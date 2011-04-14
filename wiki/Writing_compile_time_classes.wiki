@@ -80,7 +80,7 @@ public class App{
 }
 }}}
 
-Look that after the "AOP::AddTry" there aren't regular arguments sent as parameters, instead, there are braces containing a block of code. This way of calling a function, in this case a function of a CTC, is the way in which we send a "block of code" as parameter.
+Look that after the `AOP::AddTry` there aren't regular arguments sent as parameters, instead, there are braces containing a block of code. This way of calling a function, in this case a function of a CTC, is the way in which we send a "block of code" as parameter.
 
 
 * COMPILE TIME CLASS *
@@ -188,7 +188,7 @@ Because we want to show you the "code transformation" in this example we are goi
 zoec.exe myOC1.zoe -ro
 }}}
 
-When ZOE compiler start doing it job on the class, after reading the heading and the namespace declaration, it reads the AOP::AddTry that's the call to the CTC function.
+When ZOE compiler start doing it job on the class, after reading the heading and the namespace declaration, it reads the `AOP::AddTry` that's the call to the CTC function.
 
 
 * THE RESULT: THE ".CS" FILE. *
@@ -272,9 +272,9 @@ Let's move forward for improving "Example #1". Now we want to add the following 
  * Rename each function with "_" before the original name.
 
  * Create new functions that: 
-   a) will be named as the previous functions (without  "_"), 
-   b) will call the functions that have been renamed
-   c) will contain the "try-catch" block inside (for controling exceptions)
+   # will be named as the previous functions (without  "_"), 
+   # will call the functions that have been renamed
+   # will contain the "try-catch" block inside (for controling exceptions)
 
 Concerning the function call, we must be warned in sending the same arguments to the original functions from the new functions, and in including the "return" statement in the new functions if neccesary!
 
