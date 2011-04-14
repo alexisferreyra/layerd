@@ -1,5 +1,4 @@
 #summary LayerD framework compiler usage
-#sidebar TableOfContents
 =Compiler Usage=
 This page shows how to use LayerD compilers.
 
