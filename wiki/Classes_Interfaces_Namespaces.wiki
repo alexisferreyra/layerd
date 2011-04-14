@@ -130,7 +130,7 @@ namespace Example{
   {
      int x;
      int y;
-     string name;
+     string^ name;
   }
 }
 }}}
@@ -180,7 +180,7 @@ The reserved word for declaring is "interface"
 namespace Example{
   public interface iBehaviour()
   {
-    string responseToSomething();
+    string^ responseToSomething();
   }
 }
 }}}
@@ -190,7 +190,9 @@ The reserved word for using it is "implements"
 namespace Example{
   public class specificBehaviour implements iBehaviour
   {
-     //. . . -> And here the specific implementation of the interface methods
+    string^ responseToSomething(){
+      // specific implementation 
+    }
   }
 }
 }}}
