@@ -1,0 +1,169 @@
+#summary Classes, Interfaces and Namespaces
+
+==Namespaces==
+The declaration and use of namespaces is similar to C#.
+{{{
+namespace NAME_OF_NAMESPACE
+{
+	public class A
+	{
+	  ...
+	}
+	
+	...
+}
+}}}
+User-defined types such as classes, interfaces, etc. must always be declared inside a namespace.
+
+==Classes==
+Classes in Meta D++ are declared similar to C# and Java.
+Nevertheless, there are some special modifiers for MetaD++.
+Let's see a generic definition of a class:
+
+{{{
+[Class_Decl_Mods_opt] class [Identifier] inherits [Base_List_opt] implements [Implement_List_opt]
+{ 
+   Class_Decl_Block_opt 
+}
+}}}
+
+There can be more than one modifier defining the class, each one related to some aspect of the class.
+<br><br>
+*References:*
+|| *`[Class_Decl_Mods_opt]`* || modifiers used to defined different aspects of the class. The order of the modifiers doesn't matter. ||
+|| *`[Identifier]`* || the name of the class ||
+|| *`[Base_List_opt]`* || the class or classes from which it inherit ||
+|| *class* || the reserved word for defining a class ||
+|| *inherits* || the reserved word for pointing out that the class inherits from other class ||
+|| *implements* || the reserved word for pointing out that this class implements one or more interfaces. ||
+
+<br>
+
+===Modifiers===
+*Access Level Modifiers*
+
+MetaD++ supports the following access level modifiers 
+
+|| *Modifier*|| *Description*||
+||public||Allow global and unlimited access to the class and can be used for high level classes as well as for nested classes.||
+||private||As default if there's no access level modifier specified on the class definition. It's the more restrictive of all access level modifiers, for high level classes the access to the class  is restrict to the namespace that contains the class and for the nested classes the access to the class is limited to the container-class exclusively||
+||protected||Only valid for nested classes and limits the access to the class to the container-class and its derivated classes.||
+
+*Compile Time Class Modifiers*
+
+These modifiers determinate what kind of compile time class (CTC) a class is. Basically be can have two types of CTCs.
+
+|| *Modifier*|| *Description*||
+||factory||Used to specify that this class is a Compile Time Class||
+||interactive||Used to specify that this class is an interactive Compile Time Class||
+
+*Abstract Modifier*
+
+|| *Modifier*|| *Description*||
+||abstract||The abstract modifier establishes that a class can be only used as a base class for other classes or like a type of pointer but it can't be instantiated under any condition.||
+
+*Final Modifier*
+
+|| *Modifier* || *Description*||
+||final||Classes marked as final can't be inherited in any model of inheritance.||
+
+*Extern Modifier*
+
+|| *Modifier* || *Description*||
+||extern||Establishes that the method is implemented externally. It is an error to use the abstract and extern modifiers together to modify the same member. Using the extern modifier means that the method is implemented outside the Meta D++ code, while using the abstract modifier means that the method implementation is not provided in the class. Because an external method declaration provides no actual implementation, there is no method body; the method declaration simply ends with a semicolon and there are no braces ({ }) following the signature.||
+
+*Extension Modifier*
+
+|| *Modifier* || *Description* ||
+||extension||Used to declare an extension of classfactory.||
+
+*New modifier* 
+
+|| *Modifier* || *Description* ||
+||new||In nested classes it is used to explicit a hiding of a member of a class and avoid compiler warnings.||
+
+
+===Structs===
+
+It is possible to declare "structs" too, using the "struct" modifier instead of "class".
+<br>
+For example:
+{{{
+namespace Example{
+  public struct MyStruct
+  {
+     int x;
+     int y;
+     string name;
+  }
+}
+}}}
+Classes and structs are represented with the same CodeDOM class: XplClass.
+Structs represent classes that in certain runtimes can be stored in the stack and passed by value as in .NET runtime o native code.
+Use structs for types that you expect to be stored in the stack or passed by value in certain runtimes. An instance from a  class can't be passed as value or stored in the stack in some runtimes.
+
+==Enums==
+
+Enums works the same than in C# language. To declare an enum use:
+
+{{{
+namespace Example{
+
+  public enum Countries{
+    UnitedStates,
+    Mexico = 3,
+    Argentina,
+    Spain
+  }
+
+}
+}}}
+
+To use/reference an enum you can use the enum type for variable types and you use the qualified name to refer to enum constants like:
+
+{{{
+
+void foo(Countries arg){
+
+  if(arg == Countries::Argentina){
+    Console::WriteLine( "Hello Argentina!!" );
+  }
+
+}
+
+}}}
+
+You can cast an enum to an integer by using explicit casting `(int)Countries::Mexico`
+
+==Interfaces==
+The use of interfaces is similar to C# or Java.<br><br>
+The reserved word for declaring is "interface"
+{{{
+namespace Example{
+  public interface iBehaviour()
+  {
+    string responseToSomething();
+  }
+}
+}}}
+
+The reserved word for using it is "implements"
+{{{
+namespace Example{
+  public class specificBehaviour implements iBehaviour
+  {
+     . . . -> And here the specific implementation of the interface methods
+  }
+}
+}}}
+
+It's possible to implement multiple interfaces separating each implemented interface with comma. For example:
+
+{{{
+namespace Example{
+  public class multipleBehaviour implements iBehaviour, iBehaviour2, iBehaviour3
+  {
+     . . . -> And here the specific implementation of the interfaces methods
+  }
+}
+}}}
