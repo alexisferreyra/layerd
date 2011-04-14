@@ -1,4 +1,4 @@
-#summary One-sentence summary of this page.
+#summary Using writecode expression
 Instead of creating source code in memory using CodeDOM classes it is possible to use the "writecode" expression. Writecode expression takes as argument an expression or a block of code, depending on the form used, and generates in memory the code passed as an argument using CodeDOM classes, summing up the expression writecode performs automatically  work that we should do by "hand" using CodeDOM classes. Additionally writecode expression performs changes on the block passed as argument replacing identifiers marked with "$" for the content of the named variable.
 
 <table border="1">
