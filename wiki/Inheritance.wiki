@@ -20,7 +20,15 @@ namespace Example
 
 Meta D++ supports both, simple and multiple inheritance.
 
-Like C# inheritance, all inherited methods are, by default, non-virtual unless you define it as `virtual` (with `virtual` modifier). Nevertheless, for platforms like Java where methods are by default virtual, a warning will be shown for point out that the method is going to be `virtual` anyway. In this case, you should use `non-virtual` modifier so that the method won't be virtual.
+Like C# inheritance, all inherited members are, by default, non-virtual unless you define it as `virtual` in base class (with `virtual` modifier). In order to override a member you need to declare it as `virtual` in base class and use the keyword `override` in the derived class.
+
+To mark a member like a new implementation that can hide an inherited member use the keyword `new`.
+
+To mark a member so it can't be overridden by derived classes use the keyword `final` in the member declaration.
+
+You can define an instance method, property or indexer as abstract by using the keyword `abstract` and not providing implementation body.
+
+* Note: * for platforms like Java where methods are by default virtual, a warning will be shown to point out that the method is going to be `virtual` anyway. In this case, you should use `non-virtual` modifier to force that the method won't be virtual and a compilation error will be issued if the Zoe Code Generation module can warranty non-virtuality of member.
 
 == Inheritance between Classes ==
 === Ordinary classes ===
@@ -31,38 +39,43 @@ Example:
 {{{
 namespace Example{
   
-  class Animal{
+  class Animal {
     
-  string^ name;
+      string^ name;
     
     public:
+      // method that can be overridden in derived class
       virtual string^ iDo{
         return "Nothing";
-    }
+      }
+      final void NonOverridableMethod(){
+         // do something
+      }
   }
   
-  public class Dog{
+  public class Dog inherits Animal {
     
-  bool IamSomeOnePet;
+      bool IamSomeOnePet;
     
-    public:
-    Dog()
-    {
-      this.name = "";
-      this.IamSomeOnePet = false;
-    }
+  public:
+      Dog()
+      {
+        this.name = "";
+        this.IamSomeOnePet = false;
+      }
     
-    Dog(string^ name)
-    {
-      this.name = name;
-      IamSomeOnePet = true;
-    }
+      Dog(string^ name)
+      {
+        this.name = name;
+        IamSomeOnePet = true;
+      }
     
-    override string^ iDo{
-      return "My name is" + name + "and I do: Guau!";
-    }
+      override string^ iDo{
+        return "My name is" + name + "and I do: Guau!";
+      }
   }
 }
+
 }}}
 
 === Compile Time classes ===
@@ -115,8 +128,6 @@ namespace Example{
   
   public class MyClass implements SpecificBehaviour
   {
-    public class(){;}
-    
     public string commonBehaviour()
     {
       return "I do";
