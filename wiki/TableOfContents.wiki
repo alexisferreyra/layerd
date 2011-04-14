@@ -18,16 +18,16 @@
     # [Functions Functions, Properties and Operators]
     # [Inheritance]
   #Compile Time Classes
-    # [Introduction to "Compile Time Classes"]
-    # [Using writecode expressions]
-    # [Using CodeDOM]
-    # [Injecting code at compile time]
-    # [Writing compile time classes]
-    # [Interactive compilation]
-    # [Debugging compile time programs]
-    # [API Encapsulation|Compile time API encapsulation / Multiplatform development]
-    # [Create your own semantic structures]
-    # [Creating your own DSL]
+    # [Introduction_to_Compile_Time Introduction to "Compile Time Classes"]
+    # [Using_writecode Using writecode expressions]
+    # [Using_CodeDOM Using CodeDOM]
+    # [Injecting_code Injecting code at compile time]
+    # [Writing_compile_time_classes Writing compile time classes]
+    # [Interactive_compilation Interactive compilation]
+    # [Debugging_compile_time Debugging compile time programs]
+    # [API_Encapsulation Compile time API encapsulation / Multiplatform development]
+    # [Create_your_own_semantic_structures Create your own semantic structures]
+    # [Create_your_own_DSL Creating your own DSL]
 
 * Platform specific *
 
