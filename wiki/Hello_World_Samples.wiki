@@ -39,7 +39,7 @@ c:\layerd\bin>zoec.exe HelloWorld.zoe
 
 Sample hello world program in Meta D++ language targeting Java SE runtime.
 
-Source code:
+Meta D++ source code:
 {{{
 // sample import for standard JavaSE packages
 import "java.lang", "platform=java", "ns=Java";
@@ -85,7 +85,7 @@ namespace EjemploJava{
 }
 }}}
 
-Save as "SampleJava.dpp" and compile this program write the following on the command line:
+Save as "!SampleJava.dpp" and compile this program write the following on the command line:
 
 {{{
 c:\layerd\bin>metadppc.exe SampleJava.dpp
