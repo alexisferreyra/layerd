@@ -1,4 +1,5 @@
 #summary Meta D++ expressions and statements
+#sidebar TableOfContents
 
 ==Expressions==
 An expression is a construct made up of variables, operators, and method invocations, which are constructed according to the syntax of the language, that evaluates to a single value. The data type of the value returned by an expression depends on the elements used in the expression.
