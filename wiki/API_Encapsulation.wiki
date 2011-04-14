@@ -1,4 +1,4 @@
-#summary One-sentence summary of this page.
+#summary Introduction to compile time API encapsulation by using transformations
 ==Compile Time API Encapsulation==
 
 LayerD provides the required infrastructure to encapsulate libraries and frameworks (APIs). In particular, Zoe language natively support these important features:
@@ -507,4 +507,3 @@ The infrastructure provided by LayerD for API encapsulation is also useful to im
 Inheritance and polymorphism relations are automatically managed by compile time classes for method calls but you must take into account the relationship between classes when designing complex abstract API and take care of refactorization of concrete interface implementation by client classes.
 
 For example, if you have a compile time class "IEvent" that encapsulates a runtime interface for certain framework, in the type constructor of "IEvent" you will wan't to make the required refactorization of client classes when you detect that the type is used as base class or interface implementation.
-
