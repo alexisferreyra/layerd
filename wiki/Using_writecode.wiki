@@ -23,7 +23,10 @@ writecode($argumentExp + 5 * var)
 <td>
 Simple Block of code
 </td>
-<td>In simple block form, writecode expression returns an object of type `XplClass^`, `XplFunctionBody^` or `XplDocumentBody^` 
+<td>In simple block form, writecode expression returns an object of type:
+ * `XplClass^`
+ * `XplFunctionBody^`
+ * `XplDocumentBody^` 
 depending on the content of the block passed as argument.</td>
 <td>
 {{{
@@ -82,8 +85,7 @@ To tell writecode expression we want to replace an identifier for the content of
 members = writecode 
 {%
   private: 
-    $fieldType 
-    $internalFieldName; 
+    $fieldType $internalFieldName; 
   public: 
     $fieldType property $fieldName
     {
