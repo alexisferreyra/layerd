@@ -1,0 +1,69 @@
+=Welcome to LayerD Wiki !=
+Welcome to LayerD's wiki. Here you will start knowing everything you need about this project.
+
+Additional to this wiki you can find more information about LayerD at these sites:
+  * http://layerd.net
+  * http://layerd.blogspot.com
+
+==What's LayerD?==
+LayerD is a technology that deals with some of the most serious problems in Software Engineering at present, such as portability, re-usage and the capacity to create abstractions as well as multiplatform software performance.
+LayerD is made up of a framework of technologies that provide a means to construct efficient, reliable, secure multiplatform software with a huge economy of resources in its development. Such technology framework consists of the following;
+
+<br>
+
+http://layerd.net/imagenes_articulos/art_fastguide_img2.jpg
+
+<br>
+
+The Meta-Languages and compilers are high level programming languages, focused on programmers, analysts and engineers productivity since they provide the most appropriate means for software development with a high abstraction level.
+
+ZOE language and its modular compiler are the LayerD technology machinery. ZOE Language is an intermediate technology-centered and ordinary language. In general, it is a high level object-oriented imperative language but it has some unique extension mechanisms beneficial to the highest level Meta-Languages.
+The LayerD Code Generators are software components that handle each implementation platform details and are a part of the last software production stage under LayerD paradigm.
+
+In despite of the fact that LayerD is a complete software development framework, it does not demand a great amount of time or effort in its learning because it is simply based on Object-Oriented technology which has been taken to its utmost expression in every software development level.
+
+==Users==
+
+=== Quick Samples ===
+
+  # [Hello_World_Samples Hello World Samples]
+
+===Programmers Guide===
+
+  # [Compiler_usage Compiler usage]
+  # Basic Language
+    # [Expressions_and_Statements Expressions and Statements]
+    # [Classes_Interfaces_Namespaces Classes, Interfaces and Namespaces]
+    # [Native_types Native types]
+    # [Inheritance]
+  #Compile Time Classes
+    # [Introduction to "Compile Time Classes"]
+    # [Using writecode expressions]
+    # [Using CodeDOM]
+    # [Injecting code at compile time]
+    # [Writing compile time classes]
+    # [Interactive compilation]
+    # [Debugging compile time programs]
+    # [API Encapsulation|Compile time API encapsulation / Multiplatform development]
+    # [Create your own semantic structures]
+    # [Creating your own DSL]
+
+===Platform specific===
+
+  # [Programming_NET Programming for .NET]
+  # [Programming_Java Programming for Java]
+  # [Programming_Cpp Programming for C/C++]
+
+==Reference==
+  # [CodeDOM_Reference CodeDOM Reference]
+
+==Developers==
+  # [Project_Status Project Status]
+  # [Repository_Structure Repository Structure]
+  # [Participate]
+
+==Download==
+
+If you want to '''download''' the '''SDK''' please click [http://downloads.sourceforge.net/project/layerd here]. 
+
+But, if you want to access to the SVN repository where is LayerD's code and start participating in the 'open-source project' please click [http://sourceforge.net/apps/mediawiki/layerd/index.php?title=Participate here]
