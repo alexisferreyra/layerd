@@ -1,5 +1,4 @@
 #summary Hello World Samples
-#sidebar TableOfContents
 = Meta D++ =
 
 
