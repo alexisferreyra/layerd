@@ -10,9 +10,12 @@
 
   # [Compiler_usage Compiler usage]
   # Basic Language
+    # [Hello_World_Samples Hello World]
     # [Expressions_and_Statements Expressions and Statements]
-    # [Classes_Interfaces_Namespaces Classes, Interfaces and Namespaces]
     # [Native_types Native types]
+    # [Literals Literal values]
+    # [Classes_Interfaces_Namespaces Classes, Interfaces and Namespaces]
+    # [Functions Functions, Properties and Operators]
     # [Inheritance]
   #Compile Time Classes
     # [Introduction to "Compile Time Classes"]
