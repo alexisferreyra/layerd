@@ -1,6 +1,8 @@
+#summary inyecting code at compile time
+
 There are two ways of injecting code at compile time: 
-* Returning expressions and types from a member function of a compile time class.
-* Using special objects of Zoe Compiler to access to the source code of the client which calls the compile time class. 
+ * Returning expressions and types from a member function of a compile time class.
+ * Using special objects of Zoe Compiler to access to the source code of the client which calls the compile time class. 
 
 ==  Returning expressions and types from a member function of a compile time class ==
 To return expressions from a member of a compile time class is possible to use the ordinary instruction "return" as in any other function.
