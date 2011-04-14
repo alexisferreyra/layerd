@@ -1,38 +1,31 @@
 #summary One-sentence summary of this page.
 Instead of creating source code in memory using CodeDOM classes it is possible to use the "writecode" expression. Writecode expression takes as argument an expression or a block of code, depending on the form used, and generates in memory the code passed as an argument using CodeDOM classes, summing up the expression writecode performs automatically  work that we should do by "hand" using CodeDOM classes. Additionally writecode expression performs changes on the block passed as argument replacing identifiers marked with "$" for the content of the named variable.
 
-<table border=1>
-	<tr>  
-		<th>
-		Form
-		</th>
-		<th>
-		Description
-		</th>
-                <th>
-		Example
-		</th>
-	</tr>
-	<tr>	
-		<td>
-		Expression
-		</td>
-		<td>
-		In the form of expression writecode instruction always returns an object of type `XplExpression^`.
-                </td>
-                <td>
+<table border="1">
+<tr>  
+<th>Form</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+<tr>	
+<td>
+Expression
+</td>
+<td>In the form of expression writecode instruction always returns an object of type `XplExpression^`.</td>
+<td>
 {{{
 //Returns a XplExpression object<br> 
 writecode($argumentExp + 5 * var)
 }}}
-                </td>
-	</tr>
-	<tr>	
-		<td>
-		Simple Block of code
-		</td>
-		<td>In simple block form writecode expression returns an object of type `XplClass^`, `XplFunctionBody^` or `XplDocumentBody^` depending on the content of the block passed as argument.</td>
-                <td>
+</td>
+</tr>
+<tr>	
+<td>
+Simple Block of code
+</td>
+<td>In simple block form, writecode expression returns an object of type `XplClass^`, `XplFunctionBody^` or `XplDocumentBody^` 
+depending on the content of the block passed as argument.</td>
+<td>
 {{{
 //Returns a XplClass object 
 writecode{ 
