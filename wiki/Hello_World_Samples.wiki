@@ -35,7 +35,9 @@ c:\layerd\bin>metadppc.exe HelloWorld.dpp
 c:\layerd\bin>zoec.exe HelloWorld.zoe
 }}}
 
-= Java = 
+== Java == 
+
+Sample hello world program in Meta D++ language targeting Java SE runtime.
 
 Source code:
 {{{
