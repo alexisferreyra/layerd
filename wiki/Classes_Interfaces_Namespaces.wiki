@@ -1,6 +1,4 @@
 #summary Classes, Structs, Enums, Interfaces and Namespaces
-#sidebar TableOfContents
-
 ==Namespaces==
 The declaration and use of namespaces is similar to C#.
 {{{
