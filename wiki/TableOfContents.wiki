@@ -2,7 +2,35 @@
 
 [Home]
 
-Language
-  * Namespace
-  * Functions
-  * Inheritance
+* Quick Samples *
+
+  # [Hello_World_Samples Hello World Samples]
+
+* Programmers Guide *
+
+  # [Compiler_usage Compiler usage]
+  # Basic Language
+    # [Expressions_and_Statements Expressions and Statements]
+    # [Classes_Interfaces_Namespaces Classes, Interfaces and Namespaces]
+    # [Native_types Native types]
+    # [Inheritance]
+  #Compile Time Classes
+    # [Introduction to "Compile Time Classes"]
+    # [Using writecode expressions]
+    # [Using CodeDOM]
+    # [Injecting code at compile time]
+    # [Writing compile time classes]
+    # [Interactive compilation]
+    # [Debugging compile time programs]
+    # [API Encapsulation|Compile time API encapsulation / Multiplatform development]
+    # [Create your own semantic structures]
+    # [Creating your own DSL]
+
+* Platform specific *
+
+  # [Programming_NET Programming for .NET]
+  # [Programming_Java Programming for Java]
+  # [Programming_Cpp Programming for C/C++]
+
+* Reference *
+  # [CodeDOM_Reference CodeDOM Reference]
