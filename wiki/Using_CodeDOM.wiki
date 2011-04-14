@@ -8,118 +8,20 @@ All classes that represent some portion of source code are derived from XplNode 
 </p>
 
 <br>
-<table align="center" border="1" cellspacing="0" cellpadding="2">
-	<tr>
-		<th align="center" width="318" valign="middle" height="19">
+|| *Class* || *Description* ||
+|| `XplNode` || It is the base class for all classes that are part of a Zoe document in memory. ||
+|| `XplDocument` || Represents the initial node of a Zoe document in memory. Contains a "DocumentData" that contains metadata and configuration information. Another section "DocumentBody" where the functional part of the source code is located. ||
+|| `XplNamespace` || Represents a Zoe namespace, to set or get the name is used "set_name" or "get_name". ||
+|| `XplClass` || Represents a class, interface, enumeration, or Zoe structure.  By default represents a class. ||
+|| `XplFunction` || Represents a member function of a Zoe class. ||
+|| `XplProperty` || Represents a member property of a Zoe class. ||
+|| `XplField` || Represents a Zoe member field. ||
+|| `XplType` ||	Represents a data type, is a recursive structure. It is used to represent the data type "type". ||
+|| `XplFunctionBody` || Represents a function body, contains instructions. It is used to represent the type of data "block". ||
+|| `XplIName` || Represents an "iname" or identifier for the purpose of being used by the Zoe compiler, but is not itself a portion of source code. ||
+|| `XplClassMembersList` || Not used as part of a Zoe program, but to group class members in memory. ||
+|| `XplExpression` ||	Represents a container of some kind of expression. For example, can contain a literal expression, unary, binary, etc. It's the data type used to represent the expressions data types &quot;exp&quot;. ||
 
-			<b>Class </b>
-		</th>
-		<th align="center" width="317" valign="middle" height="19">
-			<b>Description</b> 
-		</th>
-	</tr>
-	<tr>
-		<td align="left" width="318" valign="top" height="39">
-			XplNode 
-		</td>
-		<td align="left" width="317" valign="middle" height="39">
-			It is the base class for all classes that are part of a Zoe document in memory. 
-		</td>
-	</tr>
-	<tr>
-		<td align="left" width="318" valign="top" height="117">
-			XplDocument 
-		</td>
-		<td align="left" width="317" valign="bottom" height="117">
-			Represents the initial node of a Zoe document in memory. 
-			Contains a &quot;DocumentData&quot; that contains metadata and configuration information and a &quot;DocumentBody&quot; where the functional part of the source code is located. 
-		</td>
-	</tr>
-	<tr>
-		<td align="left" width="318" valign="top" height="58">
-			XplNamespace 
-		</td>
-		<td align="left" width="317" valign="top" height="58">
-			Represents a Zoe namespace, to set or get the name is used &quot;set_name&quot; or &quot;get_name&quot;. 
-		</td>
-	</tr>
-	<tr>
-		<td align="left" width="318" valign="top" height="58">
-			XplClass 
-		</td>
-		<td align="left" width="317" valign="top" height="58">
-			Represents a class, interface, enumeration, or Zoe structure. 
-			By default represents a class. 
-		</td>
-	</tr>
-	<tr>
-		<td align="left" width="318" valign="top" height="39">
-			XplFunction 
-		</td>
-		<td align="left" width="317" valign="middle" height="39">
-			Represents a member function of a Zoe class. 
-		</td>
-	</tr>
-	<tr>
-		<td align="left" width="318" valign="top" height="39">
-			XplProperty 
-		</td>
-		<td align="left" width="317" valign="middle" height="39">
-			Represents a member property of a Zoe class. 
-		</td>
-	</tr>
-	<tr>
-		<td align="left" width="318" valign="top" height="19">
-			XplField 
-		</td>
-		<td align="left" width="317" valign="middle" height="19">
-			Represents a Zoe member field. 
-		</td>
-	</tr>
-	<tr>
-		<td align="left" width="318" valign="top" height="58">
-			XplType 
-		</td>
-		<td align="left" width="317" valign="top" height="58">
-			Represents a data type, is a recursive structure. 
-			It is used to represent the data type &quot;type&quot;. 
-		</td>
-	</tr>
-	<tr>
-		<td align="left" width="318" valign="top" height="58">
-			XplFunctionBody 
-		</td>
-		<td align="left" width="317" valign="top" height="58">
-			Represents a function body, contains instructions. 
-			It is used to represent the type of data &quot;block&quot; 
-		</td>
-	</tr>
-	<tr>
-		<td align="left" width="318" valign="top" height="78">
-			XplIName 
-		</td>
-		<td align="left" width="317" valign="top" height="78">
-			Represents a &quot;iname&quot; or identifier for the purpose of being used by the Zoe compiler, but is not itself a portion of source code. 
-		</td>
-	</tr>
-	<tr>
-		<td align="left" width="318" valign="top" height="58">
-			XplClassMembersList 
-		</td>
-		<td align="left" width="317" valign="top" height="58">
-			Not used as part of a Zoe program, but to group class members in memory. 
-		</td>
-	</tr>
-	<tr>
-		<td align="left" width="318" valign="top" height="98">
-			XplExpression 
-		</td>
-		<td align="left" width="317" valign="bottom" height="98">
-			Represents a container of some kind of expression. 
-			For example, can contain a literal expression, unary, binary, etc. 
-			It&#39;s the data type used to represent the expressions data types &quot;exp&quot;. 
-		</td>
-	</tr>
 	<tr>
 		<td align="left" width="318" valign="top" height="58">
 			XplNodeList 
