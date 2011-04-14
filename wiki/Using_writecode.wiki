@@ -1,0 +1,109 @@
+#summary One-sentence summary of this page.
+Instead of creating source code in memory using CodeDOM classes it is possible to use the "writecode" expression. Writecode expression takes as argument an expression or a block of code, depending on the form used, and generates in memory the code passed as an argument using CodeDOM classes, summing up the expression writecode performs automatically  work that we should do by "hand" using CodeDOM classes. Additionally writecode expression performs changes on the block passed as argument replacing identifiers marked with "$" for the content of the named variable.
+
+<table border=1>
+	<tr>  
+		<th>
+		Form
+		</th>
+		<th>
+		Description
+		</th>
+                <th>
+		Example
+		</th>
+	</tr>
+	<tr>	
+		<td>
+		Expression
+		</td>
+		<td>
+		In the form of expression writecode instruction always returns an object of type `XplExpression^`.
+                </td>
+                <td>
+{{{
+//Returns a XplExpression object<br> 
+writecode($argumentExp + 5 * var)
+}}}
+                </td>
+	</tr>
+	<tr>	
+		<td>
+		Simple Block of code
+		</td>
+		<td>In simple block form writecode expression returns an object of type `XplClass^`, `XplFunctionBody^` or `XplDocumentBody^` depending on the content of the block passed as argument.</td>
+                <td>
+{{{
+//Returns a XplClass object 
+writecode{ 
+  class $className{
+      void func () 
+      { 
+      } 
+  } 
+}
+
+//Returns a XplDocumentBody object 
+writecode{ 
+  using Zoe; 
+  namespace test{
+  
+  }
+}
+
+//Returns a XplFunctionBody object 
+writecode{ 
+  int localvar = 0; 
+  for(int n=0; n<$arg.Count; n++)
+  { 
+    localvar++; 
+  } 
+}
+}}}
+</td>
+	</tr>
+	<tr>	
+		<td>Block of code of Class members</td>
+		<td>This writecode syntactic expression returns an object of type `XplClassMembersList^` which contains a list of class members.</td>
+                <td>
+{{{
+// Returns a XplClassMembersList object 
+// Note that the use of “{%” y “%}” is required in this case
+// for generating the members of the class 
+writecode{% 
+  int field1; 
+  float field2; 
+  void func($t1 arg1, int arg2) 
+  { 
+  
+  } 
+%}
+}}}
+</td>
+	</tr>
+ </table>
+
+To tell writecode expression we want to replace an identifier for the content of a variable we must mark the identifier with the dollar sign at the beginning, for example '$myVariable'. Below is an example:
+
+{{{
+members = writecode 
+{%
+  private: 
+    $fieldType 
+    $internalFieldName; 
+  public: 
+    $fieldType property $fieldName
+    {
+        get
+        { 
+          return $internalFieldName; 
+        } 
+        set
+        { 
+          $internalFieldName = value; 
+        } 
+    } 
+%};
+}}}
+ 
+In the above example "FieldType", "internalFieldName" and "fieldName" are variables in the scope of the writecode expression. The types that can replace inside a writecode  expression are: type or `XplType^`, block or `XplFunctionBody^`,  `XplExpression^` or `exp` types, `XplIName^` or `iname` types and constants.
