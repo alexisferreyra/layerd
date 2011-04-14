@@ -1,19 +1,55 @@
-#summary Classes, Interfaces and Namespaces
+#summary Classes, Structs, Enums, Interfaces and Namespaces
 
 ==Namespaces==
 The declaration and use of namespaces is similar to C#.
 {{{
-namespace NAME_OF_NAMESPACE
+namespace SampleNamespace
 {
 	public class A
 	{
-	  ...
+          int field1; // members are private by default
+	public:
+          void fooPublicFunction(int arg1, int arg2){
+            // do something
+          }
+          int property Integer{
+             get{ return this.field1; }
+             set{ this.field1 = value; }
+          }
+        protected:
+          void protectedFunction(){ }
+        private:
+          int otherPrivateField;
 	}
 	
 	...
 }
 }}}
-User-defined types such as classes, interfaces, etc. must always be declared inside a namespace.
+
+User-defined types such as classes, enums, interfaces, etc. must always be declared inside a namespace. It's not allowed to declare a class, struct, enum or function outside namespaces. You can have compile time function calls outside namespaces, like:
+
+{{{
+
+// call to compile time function outside namespaces, classes are allowed
+
+MyClassfactory::MyFunc("Hello"){
+  // this is a block argument to static function MyFunc
+  // do something here
+};
+
+namespace T{
+  class A{
+  }
+}
+
+/* NOT ALLOWED CLASSES OUTSIDE NAMESPACES
+
+class OutsideNamespace{
+}
+
+*/
+
+}}}
 
 ==Classes==
 Classes in Meta D++ are declared similar to C# and Java.
@@ -136,8 +172,10 @@ void foo(Countries arg){
 You can cast an enum to an integer by using explicit casting `(int)Countries::Mexico`
 
 ==Interfaces==
+
 The use of interfaces is similar to C# or Java.<br><br>
 The reserved word for declaring is "interface"
+
 {{{
 namespace Example{
   public interface iBehaviour()
@@ -152,7 +190,7 @@ The reserved word for using it is "implements"
 namespace Example{
   public class specificBehaviour implements iBehaviour
   {
-     . . . -> And here the specific implementation of the interface methods
+     //. . . -> And here the specific implementation of the interface methods
   }
 }
 }}}
@@ -163,7 +201,10 @@ It's possible to implement multiple interfaces separating each implemented inter
 namespace Example{
   public class multipleBehaviour implements iBehaviour, iBehaviour2, iBehaviour3
   {
-     . . . -> And here the specific implementation of the interfaces methods
+     //. . . -> And here the specific implementation of the interfaces methods
   }
 }
+
 }}}
+
+Classes that implement an interfaces must provide (by inheritance or by themselves) an implementation for each function and property declared in the interface. That is, must provide implementation for functions with the same signature than the ones declared in the interface (name, arguments and return types).
