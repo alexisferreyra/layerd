@@ -1,0 +1,344 @@
+#summary Meta D++ expressions and statements
+
+==Expressions==
+An expression is a construct made up of variables, operators, and method invocations, which are constructed according to the syntax of the language, that evaluates to a single value. The data type of the value returned by an expression depends on the elements used in the expression.
+<br>
+Meta D++ expressions are similar to C# and Java expressions.
+<br><br>
+Some tipical expressions:
+
+===Assignment===
+The assignment expression gives value to a certain variable.
+{{{
+int a = 8;
+String^ name = ValidatorClass.getUserName(408);
+
+int b = 2;
+
+// assignment and arithmetic operation
+b += 2;
+b *= a;
+b /= 3;
+}}}
+
+===Operations===
+You can do multiple kind of operations depending on the operators that you use. For example: a+b, b*c, or a<b.
+<br>
+Some of the supported operators are:
+
+{{{
+Simple Assignment Operator
+
+=	Simple assignment operator
+
+
+Arithmetic Operators
+
++ 	Additive operator (also used for String concatenation)
+- 	Subtraction operator
+*	Multiplication operator
+/ 	Division operator
+%	Remainder operator
+
+
+Unary Operators
+
++ 	Unary plus operator; indicates positive value (numbers are positive without this, however)
+- 	Unary minus operator; negates an expression
+++  	Increment operator; increments a value by 1 (Prefix or Postfix)
+--    	Decrement operator; decrements a value by 1 (Prefix or Postfix)
+!     	Logical compliment operator; inverts the value of a boolean
+sizeof  Returns the size in bytes of an specified variable
+
+
+Equality and Relational Operators
+
+==	Equal to
+!=	Not equal to
+>	Greater than
+>=	Greater than or equal to
+<	Less than
+<=	Less than or equal to
+
+
+Conditional Operators
+
+&& 	Conditional-AND
+|| 	Conditional-OR
+?:      Ternary (shorthand for if-then-else statement)
+
+
+Type Comparison Operator
+
+typeof	Returns an object that represents the type of the provided expression
+is      Evaluates if an object is of a specified type
+
+
+Bitwise and Bit Shift Operators
+
+~	Unary bitwise complement
+<<	Signed left shift
+>>	Signed right shift
+&	Bitwise AND
+^	Bitwise exclusive OR
+|	Bitwise inclusive OR
+}}}
+
+The use of operators allows you to do "operations" like you do in other programming languages.
+<br>
+
+===Casting===
+Like in others programming languages it's possible to do casting too, as long as it's valid in the context where you're working.
+<br>
+The casting is made with parentheses.
+{{{
+XplClass^ oneClass = (XplClass^)context.CurrentNamespace.FindNode("/@XplClass");
+}}}
+
+===Method Invocation (Function call)===
+For instance methods:
+
+{{{
+//For values or references use "."
+MyClass object;
+object.method(arg1, arg2);
+
+MyOtherClass^ object2 = new MyOtherClass();
+object2.method(arg1, arg2);
+
+// for pointers use "->" like C/C++
+MyOtherClass* object3 = new MyOtherClass();
+object3->method(arg1, arg2);
+
+}}}
+For static methods use scope operator like C++:
+{{{
+ClassX::method(arg1, arg2);
+}}}
+
+The method invocation would return a value or not. If it returns a value, you could save it in a variable. (if you need or want to do that)
+
+==Statements==
+Statements are roughly equivalent to sentences in natural languages. A statement forms a complete unit of execution.
+<br>
+Types of statements:
+<br>
+===Expression Statements===
+Expressions can be made into a statement by terminating the expression with a semicolon (;)
+<br>
+For example:
+{{{
+value = 8933.234;                       // assignment statement
+value++;                                // increment statement
+Console::WriteLine("Hello World!");     // method invocation statement
+String^ myStr = new String();           // object creation statement
+}}}
+
+===Declaration Statements===
+A declaration statement declares a variable.
+<br>
+An standar variable declaration:
+{{{
+<VariableType> <variableName>;
+}}}
+Constant declaration:
+{{{
+const <typeOfConstant> <constantName> = <value>;
+}}}
+
+Arrays:
+
+{{{
+<typeOfData>[] <matrixName> = new <typeOfData> [<number of elements>];
+}}}
+
+It's possible to declare matrixes with a higher dimension adding a quantity of braces as dimension  are needed. For example for 2 dimension matrix you should declare with "[][]".
+
+Examples:
+
+{{{
+//Single variable
+int xInt=15;
+//Matrix of One dimension. 10 elements. (Vector)
+int [] var=new int[10];
+// Matrix of Two dimensions (2x3)
+int [][] var2=new int[2][3];
+// Reference to a class.
+String^ myStr="Hola";
+// Declaration and initialization.
+int a, b, c=0;
+int [] b = {{1, 2}};
+}}}
+
+Arrays are by default stored in the heap and are implicitly declared as references to arrays.
+If you want a plain-old C array stored in the stack you must use this syntax:
+
+{{{
+
+// equivalent to C "int arrayOfTwoInt[2];", stored in the stack
+typeof [2]int arrayOfTwoInt;
+
+// equivalent to C# or Java "int[] array", stored in the heap need dynamic memory allocation
+int[] array;
+
+// in complex "typeof" syntax
+typeof ^[]array;
+
+/*
+To read a type declared with "typeof" read the type from left to right, for example:
+
+typeof ^[]^[]^string array2;
+
+It´s read "reference to an array with elements of type reference to array of references to string"
+
+That´s the same than:
+
+string^[][] array2;
+
+in common short syntax. This is because Meta D++ assume that most common type of arrays are allocated in the heap in modern programs and runtimes.
+*/
+
+}}}
+
+===Control Flow Statements===
+Regulate the order in which statements get executed.
+==== The ''if'' statement ====
+{{{
+if(FIRST_CONDITION)
+{
+  //statement(s) if FIRST_CONDITION is true
+}
+else
+{
+  //statement(s) if FIRST_CONDITION is false
+  if(SECOND_CONDITION)
+  {
+     //statement(s) if SECOND_CONDITION is true
+  }
+  else
+  {
+     //statement(s) if SECOND_CONDITION is false
+     if(N_CONDITION)
+     {
+         //statement(s) if N_CONDITION is true
+     }
+     else
+     {
+         //statement(s) if N_CONDITION is false
+     }
+  }
+}
+}}}
+The ''else'' is optional and let you introduce new conditions, but you can also have a ''if'' without an ''else''
+==== The ''switch'' statement ====
+The VALUE can be int or strings.
+{{{
+switch(VALUE)
+{
+  case VALUE1:
+              //statement(s) for value1
+              break;
+  
+  case VALUE2:
+              //statement(s) for value2
+              break;
+
+. . . 
+
+  default:
+              //statement(s) for default value (not one of the presented before)
+              break;
+}
+}}}
+
+==== The ''while'' statement ====
+If the condition is at the first time false it never executes the while statement content.
+{{{
+while(CONDITION)
+{
+ //statement(s) to execute while the condition is valid (true)
+}
+}}}
+
+==== The ''do-while'' statement ====
+The do-while statement always executes it content at least one time
+{{{
+do{
+ //statement(s) to execute while the condition is valid (true)
+} while (CONDITION);
+}}}
+
+==== The ''for'' statement ====
+{{{
+for (initialization; termination; increment) {
+    //statement(s)
+}
+}}}
+The ''initialization'' expression initializes the loop; it's executed once, as the loop begins.<br>
+When the ''termination'' expression evaluates to false, the loop terminates.<br>
+The ''increment'' expression is invoked after each iteration through the loop; it is perfectly acceptable for this expression to increment or decrement a value.<br>
+
+==== The ''foreach'' statement ====
+The foreach statement repeats a group of instructions in the loop for each element of an array or an object collection.
+{{{
+foreach(X_OBJECT myObj in COLLECTION_OF__X__OBJECTS listOfObj)
+{
+  //statement(s)
+}
+}}}
+
+==== The ''break'' statement ====
+You saw the break statement in the previous discussion of the switch statement to establish the end of an option. You can also use a break to terminate a for, while, or do-while loop.
+Examples:
+On a switch statement:
+{{{
+switch(op)
+{
+  case 1:
+         Console::Write("1 selected");
+         break; //End of "case 1"
+  default:
+         Console::Write("Other selected");
+         break; //End of "default"
+}
+}}}
+Interrupting a for:
+{{{
+int i;
+for(i=0; i<myStr.length(); i++)
+{
+  if(myStr.getCharAt(i)=='A')  
+  {
+    break; //Ends for cycle
+  }
+}
+Console::Write("Char A founded at index"+i);
+}}}
+
+==== The ''continue'' statement ====
+The continue statement skips the current iteration of a for, while , or do-while loop.
+Example:
+{{{
+String^ searchMe = new String("peter piper picked a peck of pickled peppers");
+int max = searchMe.Length;
+int numPs = 0;
+
+for (int i = 0; i < max; i++) {
+//interested only in p's
+    if (searchMe.ToCharArray[i] != 'p')
+    continue;
+    //process p's
+    numPs++;
+}
+Console::Write("Found " + numPs + " p's in the string.");
+}}}
+
+==== The ''return'' statement ====
+The return statement exits from the current method, and control flow returns to where the method was invoked. The return statement has two forms: one that returns a value, and one that doesn't. To return a value, simply put the value (or an expression that calculates the value) after the return keyword.
+{{{
+     return ++count;
+}}}
+The data type of the returned value must match the type of the method's declared return value. When a method is declared void, use the form of return that doesn't return a value.
+{{{
+     return;
+}}}
