@@ -1,3 +1,5 @@
+#sidebar TableOfContents
+
 =Welcome to LayerD Wiki !=
 Welcome to LayerD's wiki. Here you will start knowing everything you need about this project.
 
