@@ -1,0 +1,266 @@
+#summary LayerD framework compiler usage
+
+
+=Compiler Usage=
+This page shows how to use LayerD compilers.
+
+==Meta D++ hello world programs==
+This is a hello world program for Meta D++ that targets the .NET framework:
+{{{
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+using DotNET::System;
+
+namespace Test{
+	public class App{
+	public:
+		static void Main(string^[] args){
+			Console::WriteLine("Hola Mundo");
+		}
+	}
+}
+}}}
+This is another hello world program for Meta D++ that use a compile time extension to implement the main for .NET:
+{{{
+Zoe::ConsoleProgram::New
+{
+	// Say hello!!
+	Console::WriteLine("Hello world!!");
+};
+}}}
+
+==Meta D++ compilation==
+To compile a Meta D++ program into a Zoe program use the "metadppc.exe" compiler:
+
+{{{
+C:\LayerD\bin\metadppc.exe helloworld.dpp
+}}}
+
+That will generate a file with the same name but with .zoe extension.<br>
+To compile a program composed of more than one file call the compiler for each file:
+
+{{{
+C:\LayerD\bin\metadppc.exe helloworld1.dpp
+C:\LayerD\bin\metadppc.exe helloworld2.dpp
+C:\LayerD\bin\metadppc.exe helloworld3.dpp
+}}}
+
+Take into account that this is possible because the program analysis and code generation is implemented in the Zoe compiler and not in the Meta D++ compiler.
+
+==Zoe Compilation==
+
+When you have the .zoe files of your program you must compile them with "zoec.exe" compiler. If the program is composed of one file:
+{{{c:\layerd\bin>zoec.exe HelloWorld.zoe}}}
+That will generate an .exe file for .NET platform that is the default platform and module type.
+
+If the program is composed of more than one file:
+{{{
+c:\layerd\bin>zoec.exe HelloWorld_Source1.zoe HelloWorld_Source2.zoe –pn:HelloWorld
+}}}
+
+The parameter "-pn:HelloWorld" set the output filename for the generated module, this is required when more than one file is provided for compilation. If your program is composed of only one file and you don't provide the "-pn" parameter then the filename of the sourcefile will be used for the module name.
+
+==All steps together==
+
+As you need to run Meta D++ compiler and Zoe compiler to get the executable/library these are all the steps together:<br>
+For a program composed of one source file:
+{{{
+c:\layerd\bin>metadppc.exe HelloWorld.dpp
+c:\layerd\bin>zoec.exe HelloWorld.zoe
+}}}
+
+For a program composed of more than one source file:
+{{{
+c:\layerd\bin>metadppc.exe HelloWorld_Source1.dpp
+c:\layerd\bin>metadppc.exe HelloWorld_Source2.dpp
+c:\layerd\bin>zoec.exe HelloWorld_Source1.zoe HelloWorld_Source2.zoe –pn:HelloWorld
+}}}
+
+Take into account that there will be more than one high level LayerD language (in addition to Meta D++), the Zoe compiler is always used in the same form.
+
+==Generation of Dynamic libraries (.dll)==
+
+To compile dynamic libraries use the parameter "-lib":
+{{{
+c:\layerd\bin>metadppc.exe HelloWorldLib.dpp
+c:\layerd\bin>zoec.exe HelloWorldLib.zoe –lib
+}}}
+
+==Compilation of compile time extensions and clients==
+Here we show how to compile a classfactory (or what is the same a "compile time extension" or a "compile time class").<br>
+First you need to write the classfactory in one or more files, take for example this code that implements a tool to run a block of instructions in parallel (for .NET):
+
+{{{
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+using DotNET::System;
+using DotNET::System::IO;
+using DotNET::System::Collections;
+using DotNET::LayerD::CodeDOM;
+using DotNET::LayerD::ZOECompiler;
+
+namespace Zoe::DotNET::Utils{
+	// Classfactory to execute concurrent statements on .NET using simple threads
+	public factory class Concurrent{
+	public:
+		// Simple function to execute concurrent statements on .NET
+		static exp void ExecuteParallel(block parallelStatements){
+			int counter = 0;
+			// For each instruction on the argument block
+			for(XplNode^ sta in parallelStatements.Children()){
+				if(sta.get_TypeName()!=CodeDOMTypes::XplDocumentation){
+					counter++;
+					// create a random function name
+					XplIName^ funcName = new XplIName();
+					// create an empty function
+					XplFunction^ func = (XplFunction^)writecode{%
+					private:
+						static void $funcName(){
+						}
+					%}.Children().FirstNode();
+					// insert the statement into the new function
+					func.get_FunctionBody().Children().InsertAtEnd(sta);
+					// insert the function into current class
+					context.CurrentClass.Children().InsertAtEnd(func);
+					// create the initialization expression for the thread
+					XplExpression^ startExp = null;
+					startExp = writecode( new DotNET::System::Threading::Thread(
+                                                   new DotNET::System::Threading::ThreadStart( & $funcName ) ).Start() );
+					// inject the initialization expression into the current context
+					context.CurrentBlock.Children().InsertBefore(startExp, context.CurrentExpression);
+				}
+			}
+			return null;
+		}
+	}
+}
+}}}
+
+To compile this file and to add it to the compiler as an extension:
+{{{
+c:\layerd\bin>metadppc.exe MyClassfactory.dpp
+c:\layerd\bin>zoec.exe MyClassfactory.zoe –ae
+Extension Added: MyClassfactory
+}}}
+Now to use this new classfactory from a client program, simply write the client program and compile it. The client program:
+{{{
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+using DotNET::System;
+// using for new classfactory
+using Zoe::DotNET::Utils;
+
+namespace Test{
+	public class App{
+	public:
+		static void Main(string^[] args){
+			// Say hello!!
+			Console::WriteLine("Welcome to new semantic structures with LayerD !!");
+
+			// Run instruction on separated threads
+			Concurrent::ExecuteParallel{
+				// Count things on one thread
+				for(int n=0;n<40000001;n++) if(n%20000000==0)Console::WriteLine("I am on "+n+".");
+				// Count other thing on other thread
+				for(int n=0;n<40000001;n++) if(n%2000000==0)Console::WriteLine("You are on "+n+".");
+			};
+
+			Console::Read();
+		}
+	}
+}
+}}}
+
+How to compile the client program:
+{{{
+c:\layerd\bin>metadppc.exe MyClassfactoryClient.dpp
+c:\layerd\bin>zoec.exe MyClassfactoryClient.zoe
+}}}
+
+So you don't have to do anything special in order to compile and use compile time extensions (or compile time classes).
+
+==List and Remove installed extensions on Zoe compiler==
+To see a list of installed extensions (classfactorys) on the zoe compiler:
+
+{{{
+c:\layerd\bin>zoec.exe –le
+ZOE Compiler - Console User Interface.
+Installed Extensions: 12
+
+Type Name, Module File, Interactive, Active
+-------------------------------------------------------
+Zoe.Utils, .\.\FactoriesLib\ZoeUtilsTemplates1.dll, False, True
+Zoe.iUtils, .\.\FactoriesLib\ZoeUtilsTemplates1.dll, True, True
+Zoe.Logger, .\.\FactoriesLib\ZoeUtilsTemplates1.dll, False, True
+DataSample.MyType, .\.\FactoriesLib\DataSampleTemplates1.dll, False, True
+DataSample.GUI, .\.\FactoriesLib\DataSampleTemplates1.dll, False, True
+DataSample.iASPNET, .\.\FactoriesLib\DataSampleTemplates1.dll, True, True
+DataSample.ASPNET, .\.\FactoriesLib\DataSampleTemplates1.dll, False, True
+DataSample.Concurrent, .\.\FactoriesLib\DataSampleTemplates1.dll, False, True
+DataSample.ClassGenerator, .\.\FactoriesLib\DataSampleTemplates1.dll, False, True
+DataSample.ProgramChecks, .\.\FactoriesLib\DataSampleTemplates1.dll, False, True
+DataModel2.Model, .\.\FactoriesLib\DataModelTemplatesPablo1.dll, True, True
+DataModel.Model, .\.\FactoriesLib\DataModelTemplates1.dll, False, True
+}}}
+
+To remove an installed extension:
+
+{{{
+c:\layerd\bin>zoec.exe –re:DataSampleTemplates
+Compilador ZOE - Interfaz de Usuario de Consola.
+Extension DataSampleTemplates eliminada. Classfactorys eliminadas: 7
+}}}
+
+==Compilation for other target platforms (different to .NET)==
+
+If you have the following program that target Java platform:
+
+{{{
+// sample import for standard JavaSE packages
+import "java.lang", "platform=java", "ns=Java";
+import "java.awt", "platform=java", "ns=Java";
+import "sun.awt.CausedFocusEvent", "platform=java", "ns=Java";
+import "javax.swing", "platform=java", "ns=Java";
+// sample import for custom jar files
+// import "com.mypackage", "platform=java", "ns=Java", "packagePath=c:/mypackage/dist/mypackage.jar";
+
+using Java::java::lang;
+using Java::java::awt;
+using Java::java::awt::event;
+using Java::javax::swing;
+
+namespace EjemploJava{
+	class Panel inherits JPanel implements ActionListener
+	{
+	public:
+		JButton^ salir = new JButton("JButton");
+		Panel()
+		{
+			add(new JLabel("Un Label en Meta D++"));
+			salir.addActionListener(this);
+			add(salir);
+			add(new JToggleButton("JToggleButton"));
+			add(new JCheckBox("JCheckBox"));
+			add(new JRadioButton("JRadioButton"));
+		}
+		static void Main(string^[] args)
+		{
+			Panel^ panel = new Panel();
+			JFrame^ ventana = new JFrame();
+			ventana.getContentPane().add(panel, BorderLayout::CENTER);
+			ventana.setSize(300, 200);
+			ventana.setTitle("Ejemplo de Java, Swing");
+			ventana.setVisible(true);
+		}
+		void actionPerformed(ActionEvent^ e)
+		{
+			System::exit(0);
+		}
+	}
+}
+}}}
+
+To compile this program write the following on the command line:
+{{{
+c:\layerd\bin>metadppc.exe SampleJava.dpp
+c:\layerd\bin>zoec.exe SampleJava.zoe –p:java
+}}}
+
+As it's noted you must only add the parameter "-p:java" to the Zoe compiler.
