@@ -9,4 +9,6 @@ Take into account that to have a working program in LayerD, using Meta D++, you 
  # compile your Meta D++ source files with Meta D++ parser
  # compile all resulting Zoe files with Zoe Compiler to generate the target artifact
 
-Also, remember that Zoe compiler is modular and can generate code native for multiple platforms like .NET, Java or Native.
+Also, remember that Zoe compiler is modular and can generate native code for multiple platforms like .NET, Java or Native binary.
+
+
