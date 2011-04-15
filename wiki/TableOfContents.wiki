@@ -14,7 +14,7 @@
     # [Expressions_and_Statements Expressions and Statements]
     # [Native_types Native types]
     # [Literals Literal values]
-    # [Classes_Interfaces_Namespaces Classes, Interfaces and Namespaces]
+    # [Classes_Interfaces_Namespaces Namespaces, Classes, Structs, Enums and Interfaces]
     # [Functions Class Members]
     # [Inheritance]
   #Compile Time Classes
