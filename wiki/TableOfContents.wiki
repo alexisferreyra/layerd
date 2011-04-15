@@ -2,12 +2,12 @@
 
 [Home]
 
-* Quick Samples *
+* Meta D++ Quick Samples *
 
   # [Hello_World_Samples Hello World Samples]
 
 * Programmers Guide *
-
+  # [Introduction]
   # [Compiler_usage Compiler usage]
   # Basic Language
     # [Hello_World_Samples Hello World]
@@ -17,7 +17,7 @@
     # [Classes_Interfaces_Namespaces Namespaces, Classes, Structs, Enums and Interfaces]
     # [Functions Class Members]
     # [Inheritance]
-  #Compile Time Classes
+  # Compile Time Classes
     # [Introduction_to_Compile_Time Introduction to "Compile Time Classes"]
     # [Using_writecode Using writecode expressions]
     # [Using_CodeDOM Using CodeDOM]
