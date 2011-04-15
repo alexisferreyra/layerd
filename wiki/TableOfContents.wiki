@@ -15,7 +15,7 @@
     # [Native_types Native types]
     # [Literals Literal values]
     # [Classes_Interfaces_Namespaces Classes, Interfaces and Namespaces]
-    # [Functions Functions, Properties and Operators]
+    # [Functions Class Members]
     # [Inheritance]
   #Compile Time Classes
     # [Introduction_to_Compile_Time Introduction to "Compile Time Classes"]
