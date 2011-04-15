@@ -32,6 +32,6 @@ In despite of the fact that LayerD is a complete software development framework,
 
 If you want to '''download''' the '''SDK''' please click [http://downloads.sourceforge.net/project/layerd here]. 
 
-We are moving the project from SourceForge hosting to Google Code. Also, there is a lot of effort going on in a commercial project that use LayerD. Expect that work to be integrated in the open source some time in 2011.
+We are moving the project from `SourceForge` hosting to Google Code. Also, there is a lot of effort going on in a commercial project that use LayerD. Expect that work to be integrated in the open source some time in 2011.
 
 If you want collaborate with LayerD join us in Google Code!
