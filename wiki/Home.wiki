@@ -24,48 +24,14 @@ The LayerD Code Generators are software components that handle each implementati
 
 In despite of the fact that LayerD is a complete software development framework, it does not demand a great amount of time or effort in its learning because it is simply based on Object-Oriented technology which has been taken to its utmost expression in every software development level.
 
-==Users==
-
 === Quick Samples ===
 
   # [Hello_World_Samples Hello World Samples]
-
-===Programmers Guide===
-
-  # [Compiler_usage Compiler usage]
-  # Basic Language
-    # [Expressions_and_Statements Expressions and Statements]
-    # [Classes_Interfaces_Namespaces Classes, Interfaces and Namespaces]
-    # [Native_types Native types]
-    # [Inheritance]
-  #Compile Time Classes
-    # [Introduction to "Compile Time Classes"]
-    # [Using writecode expressions]
-    # [Using CodeDOM]
-    # [Injecting code at compile time]
-    # [Writing compile time classes]
-    # [Interactive compilation]
-    # [Debugging compile time programs]
-    # [API Encapsulation|Compile time API encapsulation / Multiplatform development]
-    # [Create your own semantic structures]
-    # [Creating your own DSL]
-
-===Platform specific===
-
-  # [Programming_NET Programming for .NET]
-  # [Programming_Java Programming for Java]
-  # [Programming_Cpp Programming for C/C++]
-
-==Reference==
-  # [CodeDOM_Reference CodeDOM Reference]
-
-==Developers==
-  # [Project_Status Project Status]
-  # [Repository_Structure Repository Structure]
-  # [Participate]
 
 ==Download==
 
 If you want to '''download''' the '''SDK''' please click [http://downloads.sourceforge.net/project/layerd here]. 
 
-But, if you want to access to the SVN repository where is LayerD's code and start participating in the 'open-source project' please click [http://sourceforge.net/apps/mediawiki/layerd/index.php?title=Participate here]
+We are moving the project from SourceForge hosting to Google Code. Also, there is a lot of effort going on in a commercial project that use LayerD. Expect that work to be integrated in the open source some time in 2011.
+
+If you want collaborate with LayerD join us in Google Code!
