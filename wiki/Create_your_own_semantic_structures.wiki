@@ -80,39 +80,39 @@ using DotNET::LayerD::CodeDOM;
 using DotNET::LayerD::ZOECompiler;
 
 namespace Zoe::DotNET::Utils{
-	// Classfactory to execute concurrent statements on .NET using simple threads
-	public factory class Concurrent{
-	public:
-		// Simple function to execute concurrent statements on .NET
-		static exp void ExecuteParallel(block parallelStatements){
-			int counter = 0;
-			// For each instruction on the argument block
-			for(XplNode^ sta in parallelStatements.Children()){
-				if(sta.get_TypeName()!=CodeDOMTypes::XplDocumentation){
-					counter++;
-					// create a random function name
-					XplIName^ funcName = new XplIName();
-					// create an empty function
-					XplFunction^ func = (XplFunction^)writecode{%
-					private:
-						static void $funcName(){
-						}
-					%}.Children().FirstNode();
-					// insert the statement into the new function
-					func.get_FunctionBody().Children().InsertAtEnd(sta);
-					// insert the function into current class
-					context.CurrentClass.Children().InsertAtEnd(func);
-					// create the initialization expression for the thread
-					XplExpression^ startExp = null;
-					startExp = writecode( new DotNET::System::Threading::Thread(
+  // Classfactory to execute concurrent statements on .NET using simple threads
+  public factory class Concurrent{
+  public:
+    // Simple function to execute concurrent statements on .NET
+    static exp void ExecuteParallel(block parallelStatements){
+      int counter = 0;
+      // For each instruction on the argument block
+      for(XplNode^ sta in parallelStatements.Children()){
+        if(sta.get_TypeName()!=CodeDOMTypes::XplDocumentation){
+          counter++;
+          // create a random function name
+          XplIName^ funcName = new XplIName();
+          // create an empty function
+          XplFunction^ func = (XplFunction^)writecode{%
+          private:
+            static void $funcName(){
+            }
+          %}.Children().FirstNode();
+          // insert the statement into the new function
+          func.get_FunctionBody().Children().InsertAtEnd(sta);
+          // insert the function into current class
+          context.CurrentClass.Children().InsertAtEnd(func);
+          // create the initialization expression for the thread
+          XplExpression^ startExp = null;
+          startExp = writecode( new DotNET::System::Threading::Thread(
                                                    new DotNET::System::Threading::ThreadStart( & $funcName ) ).Start() );
-					// inject the initialization expression into the current context
-					context.CurrentBlock.Children().InsertBefore(startExp, context.CurrentExpression);
-				}
-			}
-			return null;
-		}
-	}
+          // inject the initialization expression into the current context
+          context.CurrentBlock.Children().InsertBefore(startExp, context.CurrentExpression);
+        }
+      }
+      return null;
+    }
+  }
 }
 }}}
 
@@ -136,23 +136,23 @@ using DotNET::System;
 using Zoe::DotNET::Utils;
 
 namespace Test{
-	public class App{
-	public:
-		static void Main(string^[] args){
-			// Say hello!!
-			Console::WriteLine("Welcome to new semantic structures with LayerD !!");
+  public class App{
+  public:
+    static void Main(string^[] args){
+      // Say hello!!
+      Console::WriteLine("Welcome to new semantic structures with LayerD !!");
 
-			// Run instruction on separated threads
-			Concurrent::ExecuteParallel{
-				// Count things on one thread
-				for(int n=0;n<40000001;n++) if(n%20000000==0)Console::WriteLine("I am on "+n+".");
-				// Count other thing on other thread
-				for(int n=0;n<40000001;n++) if(n%2000000==0)Console::WriteLine("You are on "+n+".");
-			};
+      // Run instruction on separated threads
+      Concurrent::ExecuteParallel{
+        // Count things on one thread
+        for(int n=0;n<40000001;n++) if(n%20000000==0)Console::WriteLine("I am on "+n+".");
+        // Count other thing on other thread
+        for(int n=0;n<40000001;n++) if(n%2000000==0)Console::WriteLine("You are on "+n+".");
+      };
 
-			Console::Read();
-		}
-	}
+      Console::Read();
+    }
+  }
 }
 }}}
 
@@ -165,4 +165,3 @@ c:\layerd\bin>zoec.exe MyClassfactoryClient.zoe
 So you don't have to do anything special in order to compile and use compile time extensions (or compile time classes).
 
 Programmers in any high level LayerD language can use our new created semantic structure like any other native construct.
-
