@@ -85,31 +85,38 @@ namespace Zoe::DotNET::Utils{
   public:
     // Simple function to execute concurrent statements on .NET
     static exp void ExecuteParallel(block parallelStatements){
-      int counter = 0;
-      // For each instruction on the argument block
+      // For each instruction on the argument block (that´s not a comment)
       for(XplNode^ sta in parallelStatements.Children()){
-        if(sta.get_TypeName()!=CodeDOMTypes::XplDocumentation){
-          counter++;
+        if(sta.get_TypeName() != CodeDOMTypes::XplDocumentation){
+
           // create a random function name
           XplIName^ funcName = new XplIName();
+          
           // create an empty function
           XplFunction^ func = (XplFunction^)writecode{%
           private:
             static void $funcName(){
             }
           %}.Children().FirstNode();
+          
           // insert the statement into the new function
           func.get_FunctionBody().Children().InsertAtEnd(sta);
+
           // insert the function into current class
           context.CurrentClass.Children().InsertAtEnd(func);
+
           // create the initialization expression for the thread
           XplExpression^ startExp = null;
           startExp = writecode( new DotNET::System::Threading::Thread(
-                                                   new DotNET::System::Threading::ThreadStart( & $funcName ) ).Start() );
+                                      new DotNET::System::Threading::ThreadStart( & $funcName ) ).Start() );
+
           // inject the initialization expression into the current context
           context.CurrentBlock.Children().InsertBefore(startExp, context.CurrentExpression);
+
         }
       }
+      
+      // return null to remove ExecuteParallel call from client code
       return null;
     }
   }
