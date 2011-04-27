@@ -12,11 +12,49 @@ Following types of class members exists in Meta D++:
 
 ==Fields==
 
-TODO
+{{{
+namespace T{
+  class A{
+    // fields are written inside classes and structs in similar way to C# or Java
+    int privateField;
+  protected:
+    A* protectedPointerToA;
+  public:
+    // use static declaration modifier to mark a field as static (share values between instances)
+    // to reference static fields you need to provide the full name with at least the class name like:
+    // A::publicStaticField or T::A::publicStaticField
+    static int publicStaticField;
+  }
+}
+}}}
 
 ==Methods==
 
-TODO
+{{{
+namespace T{
+  class A{
+    // methods are written inside classes and structs in similar way to C# or Java
+    int privateMethod(int a, int b){
+      return a + b;
+    }
+  protected:
+    // you need to mark methods as virtual if you want to override in derived classes
+    virtual A* protectedMethod(int p1){
+      return null;
+    }
+  public:
+    void simpleVoidMethod(){
+    }
+    // constructors
+    A(){
+      // implementation code here
+    }
+    // overloaded constructor
+    A(int a, int b){
+    }
+  }
+}
+}}}
 
 ===Parameters===
 
@@ -24,12 +62,46 @@ TODO
 
 ==Properties==
 
-TODO
+Properties work in similar way to .NET:
+
+{{{
+namespace T{
+  class A{
+    // field to hold the value of the property
+    int privateField;
+    static int counter;
+  public:
+    // properties are declared using [type] property [name] { [getter] [setter] }
+    int property Index{
+      // getter block
+      get{
+        return privateField;
+      }
+      // setter block, use "value" identifier to access new value
+      set{
+        privateField = value;
+      }
+    }
+    // static property
+    static int property Counter{
+      get{
+        return ++counter;
+      }
+    }
+  }
+}
+
+}}}
+
 
 ==Indexers==
+
+Indexers allows the overloading of "[]" operator.
 
 TODO
 
 ==Operators==
+
+Meta D++ allows to overloading of binary and unary operators.
 
 TODO
