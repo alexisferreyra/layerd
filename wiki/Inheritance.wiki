@@ -45,7 +45,7 @@ namespace Example{
     
     public:
       // method that can be overridden in derived class
-      virtual string^ iDo{
+      virtual string^ iDo(){
         return "Nothing";
       }
       final void NonOverridableMethod(){
@@ -70,7 +70,7 @@ namespace Example{
         IamSomeOnePet = true;
       }
     
-      override string^ iDo{
+      override string^ iDo(){
         return "My name is" + name + "and I do: Guau!";
       }
   }
@@ -118,22 +118,22 @@ namespace Example{
 
   public interface Behaviour
   {
-    string commonBehaviour();
+    string^ commonBehaviour();
   }
   
   public interface SpecificBehaviour inherits Behaviour
   {
-    string mySpecificBehaviour();
+    string^ mySpecificBehaviour();
   }
   
   public class MyClass implements SpecificBehaviour
   {
-    public string commonBehaviour()
+    public string^ commonBehaviour()
     {
       return "I do";
     }
     
-    public string mySpecificBehaviour()
+    public string^ mySpecificBehaviour()
     {
       return "Some particular action";
     }
