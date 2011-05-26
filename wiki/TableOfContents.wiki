@@ -23,6 +23,7 @@
     # [Using_CodeDOM Using CodeDOM]
     # [Injecting_code Injecting code at compile time]
     # [Writing_compile_time_classes Writing compile time classes]
+    # [Writing_compile_time_classes_2 Implementing Logging through CTC]
     # [Interactive_compilation Interactive compilation]
     # [Debugging_compile_time Debugging compile time programs]
     # [API_Encapsulation Compile time API encapsulation / Multiplatform development]
