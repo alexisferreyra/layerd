@@ -40,8 +40,7 @@ using Zoe::LoggingTool;
 namespace Sample2{
 
 //#4: Here's the function call to the CTC function
-AOP::AddLog{   
-};
+AOP::AddLog();
 
 
 //#6: These are the classes that we want to change
@@ -104,7 +103,7 @@ namespace Zoe::LoggingTool{
   public factory class AOP{
   public:
     /*#3: In this case, logBlock is empty, beacause de the call in OC doesn't contain anything*/
-    static exp void AddLog(block logBlock){
+    static exp void AddLog(){
        /*#4: Here we are asking the special object "context" to bring us all 
                   the classes that are inside the "namespace".*/
       XplNodeList^ classesOfNameSpace=context.CurrentNamespace.get_ClassNodeList();       
