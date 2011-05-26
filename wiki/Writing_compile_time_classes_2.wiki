@@ -62,17 +62,17 @@ public class App{
   }
   public class B{
 	public:
-		void foo2(){
-			int a, b, c;
-			a = 1;
-			b = 0;
-			try{ 
-				c = a / b;
-			}
-			catch( Exception^ error){		
-				Console::WriteLine("Exception: "+ error.ToString());
-			}
-		}
+	void foo2(){
+	  int a, b, c;
+	  a = 1;
+	  b = 0;
+	  try{ 
+	    c = a / b;
+	  }
+	  catch( Exception^ error){		
+	    Console::WriteLine("Exception: "+ error.ToString());
+	  }
+	}
   }
 }
 
