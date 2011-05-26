@@ -1,7 +1,7 @@
 #summary writing compile time classes
 Here we'll show another example of Compile Time Classes (CTC). Particularly, a Logging Aspect through CTC.
 
-== EXAMPLE #1: Implementing an Aspect ==
+== EXAMPLE: Implementing a Logging Aspect  ==
 
 We want to implement an "aspect" that adds _Logging_ messages in the body functions. 
 We are going to create a CTC that will add some lines of log to every body of every function of every class of a namespace. Then, the body of the functions after be processed by CTC will look like:
