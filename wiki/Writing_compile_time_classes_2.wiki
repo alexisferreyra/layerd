@@ -1,13 +1,23 @@
-#summary Here we'll show another example of Compile Time Classes (CTC).
+#summary writing compile time classes
+ere we'll show another example of Compile Time Classes (CTC). Particularly, a Logging Aspect through CTC.
 
-= Introduction =
+== EXAMPLE #1: Implementing an Aspect ==
 
-Add your content here.
+We want to implement an "aspect" that adds _Logging_ messages in the body functions. 
+We are going to create a CTC that will add some lines of log to every body of every function of every class of a namespace. Then, the body of the functions after be processed by CTC will look like:
+{{{
+ Log.WriteLine("Entering function <functionName>");
+ Log.WriteLine("- argument <var1> :" + <var1>);
+ ....
+ <function body>
+ ...
+ Log.WriteLine("Exiting function <functionName>");
+}}}
+
+ In this example we are going to see:
+
+ * How to create a compile time class (CTC)
+ * How to compile and test CTC with an ordinary class as example.
 
 
-= Details =
-
-Add your content here.  Format your content with:
-  * Text in *bold* or _italic_
-  * Headings, paragraphs, and lists
-  * Automatic links to other wiki pages
+* ORDINARY CLASS *
