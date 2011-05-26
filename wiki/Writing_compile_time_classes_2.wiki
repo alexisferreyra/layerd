@@ -27,12 +27,14 @@ In another words, the lines will indicate that the start and the end of function
 Here is the ordinary class (OC) programmed in MetaD++. As you can see, there's a function call to a CTC function just after the namespace declaration.
 
 {{{
+//#1: These are the "import" directives needed if your target platform is .NET.
 import "Microsoft", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
 import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+//#2: Some "using" directives needed to use some .NET classes.
 using DotNET::System;
 using DotNET::System::IO;
 using DotNET::System::Collections;
-
+//#3: This "using" directive is very important because in this namespace is where the CTCs are. 
 using Zoe::LoggingTool;
 
 namespace Sample2{
@@ -96,44 +98,46 @@ using DotNET::System::Collections;
 using DotNET::LayerD::CodeDOM;
 using DotNET::LayerD::ZOECompiler;
 
+/*#1: As you can see this CTC is declared in the "Zoe::Tools" namespace */
 namespace Zoe::LoggingTool{
-
+ /*#2: To discriminate that this class is a compile time class you must use the modifier "factory".*/
   public factory class AOP{
   public:
+    /*#3: In this case, logBlock is empty, beacause de the call in OC doesn't contain anything*/
     static exp void AddLog(block logBlock){
-       /*#3: Here we are asking the special object "context" to bring us all 
+       /*#4: Here we are asking the special object "context" to bring us all 
                   the classes that are inside the "namespace".*/
       XplNodeList^ classesOfNameSpace=context.CurrentNamespace.get_ClassNodeList();       
       
-            /*#4: Iterate each class...*/
+            /*#5: Iterate each class...*/
       for(XplClass^ oneClass in classesOfNameSpace)
       {
-        /*#5: Bring us all the functions of this Class.*/
+        /*#6: Bring us all the functions of this Class.*/
         for(XplFunction^ oneFunction in oneClass.get_FunctionNodeList())
         {
-          /*#6: There's no point to implement this aspect in the "Main" function.
+          /*#7: There's no point to implement this aspect in the "Main" function.
               So here we omit the "Main" function asking for the "function name" and checking it's not the "Main" one*/
           if(oneFunction.get_name()!="Main")
           {  
-			  /*#7 We'll create a new Function Body to replace the currentm, adding LogLines at the begining and the end */
+			  /*#8: We'll create a new Function Body to replace the currentm, adding LogLines at the begining and the end */
 		    XplFunctionBody^ newBody = new XplFunctionBody();
 			
-			/*#8 It's necessary to have functionName in a simple var because "writecode" function restrictions 
+			/*#9: It's necessary to have functionName in a simple var because "writecode" function restrictions 
 			Here we add Firsts LogLines at Begining of function */
 			string^ functionName = oneFunction.get_name();
 			newBody.Children(). InsertAtEnd( 
 				writecode(Console::WriteLine("Entering function "+ $functionName))
 			);
 			
-			/*#9 We'll add a LogLine for each parameter, if exists them*/
+			/*#10: We'll add a LogLine for each parameter, if exists them*/
 			if( oneFunction.get_Parameters() != null){
 				for (XplParameter^ param in oneFunction.get_Parameters().Children())
 				{  
-					/*#10 Here, paramNameStr will be converted in a string when writecode will create a new tree of code */
+					/*#11: Here, paramNameStr will be converted in a string when writecode will create a new tree of code */
 				   string^ paramNameStr = param.AttributeValue("name");
-				   /*#11 paramId will be converted in the name of var whitout quotes */
+				   /*#12: paramId will be converted in the name of var whitout quotes */
 				   XplIName^ paramId = new XplIName(paramNameStr);				   	
-				   /*#12 the result of writecode function is the equivalent tree of:
+				   /*#13: the result of writecode function is the equivalent tree of:
 							Console::WriteLine("- argument " + "var1" + ":" + var1);*/
 				   newBody.Children().InsertAtEnd( 
 					   writecode(Console::WriteLine( "- argument " + $paramNameStr + ":" + $paramId ))
@@ -141,15 +145,15 @@ namespace Zoe::LoggingTool{
 				}
 			}
 
-			/*#13 Add all Content of Original Function */
+			/*#14: Add all Content of Original Function */
 			newBody.Children().InsertAtEnd(oneFunction.get_FunctionBody().Children());
 			
-			/*#14 Here we add a LogLine at the end of function */
+			/*#15: Here we add a LogLine at the end of function */
 			newBody.Children().InsertAtEnd(
 				writecode(Console::WriteLine("Exiting function " + $functionName))
 				);
 
-			/*#15 We replace the Content of Original Function with the new one */
+			/*#16: We replace the Content of Original Function with the new one */
 			oneFunction.set_FunctionBody(newBody);
 
           }                    
