@@ -1,5 +1,5 @@
 #summary writing compile time classes
-ere we'll show another example of Compile Time Classes (CTC). Particularly, a Logging Aspect through CTC.
+Here we'll show another example of Compile Time Classes (CTC). Particularly, a Logging Aspect through CTC.
 
 == EXAMPLE #1: Implementing an Aspect ==
 
