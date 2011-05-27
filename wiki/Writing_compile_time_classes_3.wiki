@@ -1,0 +1,9 @@
+#summary One-sentence summary of this page.
+
+=  Implementing a Logging Aspect version 2 =
+
+This version is based in [writing_compile_time_classes_2]. Here, we're going to implement next features:
+
+* Creation of new functions with the same name of originals which call original functions renamed.
+* The logging also print the return value of the functions.
+* The method that prints log messages can be setted by user in OC.
