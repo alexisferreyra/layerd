@@ -50,14 +50,14 @@ public class App{
       B^ bb = new B();      
       aa.foo();    
       aa.foo2(6,2);
-      bb.foo(3,0);
+      bb.foo(3,1);
       return 0;
     }
   }
   
   public class A{
   
-    int c = 0;
+    int c = 2;
   
   public:
     void foo(){
@@ -71,7 +71,7 @@ public class App{
   }
   
   public class B{
-    int c = 0;  
+    int c = 3;  
     public:
     int foo(int d, int e){
       Console::WriteLine("B::foo");
@@ -162,6 +162,7 @@ static XplNodeList^ ParamsLogNodes(XplFunction^ function, iname void logMethod)
 				string^ paramNameStr = param.AttributeValue("name");				  
 				XplIName^ paramId = new XplIName(paramNameStr);
 				expressionList.InsertAtEnd( writecode($logMethod( "- argument " + $paramNameStr + ":" + $paramId )));			  
+return $retValue;
 			}
 
 		  return expressionList.Children();
@@ -177,7 +178,7 @@ static XplNodeList^ FunctionCallAndExitNodes(XplFunction^ function, iname void l
 		    XplIName^ retValue = new XplIName(retName);
 			XplIName^ typeReturn = null;			
 			XplFunctionBody^ funcCallAndExitLines = new XplFunctionBody();
-		    XplIName^ functionId = new XplIName(function.get_name());	
+		    XplIName^ functionId = new XplIName("_"+function.get_name());		
 			
 			string^ functionNameStr = function.get_name();
 
@@ -240,14 +241,14 @@ namespace Sample
 			Sample.B bb = new Sample.B();
 			aa.foo();
 			aa.foo2(6, 2);
-			bb.foo(3, 0);
+			bb.foo(3, 1);
 			return 0;
 		} 
 
 	} 
 	public class A
 	{
-		private int c = 0; 
+		private int c = 2; 
 		public void _foo()
 		{
 			System.Console.WriteLine("A::foo");
@@ -263,7 +264,7 @@ namespace Sample
 		public void foo()
 		{
 			System.Console.WriteLine("Entering function " + "foo");
-			foo();
+			_foo();
 			System.Console.WriteLine("Exiting function " + "foo");
 		} 
 
@@ -272,8 +273,9 @@ namespace Sample
 			System.Console.WriteLine("Entering function " + "foo2");
 			System.Console.WriteLine("- argument " + "a" + ":" + a);
 			System.Console.WriteLine("- argument " + "b" + ":" + b);
-			int retValue = foo2(a, b);
+			int retValue = _foo2(a, b);
 			System.Console.WriteLine("Exiting function " + "foo2" + "with " + retValue + " value");
+			return retValue;
 		} 
 
 	} 
@@ -291,11 +293,11 @@ namespace Sample
 			System.Console.WriteLine("Entering function " + "foo");
 			System.Console.WriteLine("- argument " + "d" + ":" + d);
 			System.Console.WriteLine("- argument " + "e" + ":" + e);
-			int retValue = foo(d, e);
+			int retValue = _foo(d, e);
 			System.Console.WriteLine("Exiting function " + "foo" + "with " + retValue + " value");
+			return retValue;
 		} 
 
 	} 
 } 
 }}}
-
