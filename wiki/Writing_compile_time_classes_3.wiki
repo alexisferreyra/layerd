@@ -162,7 +162,6 @@ static XplNodeList^ ParamsLogNodes(XplFunction^ function, iname void logMethod)
 				string^ paramNameStr = param.AttributeValue("name");				  
 				XplIName^ paramId = new XplIName(paramNameStr);
 				expressionList.InsertAtEnd( writecode($logMethod( "- argument " + $paramNameStr + ":" + $paramId )));			  
-return $retValue;
 			}
 
 		  return expressionList.Children();
@@ -203,6 +202,7 @@ static XplNodeList^ FunctionCallAndExitNodes(XplFunction^ function, iname void l
 				funcCallAndExitLines = writecode {
 					$typeReturn $retValue = $functionId();
 					$logMethod("Exiting function " + $functionNameStr + "with " + $retValue + " value");
+					return $retValue;
 				};
 			}
 
