@@ -175,7 +175,7 @@ The last function, make the call to original function and add the logging of exi
 static XplNodeList^ FunctionCallAndExitNodes(XplFunction^ function, iname void logMethod, string^ retName)
 	  {
 		    XplIName^ retValue = new XplIName(retName);
-			XplIName^ typeReturn = null;			
+			XplType^ typeReturn = null;			
 			XplFunctionBody^ funcCallAndExitLines = new XplFunctionBody();
 		    XplIName^ functionId = new XplIName("_"+function.get_name());		
 			
@@ -198,7 +198,7 @@ static XplNodeList^ FunctionCallAndExitNodes(XplFunction^ function, iname void l
 			     type var = call();
 				 and the exit logging prints the "var" value
 			 */
-				typeReturn =  new XplIName(function.get_ReturnType().get_typename());		
+				typeReturn =  (XplType^)function.get_ReturnType().Clone();		
 				funcCallAndExitLines = writecode {
 					$typeReturn $retValue = $functionId();
 					$logMethod("Exiting function " + $functionNameStr + "with " + $retValue + " value");
