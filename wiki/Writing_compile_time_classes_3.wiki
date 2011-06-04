@@ -102,33 +102,33 @@ static exp void AddLog( iname void logMethod ){
     {
     /*#7: There's no point to implement this aspect in the "Main" function.
       So here we omit the "Main" function asking for the "function name" and checking it's not the "Main" one*/
-    if(originalFunction.get_name()!="Main")
-    {       
+      if(originalFunction.get_name()!="Main")
+      {       
 
-    /*#8: We'll make a new one equals function, but with a different body: Some Loggings and a call to renamed original function */
-    XplFunction^ encapsulatorFunction = (XplFunction^)originalFunction.Clone();
-    XplFunctionBody^ encapsulatorFunctionBody = new XplFunctionBody();
+        /*#8: We'll make a new one equals function, but with a different body: Some Loggings and a call to renamed original function */
+        XplFunction^ encapsulatorFunction = (XplFunction^)originalFunction.Clone();
+        XplFunctionBody^ encapsulatorFunctionBody = new XplFunctionBody();
 
-    /*#9: The new log function is composed by four main parts: Begin ("entering...",  "starting...", etc), Params, Original Function Call and End. 
-      Here we'll insert the four parts grouped in three functions */
-    encapsulatorFunctionBody += BeginLogNodes(encapsulatorFunction, logMethod);
-    encapsulatorFunctionBody += ParamsLogNodes(encapsulatorFunction, logMethod);
-    encapsulatorFunctionBody += FunctionCallAndExitNodes(encapsulatorFunction, logMethod, "retValue");
-    
-    /*#10: Here the body of function is changed for de new one, which calls to older that has an underscore before (_nameFunction) */
-    encapsulatorFunction.set_FunctionBody(encapsulatorFunctionBody);
+        /*#9: The new log function is composed by four main parts: Begin ("entering...",  "starting...", etc), Params, Original Function Call and End. 
+        Here we'll insert the four parts grouped in three functions */
+        encapsulatorFunctionBody += BeginLogNodes(encapsulatorFunction, logMethod);
+        encapsulatorFunctionBody += ParamsLogNodes(encapsulatorFunction, logMethod);
+        encapsulatorFunctionBody += FunctionCallAndExitNodes(encapsulatorFunction, logMethod, "retValue");
+        
+        /*#10: Here the body of function is changed for de new one, which calls to older that has an underscore before (_nameFunction) */
+        encapsulatorFunction.set_FunctionBody(encapsulatorFunctionBody);
 
-    /*#11: Changing name of original function */
-    originalFunction.set_name("_" + originalFunction.get_name());
+        /*#11: Changing name of original function */
+        originalFunction.set_name("_" + originalFunction.get_name());
 
-    /*#12: Add the new function to class */
-    oneClass.Children().InsertAtEnd(encapsulatorFunction);
+        /*#12: Add the new function to class */
+        oneClass.Children().InsertAtEnd(encapsulatorFunction);
 
-    }
+      }
     }
   }
-}
 
+}
 }}}
 
 
@@ -174,10 +174,10 @@ The last function, make the call to original function and add the logging of exi
 {{{
 static XplNodeList^ FunctionCallAndExitNodes(XplFunction^ function, iname void logMethod, string^ retName)
 {
-	XplIName^ retValue = new XplIName(retName);
+  XplIName^ retValue = new XplIName(retName);
   XplType^ typeReturn = null;      
   XplFunctionBody^ funcCallAndExitLines = new XplFunctionBody();
-	XplIName^ functionId = new XplIName("_"+function.get_name());    
+  XplIName^ functionId = new XplIName("_"+function.get_name());    
   
   string^ functionNameStr = function.get_name();
 
@@ -195,9 +195,9 @@ static XplNodeList^ FunctionCallAndExitNodes(XplFunction^ function, iname void l
   else
   {
 	/*#18: Else, if function call returns a value, the call is:
-	   type var = call();
-	 and the exit logging prints the "var" value
-   */
+	     type var = call();
+	  and the exit logging prints the "var" value
+        */
 	typeReturn = (XplType^)function.get_ReturnType().Clone();    
 	funcCallAndExitLines = writecode {
 	  $typeReturn $retValue = $functionId();
