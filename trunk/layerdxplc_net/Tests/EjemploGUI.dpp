@@ -1,0 +1,88 @@
+import "System", "ns=DotNET", "platform=DotNET", "assembly=System";
+using Zoe;
+using XmlSample;
+using DataSample;
+
+namespace GUITest{
+
+	Utils::WindowsNetImports();
+
+	class MiVentana3{
+	public:
+		void MostrarMensaje(){
+			MessageBox::Show("Mensaje en funcion externa al DSL para GUI.");
+		}
+	}
+
+	GUI::Window(MiVentana2){
+		Text = "Ventana Principal";
+		Left = 200;	Top = 200; Width = 600; Height = 400;
+		Controls{
+			FlowLayoutPanel (f1){
+				Text = "Mis Controles";
+				//BorderStyle = BorderStyle::FixedSingle;
+				//Top = 5; Left = 5; Width = 570; Height = 350;
+				Dock = DockStyle::Fill;
+				Controls{
+					Label(LEntrada){
+						Top = 50; Left = 50; AutoSize = true;
+						Text = "Ingrese un Dato";
+					};
+					TextBox(CEntrada){
+						Top = 50; Left = 150; MaxLength = 15;
+						Text = "Yuho!!";
+						TextAlign = HorizontalAlignment::Right;
+					};
+					CheckBox(CCheck1){
+						Text = "Opcion Check."; AutoSize = true;
+						CheckedChanged{	
+							MessageBox::Show("CCheck1 cambio: " + CCheck1.Checked.ToString() );
+						};
+					};
+					Button(CSalir3){
+						Text = "&Salir"; AutoSize = true;
+						//Left = 100;	Top = 100; Width = 200; Height = 80;
+						Click{
+							MessageBox::Show("OK quiero cerrar esta ventana.");
+							this.Close();
+						};
+					};
+					Button(CSalir2){
+						Text = "&Salir SEGUNDO"; AutoSize = true;
+						//Left = 350;	Top = 100; Width = 200; Height = 80;
+						Click{
+							MessageBox::Show("Usted Ingreso: " + CEntrada.Text);
+							MessageBox::Show("OK quiero cerrar esta ventana pero no!.");
+						};
+					};
+					Button(CAbrir){
+						Text = "Abrir Ventana"; AutoSize=true;
+						Click{ new MiVentana3().Show();	};
+					};
+				};
+			}; //Frame
+		};
+	}; //Window
+
+	class Run{
+	public:
+		static void Main(string^[] args){
+
+			GUI::Window(MiVentana3){
+				Text = "Una ventana en un DSL con LayerD";
+				Controls{
+					Button(CSalir){
+						Text="Salir"; AutoSize=true;
+						Click{
+							this.Close(); 
+						};
+					};
+				};
+			};
+
+			Application::EnableVisualStyles();
+			Application::Run(new MiVentana2());
+		}
+	}
+
+}

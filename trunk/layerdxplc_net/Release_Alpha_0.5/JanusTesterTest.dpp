@@ -1,0 +1,17 @@
+import "Microsoft", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+using DotNET::System;
+using DotNET::System::IO;
+using DotNET::System::Collections;
+using Janus;
+
+namespace Sample{
+	public class App{
+	public:
+		static int Main(string^[] args){
+			Tester::New();
+			return 0;
+		}
+	}
+}
+

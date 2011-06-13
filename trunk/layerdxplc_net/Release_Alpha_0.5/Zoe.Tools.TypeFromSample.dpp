@@ -1,0 +1,145 @@
+/*
+
+	Meta D++ sample.
+
+	Visit http://layerd.net and http://layerd.blogspot.com to get updates of LayerD SDK and documentation.
+	
+*/
+/*-
+ * 2009 Alexis Ferreyra
+ *
+ * THIS SOFTWARE IS PROVIDED BY CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL COPYRIGHT HOLDERS OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+using DotNET::LayerD::CodeDOM;
+using DotNET::LayerD::ZOECompiler;
+
+namespace Sample{
+	public interactive class TypeFromSample{
+	public:
+		static exp void New(iname void className){
+			XplClass^ clase = null;
+			// Search if provided className exists on current namespace
+			// If class doesn't exists create one, insert on current namespace and return a new call
+			// to current function
+			clase = (XplClass^)context.CurrentNamespace.FindNode("/Class[name='" + className.Identifier + "']");
+			if (clase == null){
+				clase = writecode{
+					public class $className{
+					}
+				};
+				// Insert the class on current namespace
+				context.CurrentNamespace.Children().InsertAtEnd(clase);
+				// Return a call to this function with same parameter
+				return writecode( Sample::TypeFromSample::New($className) );
+			}
+			// Search for al missing members in current function, find member access binary operator expressions
+			XplNodeList^ items = context.CurrentFunction.FindNodes("/bo[targetMember='?']");
+			// For each missing member try to infer it.
+			for (XplBinaryoperator^  op in items){
+				if (op.get_targetClass().Contains(className.Identifier)){
+					// Insert the inferred member on target class
+					clase.Children().InsertAtEnd(CreateFunctionFor(op));
+				}
+			}
+			// Return
+			return null;
+		}
+
+	private:
+		static XplNode^ CreateFunctionFor(XplBinaryoperator^ op){
+			// Get the string on the right part of the member access binary operator
+			XplIName^ funcName = new XplIName(op.get_r().get_Content().get_StringValue());
+
+			// If the parent expression is a function call we must infer the function signature
+			if (op.get_Parent().get_Parent().get_TypeName() == "XplFunctioncall"){
+				XplFunctioncall^ func = (XplFunctioncall^)op.get_Parent().get_Parent();
+				// Create the function
+				XplFunction^ retFunc = (XplFunction^)writecode{%
+				private:
+					void $funcName(){
+						throw new NotImplementedException();
+					}
+				%}.Children().FirstNode();
+				// Create the parameters of the function
+				retFunc.set_Parameters(XplFunction::new_Parameters());
+				XplExpressionlist^ args = func.get_args();
+				int count = 0;
+				for (XplExpression^  arg in args.Children()){
+					count++;
+					XplParameter^ param = XplParameters::new_P();
+					param.set_name("p" + count.ToString());
+					// Use the provided arguments type string to infer parameter type
+					if (arg.get_typeStr() != ""){
+						param.set_type(GetType(arg.get_typeStr()));
+					}
+					else {
+						// If argument is unknow use a reference to object
+						param.set_type(ZoeHelper::MakeTypeFromString("^_" + NativeTypes::Object));
+					}
+					// Add the parameter to function
+					retFunc.get_Parameters().Children().InsertAtEnd(param);
+				}
+				// If the parent expression of the function call is an assingment try to infer the return type
+				if (func.get_Parent().get_Parent().get_TypeName() == "XplAssing"){
+					XplExpression^ leftExp = ((XplAssing^)func.get_Parent().get_Parent()).get_l();
+					if (leftExp.get_typeStr() != ""){
+						retFunc.set_ReturnType(GetType(leftExp.get_typeStr()));
+					}
+				}
+				return retFunc;
+			}
+			else {
+				// If the parent expression of the member access is an assingment try to infer a property
+				if (op.get_Parent().get_Parent().get_TypeName() == "XplAssing"){
+					XplExpression^ otherSide = null;
+					// Member access can be on the left or on the right
+					if (op.get_Parent().get_ElementName() == "l"){
+						otherSide = ((XplAssing^)op.get_Parent().get_Parent()).get_r();
+					}
+					else {
+						otherSide = ((XplAssing^)op.get_Parent().get_Parent()).get_l();
+					}
+					// Make a default property
+					XplProperty^ retProp = (XplProperty^)writecode{%
+						int property $funcName {
+							get {
+								throw new NotImplementedException();
+							}
+							set {
+								throw new NotImplementedException();
+							}
+						}
+					%}.Children().FirstNode();
+					// Infer the type of the property from "other side" type string
+					if (otherSide.get_typeStr() != ""){
+						retProp.set_type(GetType(otherSide.get_typeStr()));
+					}
+					return retProp;
+				}
+			}
+			// In this case the member is not inferred
+			return null;
+		}
+		// Get a XplType from Zoe type string literal
+		static XplType^ GetType(string^ typeStr){
+			// Use the function "MakeTypeFromString" from "ZoeHelper" class
+			if (typeStr == "$STRING_LIT$"){
+				return ZoeHelper::MakeTypeFromString("^_" + NativeTypes::String);
+			}
+			else {
+				return ZoeHelper::MakeTypeFromString(typeStr);
+			}
+		}
+	}
+}
+

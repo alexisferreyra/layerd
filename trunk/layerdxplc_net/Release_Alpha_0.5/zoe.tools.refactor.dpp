@@ -1,0 +1,113 @@
+import "Microsoft", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+using DotNET::System;
+using DotNET::System::Collections;
+using DotNET::LayerD::CodeDOM;
+using DotNET::LayerD::ZOECompiler;
+
+namespace Zoe::Tools{
+	/**
+	* Static methods for helping on basic refactoring task.
+	*/
+	public factory class Refactor{
+		static void AddError(Error^ error){
+			error.set_PersistentError(true);
+			compiler.Errors.AddError(error);
+		}
+		static void ImplementMember(MemberInfo^ member, XplClass^ currentClass){
+			if(member.IsStatic()) return;
+			if(member.IsMethod()){
+				ImplementMethod(member, currentClass);
+			}
+			else if(member.IsProperty()){
+				ImplementProperty(member, currentClass);
+			}
+			else if(member.IsIndexer()){
+				ImplementIndexer(member, currentClass);
+			}
+			else{
+				AddError(new Error("Member "+ member.get_MemberName() + " can't be implemented.", context));
+			}
+		}
+		static void ImplementProperty(MemberInfo^ member, XplClass^ currentClass){
+			AddError(new Error("Member "+ member.get_MemberName() + " can't be implemented.", context));
+		}
+		static void ImplementIndexer(MemberInfo^ member, XplClass^ currentClass){
+			AddError(new Error("Member "+ member.get_MemberName() + " can't be implemented.", context));
+		}
+		
+		static void ImplementMethod(MemberInfo^ member, XplClass^ currentClass){
+			if(currentClass.FindNode("/@XplFunction[name='" + member.get_MemberName() + "']")!=null){
+				// TODO : this must check parameters also, not only the name
+				return;
+			}
+			// clone original member on the inteface
+			XplFunction^ clonedNode = (XplFunction^)member.get_MemberNode().Clone();
+			// implement the method providing a function block
+			clonedNode.set_FunctionBody( new XplFunctionBody() );
+			// remove abstract and extern modifiers
+			clonedNode.set_abstract(false);
+			clonedNode.set_storage(XplVarstorage_enum::AUTO);
+			// if return type is != from void implement a return statement
+			if(!NativeTypes::IsNativeVoid(clonedNode.get_ReturnType().get_typename())){
+				XplNode^ returnStat =  GetReturnInstructionForType(clonedNode.get_ReturnType());
+				if(returnStat==null){
+					// error, return statement can't be infered
+					AddError(new Error("The member " + member.get_MemberName() + " can't be implemented because the return type is not supported.", context));
+					return;
+				}
+				clonedNode.get_FunctionBody().Children().InsertAtEnd( returnStat );
+			}
+			// add the member to the class
+			currentClass.Children().InsertAtEnd( clonedNode );
+		}
+		static XplNode^ GetReturnInstructionForType(XplType^ returnType){
+			if(returnType.get_dt()!=null) return writecode{ return null; }.Children().FirstNode();
+			switch(returnType.get_typename()){
+				case NativeTypes::SByte:
+				case NativeTypes::UShort:
+				case NativeTypes::Unsigned:
+				case NativeTypes::ULong:
+				case NativeTypes::Double:
+				case NativeTypes::Decimal:
+				case NativeTypes::Byte:
+				case NativeTypes::Short:
+				case NativeTypes::Integer:
+				case NativeTypes::Long:
+				case NativeTypes::Float:
+					return writecode{ return 0; }.Children().FirstNode();
+				case NativeTypes::Boolean:
+					return writecode{ return false; }.Children().FirstNode();
+				default:
+					return null;
+			}			
+		}
+	public:
+		/**
+		* Complete the implementation of provided interface on currentclass. Implemented
+		* members doesn't throw exceptions, returns default values (null for class types).
+		* @param fullInterfaceTypeName the full name of the interface type to be checked/implemented
+		* @return none, remove this call. Implemented interface on CurrentClass or compilation error
+		*/
+		static exp void ImplementInterface(iname void fullInterfaceTypeName){
+			XplClass^ currentClass = context.CurrentClass;
+			// check that we are inside of a class
+			if(currentClass==null){
+				AddError(new Error("Refactor.ImplementInterface must be called from a class.", context));
+				return null;
+			}
+			// check that the interface type does exists
+			TypeInfo^ typeInfo = compiler.LastTypesTable.get_TypeInfo(fullInterfaceTypeName.Identifier.Replace("::", "."));
+			if(typeInfo==null){
+				AddError(new Error("Refactor.ImplementInterface doesn't found the type " + fullInterfaceTypeName.Identifier + ".", context));
+				return null;
+			}
+			// i've found the interface type, process interface members
+			ArrayList^ members = typeInfo.get_MemberInfoCollection().get_MemberInfoList();
+			foreach(MemberInfo^ member in members){
+				ImplementMember(member, currentClass);
+			}			
+			return null;
+		}
+	}
+}

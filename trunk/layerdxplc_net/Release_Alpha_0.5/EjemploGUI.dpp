@@ -1,0 +1,110 @@
+/*
+
+	Meta D++ sample.
+
+	Custom Domain Specific language for GUI modeling with .NET Windows Forms.
+
+	Visit http://layerd.net and http://layerd.blogspot.com to get updates of LayerD SDK and documentation.
+	
+*/
+/*-
+ * 2009 Alexis Ferreyra
+ *
+ * THIS SOFTWARE IS PROVIDED BY CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL COPYRIGHT HOLDERS OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+import "System", "ns=DotNET", "platform=DotNET", "assembly=System";
+using Zoe;
+using Zoe::DotNET::Utils;
+
+namespace GUITest{
+
+	Utils::WindowsNetImports();
+
+	class MiVentana3{
+	public:
+		void MostrarMensaje(){
+			MessageBox::Show("A message from a function outside of original DSL.");
+		}
+	}
+
+	GUI::Window(MiVentana2){
+		Text = "Main Window";
+		Left = 200;	Top = 200; Width = 600; Height = 400;
+		Controls{
+			FlowLayoutPanel (f1){
+				Text = "My controls";
+				//BorderStyle = BorderStyle::FixedSingle;
+				//Top = 5; Left = 5; Width = 570; Height = 350;
+				Dock = DockStyle::Fill;
+				Controls{
+					Label(LEntrada){
+						Top = 50; Left = 50; AutoSize = true;
+						Text = "Insert something";
+					};
+					TextBox(CEntrada){
+						Top = 50; Left = 150; MaxLength = 15;
+						Text = "Yuho!!";
+						TextAlign = HorizontalAlignment::Right;
+					};
+					CheckBox(CCheck1){
+						Text = "Option Check."; AutoSize = true;
+						CheckedChanged{	
+							MessageBox::Show("CCheck1 changed: " + CCheck1.Checked.ToString() );
+						};
+					};
+					Button(CSalir3){
+						Text = "&Salir"; AutoSize = true;
+						//Left = 100;	Top = 100; Width = 200; Height = 80;
+						Click{
+							MessageBox::Show("OK really, close this window.");
+							this.Close();
+						};
+					};
+					Button(CSalir2){
+						Text = "&Salir SEGUNDO"; AutoSize = true;
+						//Left = 350;	Top = 100; Width = 200; Height = 80;
+						Click{
+							MessageBox::Show("You've inserted: " + CEntrada.Text);
+							MessageBox::Show("OK close this window!.");
+						};
+					};
+					Button(CAbrir){
+						Text = "Open Window"; AutoSize=true;
+						Click{ new MiVentana3().Show();	};
+					};
+				};
+			}; //Frame
+		};
+	}; //Window
+
+	class Run{
+	public:
+		static void Main(string^[] args){
+			// Other window
+			GUI::Window(MiVentana3){
+				Text = "A window with a LayerD DSL for Windows Forms";
+				Controls{
+					Button(CSalir){
+						Text="Exit"; AutoSize=true;
+						Click{
+							this.Close(); 
+						};
+					};
+				};
+			};
+			Application::EnableVisualStyles();
+			Application::Run(new MiVentana2());
+		}
+	}
+
+}

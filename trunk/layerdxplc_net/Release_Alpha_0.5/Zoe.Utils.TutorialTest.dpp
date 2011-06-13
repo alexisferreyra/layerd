@@ -1,0 +1,56 @@
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+using DotNET::System;
+using DotNET::System::IO;
+using DotNET::System::Collections;
+using Zoe::Utils::Help;
+
+namespace Testing{
+
+Tutorial{
+	Name = "Repetition Structures Tutorial";
+	Language = "English";
+	Steps{
+		Step{
+			Title = "For iteration";
+			Description{ 
+				"To iterate on some items use the for iteration.";
+				"It consist of something on the declaration part,";
+				"something on the condition and the repetition.";
+			};
+			Sample{
+				//Iterate on items of the array
+				int[] matrix = new int[] = {0, 1, 2, 3, 2, 1, 0};
+				for(int n = 0; n<matrix.Length ; n++)
+				{
+					//Write out item n
+					WriteOut( matrix[n] );
+				}
+			};
+			FooterText{
+				"As you can see on the example the cycle will end when n is equal";
+				"to the items on the matrix.";
+			};
+		};
+		Step{
+			Title = "Foreach iteration";
+			Description{ 
+				"To iterate on collections or arrays you can use the foreach statement.";
+			};
+			Sample{
+				//Iterate on items of the array
+				int[] matrix = new int[] = {0, 1, 2, 3, 2, 1, 0};
+				foreach(int item in matrix)
+				{
+					//Write out item
+					WriteOut( item );
+				}
+			};
+			FooterText{
+				"As you can see on the example the cycle will end when n is equal";
+				"to the items on the matrix.";
+			};
+		};
+	};
+};
+
+}

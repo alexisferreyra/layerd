@@ -1,0 +1,57 @@
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+import "System", "platform=DotNET", "ns=DotNET", "assembly=System";
+import "System.Windows.Forms", "platform=DotNET", "ns=DotNET", "assembly=System.Windows.Forms";
+import "System.Drawing", "platform=DotNET", "ns=DotNET", "assembly=System.Drawing";
+using DotNET::System;
+using DotNET::System::Collections;
+using DotNET::System::Windows::Forms;
+using Zoe;
+
+namespace EjemploNET{
+	class MiVentana inherits Form{
+		//Uso todo igual a .NET
+		Button^ CSalir;
+	public:
+		 MiVentana(){
+			this.Text = "Una ventana Windows Forms con LayerD";
+			CSalir = new Button();
+			CSalir.AutoSize = true;
+			DateTime time = DotNET::System::DateTime::Now;
+			if(!(CSalir is Button^)){
+				CSalir.Text = "Salir" ;
+				CSalir.Text = (typeof(Button^)).ToString();
+				Test(typeof(Button^));
+			}
+			this.Controls.Add(CSalir);
+			//Enlazo eventos
+			this.CSalir.add_Click(new EventHandler(&this.CDestinoB_Click));
+		}
+		 void Test(Type^ tipo){
+			 int[] mat1 = {1,2,3};
+			 typeof ^[][]int mat4 = {{1,2,3},{4,5,6}};
+			 typeof *ref[]int mat2 = {4,5,6};
+			 mat1=mat2;
+			 this.Text = tipo.ToString();
+		 }
+		void CDestinoB_Click(object^ sender, EventArgs^ e){
+			ArrayList^ lista = new ArrayList();
+			lista.Add("Hola ");
+			lista.Add("Mundo ");
+			lista.Add("desde ");
+			lista.Add("Meta D++");
+
+			for(string^ str in lista){
+				MessageBox::Show(str);
+			}
+			MessageBox::Show((string^)lista[0] + (string^)lista[1] + (string^)lista[2] + (string^)lista[3]);
+			this.Close();
+		}
+	}
+	class Principal{
+	public:
+		static void Main(string^[] args){
+			Application::EnableVisualStyles();
+			Application::Run(new MiVentana());
+		}
+	}
+}

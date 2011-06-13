@@ -1,0 +1,64 @@
+import "Microsoft", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+//import "LayerD.CodeDOM", "platform=DotNET", "ns=DotNET", "assembly=lib_layerd_xpl_codedom_net";
+//import "LayerD.ZOECompiler", "platform=DotNET", "ns=DotNET", "assembly=lib_zoec_core";
+using DotNET::System;
+using DotNET::System::IO;
+using DotNET::System::Collections;
+using DotNET::LayerD::CodeDOM;
+using DotNET::LayerD::ZOECompiler;
+
+namespace Sample{
+
+	public interactive class TestIName{
+	public:
+		static XplNode^ Test(iname void identifier){
+			return writecode{
+				class $identifier{
+					$identifier^ $identifier;
+					void func(){
+						$identifier var = new $identifier();
+					}
+				}
+			};
+		}
+	}
+	public factory class Generic{
+		static Hashtable^ classes = new Hashtable();
+	public:
+		static XplNode^ NewType(iname void newTypeName, type T, type M){
+			XplClass^ node = writecode{
+				extern public class $newTypeName{
+				public:
+					$T func($M^ arg1, $T^ arg2){}
+				}
+			};
+			node.set_externalname(newTypeName.Identifier+"<T,M>");
+			node.set_lddata("$NET_GENERIC[Sample."+newTypeName.Identifier+"<"+T.get_typename()+","+M.get_typename()+">]$");
+
+			classes.Add(newTypeName.Identifier, node);
+
+			return node;
+		}
+
+		static exp void GetGenericMethod(iname void forClass, type param1Type, type retType, exp void retExp){
+			XplFunction^ func = (XplFunction^) writecode{%
+				public:
+					$retType^ func2($param1Type^ arg){}
+				%}.Children().FirstNode();
+
+			func.set_externalname("func2<"+GetNETTypeName(param1Type.get_typename())+","+GetNETTypeName(retType.get_typename())+">");
+			XplClass^ clase = (XplClass^)classes[forClass.Identifier];
+			clase.Children().InsertAtEnd(func);
+			return retExp;
+		}
+		static string^ GetNETTypeName(string^ zoeTypeName){
+			switch(zoeTypeName){
+				case NativeTypes::String:
+					return "string";
+			}
+			return zoeTypeName;
+		}
+	}
+}
+

@@ -1,0 +1,39 @@
+import "Microsoft", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+import "LayerD.CodeDOM", "platform=DotNET", "ns=DotNET", "assembly=lib_layerd_xpl_codedom_net";
+import "LayerD.ZOECompiler", "platform=DotNET", "ns=DotNET", "assembly=lib_zoec_core";
+using zoe::lang;
+using DotNET::System;
+using DotNET::System::IO;
+using DotNET::System::Collections;
+using DotNET::LayerD::CodeDOM;
+using DotNET::LayerD::ZOECompiler;
+using DotNET::System::Collections::Generic;
+
+namespace Sample{
+	public class App{
+	public:
+		static int Main(string^[] args){
+
+			Janus::Utils::Dictionary::New(mydict, gettype(string^), gettype(object^));
+
+			mydict^ dict = new mydict();
+			dict.Add("hola",null);
+			DateTime var1 , var2 ;
+
+			if(var1!=var2){
+				Console::WriteLine("Son diferentes");
+			}
+
+			/*
+			TestType^ myVar = new TestType();
+			TestType* myVar2 = new TestType();
+			myVar.func(new Test(), new App());
+			Generic::GetGenericMethod(TestType, gettype(string), gettype(string), myVar.func2("Hola Mundo"));
+			myVar2->func2("Hola Mundo");
+			*/
+			return 0;
+		}
+	}
+}
+

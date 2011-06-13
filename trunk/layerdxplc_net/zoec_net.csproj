@@ -1,0 +1,229 @@
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>9.0.30729</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{8EE53024-1041-4D77-9114-35228E569D74}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>zoec_net</RootNamespace>
+    <AssemblyName>zoec</AssemblyName>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <OldToolsVersion>2.0</OldToolsVersion>
+    <UpgradeBackupLocation>
+    </UpgradeBackupLocation>
+    <PublishUrl>publish\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
+    <StartupObject>LayerD.ZOECompilerUI.ZOECConsoleUI</StartupObject>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <DocumentationFile>bin\Debug\zoec.XML</DocumentationFile>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\..\..\layerd\Bin\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="layerdxplc_console_ui.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\lib_layerdxplc_core\lib_zoec_core.csproj">
+      <Project>{2D7B2F5B-DEFF-4FD3-919E-4BB7A411EEFA}</Project>
+      <Name>lib_zoec_core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\lib_layerd_xpl_codedom_cs\lib_layerd_xpl_codedom_net.csproj">
+      <Project>{A5E96AAA-E255-452C-9F58-AD31D588DEFE}</Project>
+      <Name>lib_layerd_xpl_codedom_net</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\lib_metadppc\lib_metadppc.csproj">
+      <Project>{2D7B8019-4597-4DA1-81E8-D60046DE6838}</Project>
+      <Name>lib_metadppc</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\lib_zoe_cginterface\lib_zoe_cginterface.csproj">
+      <Project>{5511DCDD-1242-4F70-A1B7-B2EFCCA4D5AB}</Project>
+      <Name>lib_zoe_cginterface</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="BuildTest.bat" />
+    <None Include="Tests\CompileTimeProperty.Client.test.dpp" />
+    <None Include="Mini\AutoVarTemplate.dpp" />
+    <None Include="Mini\AutoVarTest.dpp" />
+    <None Include="Mini\MiniModelTemplate.dpp" />
+    <None Include="Mini\MiniModelTest.dpp" />
+    <None Include="Release_Alpha_0.5\CompileTimeUtils.dpp" />
+    <None Include="Release_Alpha_0.5\CompileTimeUtils.test.dpp" />
+    <None Include="Release_Alpha_0.5\EjemploGUI.dpp" />
+    <None Include="Release_Alpha_0.5\EjemploLibreriaActiva.dpp" />
+    <None Include="Release_Alpha_0.5\EjemploMultihiloSimple.dpp" />
+    <None Include="Release_Alpha_0.5\EjemploNET.dpp" />
+    <None Include="Release_Alpha_0.5\InstanceBuilderTemplate.dpp" />
+    <None Include="Release_Alpha_0.5\InstanceBuilderTest.dpp" />
+    <None Include="Release_Alpha_0.5\JanusTester.dpp" />
+    <None Include="Release_Alpha_0.5\JanusTesterTest.dpp" />
+    <None Include="Release_Alpha_0.5\LibreriaActivaTemplates.dpp" />
+    <None Include="Release_Alpha_0.5\ProgramaMinimo.dpp" />
+    <None Include="Release_Alpha_0.5\WinFormsMenuTemplate.dpp" />
+    <None Include="Release_Alpha_0.5\WinFormsMenuTest.dpp" />
+    <None Include="Release_Alpha_0.5\Zoe.DotNET.UtilsTemplate.dpp" />
+    <None Include="Release_Alpha_0.5\Zoe.Tools.TypeFromSample.dpp" />
+    <None Include="Release_Alpha_0.5\Zoe.Tools.TypeFromSampleTest.dpp" />
+    <None Include="Release_Alpha_0.5\Zoe.Utils.TutorialTemplate.dpp" />
+    <None Include="Release_Alpha_0.5\Zoe.Utils.TutorialTest.dpp" />
+    <None Include="Tests\BooleanOperatorTest.dpp" />
+    <None Include="Tests\ClassfactoryMethodOverloadingTest.dpp" />
+    <None Include="Tests\ClassfactoryMethodOverloadingTest.test.dpp" />
+    <None Include="Tests\CompileTimeProperty.test.dpp" />
+    <None Include="Tests\CompileTimeReturnInstructionTest.dpp" />
+    <None Include="Tests\CompileTimeReturnInstructionTest.test.dpp" />
+    <None Include="Tests\EnumTest.dpp" />
+    <None Include="Tests\ExternalTestTemplate.dpp" />
+    <None Include="Tests\BusinessLogicDSL.dpp" />
+    <None Include="Tests\CustomerServiceDSL.dpp" />
+    <None Include="Tests\DataModel.dpp" />
+    <None Include="Tests\DataModelPablo.dpp" />
+    <None Include="Tests\DataModelTemplates.dpp" />
+    <None Include="Tests\DataModelTemplatesPablo.dpp" />
+    <None Include="Tests\EjemploDataModel.dpp" />
+    <None Include="Tests\EjemploEstructuras.dpp" />
+    <None Include="Tests\EjemploLibreriaActiva.dpp" />
+    <None Include="Tests\EjemploGUI.dpp" />
+    <None Include="Tests\EjemploRAD.dpp" />
+    <None Include="Release_Alpha_0.5\EjemploSimulacion.dpp" />
+    <None Include="Tests\ExternalTest.dpp" />
+    <None Include="Tests\FunctionPointerTest.dpp" />
+    <None Include="Tests\InfrastructureServiceDSL.dpp" />
+    <None Include="Tests\InfrastructureServiceTemplate.dpp" />
+    <None Include="Tests\InfrastructureServiceTest.dpp" />
+    <None Include="Tests\LibreriaActivaTemplates.dpp" />
+    <None Include="Tests\DataSample.dpp" />
+    <None Include="Tests\DataSampleTemplates.dpp" />
+    <None Include="Tests\EjemploJava.dpp" />
+    <None Include="Tests\EjemploNET.dpp" />
+    <None Include="Tests\ESCatellano.dpp" />
+    <None Include="Tests\FileIOSampleTemplates.dpp" />
+    <None Include="Tests\HelloWorld_TFS.dpp" />
+    <None Include="Tests\HolaMundo.dpp" />
+    <None Include="Tests\HolaMundoCF.dpp" />
+    <None Include="Tests\EjemploMultiPlataforma.dpp" />
+    <None Include="Tests\CustomerServiceDSLTemplate.dpp" />
+    <Content Include="Tests\IdeasDSL.dpp.txt" />
+    <None Include="Tests\EjemploCorreccion.dpp" />
+    <None Include="Tests\ICFTestTemplates.dpp" />
+    <None Include="Tests\IntelliSense.dpp" />
+    <None Include="Tests\IntelliSenseTest.dpp" />
+    <None Include="Tests\EjemploVariosClientes.dpp" />
+    <None Include="Tests\ModelProcessorTemplate.dpp" />
+    <None Include="Tests\ModelProcessorTest.dpp" />
+    <None Include="Tests\MoviesService.dpp" />
+    <None Include="Tests\MoviesService2.dpp" />
+    <None Include="Tests\MoviesService3.dpp" />
+    <None Include="Tests\MoviesServiceTest.dpp" />
+    <None Include="Tests\MoviesyOfertas.dpp" />
+    <None Include="Tests\OrcasPrototipos.dpp" />
+    <None Include="Tests\OrcasVSTest.dpp" />
+    <None Include="Tests\Pagina1.dpp" />
+    <None Include="Tests\PatronesTemplate.dpp" />
+    <None Include="Tests\EjemploPatrones.dpp" />
+    <None Include="Tests\EjemploRefactor.dpp" />
+    <None Include="Release_Alpha_0.5\ProgramConfiguration.test.dpp" />
+    <None Include="Release_Alpha_0.5\ProgramConfigurationTemplate.dpp" />
+    <None Include="Tests\RADTemplates.dpp" />
+    <None Include="Tests\ReferenceParametersTest.dpp" />
+    <None Include="Tests\SimleName.test.dpp" />
+    <None Include="Tests\TestLexico.dpp" />
+    <None Include="Tests\Test_Hello_World.pxpl" />
+    <None Include="Tests\Test_Hello_World.Source1.dpp">
+    </None>
+    <None Include="Tests\Test_Hello_World.Source2.dpp" />
+    <None Include="Tests\Test_Hello_World.Source3.dpp" />
+    <None Include="Tests\TextFile1.dpp" />
+    <None Include="Tests\TextFile1Client.dpp" />
+    <None Include="Tests\TypeConstructorsTest.dpp" />
+    <None Include="Tests\TypeConstructorTest.test.dpp" />
+    <None Include="Tests\WebPageTest.dpp" />
+    <None Include="Tests\webservicetest.dpp" />
+    <None Include="Tests\webservicetestServices.dpp" />
+    <None Include="Tests\wscinema2.dpp" />
+    <None Include="Tests\wscinema2Services.dpp" />
+    <None Include="Tests\XMLTest.dpp" />
+    <None Include="Tests\XMLTestTemplates.dpp" />
+    <None Include="Release_Alpha_0.5\Zoe.UtilsTemplates.dpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework Client Profile</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.2.0">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 2.0 %28x86%29</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.0">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.0 %28x86%29</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+  <PropertyGroup>
+    <PreBuildEvent>
+    </PreBuildEvent>
+    <PostBuildEvent>
+    </PostBuildEvent>
+  </PropertyGroup>
+</Project>

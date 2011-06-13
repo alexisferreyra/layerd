@@ -1,0 +1,621 @@
+/*
+
+	Meta D++ sample.
+
+	Visit http://layerd.net and http://layerd.blogspot.com to get updates of LayerD SDK and documentation.
+	
+*/
+/*-
+ * 2009 Alexis Ferreyra
+ *
+ * THIS SOFTWARE IS PROVIDED BY CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL COPYRIGHT HOLDERS OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+ 
+// Importo los assemblies de .NET que voy a utilizar
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+import "System", "platform=DotNET", "ns=DotNET", "assembly=System";
+import "System.Windows.Forms", "platform=DotNET", "ns=DotNET", "assembly=System.Windows.Forms";
+import "System.Drawing", "platform=DotNET", "ns=DotNET", "assembly=System.Drawing";
+
+// Declaro los espacios de nombre a usar en el alcance del programa
+using Zoe;
+using Zoe::DotNET::Utils;
+using DotNET::System;
+using DotNET::System::ComponentModel;
+using DotNET::System::Drawing;
+using DotNET::System::Collections;
+using DotNET::System::Windows::Forms;
+
+
+///S I M U L A C I O N
+///-------------------
+///
+namespace Simulacion{
+	///
+	/// Interfaz de usuario en .NET Windows Forms usando un DSL en Meta D++
+	///
+	GUI::Window(MainWindow){
+		Text = "Ejemplo de Simulación";
+		AcceptButton = Run;
+		BackColor = Color::WhiteSmoke;
+		Width = 310; Height = 530;
+		Controls{
+			FlowLayoutPanel (f1){
+				Dock = DockStyle::Fill;
+				Controls{
+					Label(ltitle){
+						Text = "Ejemplo de Simulación"; AutoSize = true;
+						Font = new Font("Times",24,FontStyle::Bold);
+						ForeColor = Color::Blue;
+					};
+					Label(l1){
+						Text = "Cola para Retirar Ticket: "; AutoSize = true;
+						Font = new Font("Arial",12,FontStyle::Bold);
+						ForeColor = Color::DarkBlue;
+					};
+					Label(colaEnCaja){
+						Text = "0"; AutoSize = true;
+						Font = new Font("Arial",12,FontStyle::Bold);
+						ForeColor = Color::DarkBlue;
+					};
+					Label(l2){
+						Text = "Cola de Entrega Empleado 1: "; AutoSize = true;
+						Font = new Font("Arial",12,FontStyle::Bold);
+						ForeColor = Color::DarkBlue;
+					};
+					Label(colaEmpleado1){
+						Text = "0"; AutoSize = true;
+						Font = new Font("Arial",12,FontStyle::Bold);
+						ForeColor = Color::DarkBlue;
+					};
+					Label(l3){
+						Text = "Cola de Entrega Empleado 2: "; AutoSize = true;
+						Font = new Font("Arial",12,FontStyle::Bold);
+						ForeColor = Color::DarkBlue;
+					};
+					Label(colaEmpleado2){
+						Text = "0"; AutoSize = true;
+						Font = new Font("Arial",12,FontStyle::Bold);
+						ForeColor = Color::DarkBlue;
+					};
+					Label(l4){
+						Text = "Personas en Mesas: "; AutoSize = true;
+						Font = new Font("Arial",12,FontStyle::Bold);
+						ForeColor = Color::DarkBlue;
+					};
+					Label(personasEnMesas){
+						Text = "0"; AutoSize = true;
+						Font = new Font("Arial",12,FontStyle::Bold);
+						ForeColor = Color::DarkBlue;
+					};
+					//Labels para resultados
+					Label(l5){
+						Text = "Cantidad de Personas: "; AutoSize = true;
+						Font = new Font("Arial",16,FontStyle::Bold);
+						ForeColor = Color::DarkGreen;
+					};
+					Label(cantidadPersonas){
+						Text = "0"; Width = 280;
+						Font = new Font("Arial",16,FontStyle::Bold);
+						ForeColor = Color::DarkGreen;
+					};
+					//Labels para resultados
+					Label(l6){
+						Text = "Acumulador Permanencia: "; AutoSize = true;
+						Font = new Font("Arial",16,FontStyle::Bold);
+						ForeColor = Color::DarkGreen;
+					};
+					Label(acumuladorPermanencia){
+						Text = "0 [min]"; AutoSize = true;
+						Font = new Font("Arial",16,FontStyle::Bold);
+						ForeColor = Color::DarkGreen;
+					};
+					//Labels para resultados
+					Label(l7){
+						Text = "Promedio de Permanecia: "; AutoSize = true;
+						Font = new Font("Arial",16,FontStyle::Bold);
+						ForeColor = Color::DarkGreen;
+					};
+					Label(promedioPermanencia){
+						Text = "0 [min]"; AutoSize = true;
+						Font = new Font("Arial",16,FontStyle::Bold);
+						ForeColor = Color::DarkGreen;
+					};
+					Label(l8){
+						Text = "Cantidad de Ciclos: "; Width = 280;
+						Font = new Font("Arial",12,FontStyle::Bold);
+					};
+					TextBox(cantidadCiclos){
+						TextAlign = HorizontalAlignment::Right;
+						Text = 100.ToString(); Width = 280;
+					};
+					ProgressBar(pbar){
+						Width = 280;
+						Minimum = 0; Maximum = 99;
+					};
+					//Botones
+					Button(Run){
+						Text = "Correr Simulación"; AutoSize = true;
+						Width = 280;
+						// Capturo el evento Click del boton
+						Click{
+							Run.Enabled = false;
+							BackgroundWorker^ worker = new BackgroundWorker();
+							worker.WorkerReportsProgress = true;
+							worker.add_DoWork(new DoWorkEventHandler(&DoWork));
+							worker.add_ProgressChanged(new ProgressChangedEventHandler(&ShowProgress));
+							worker.add_RunWorkerCompleted(new RunWorkerCompletedEventHandler(&Completed));
+							worker.RunWorkerAsync();
+						};
+					};
+					Button(CSalir){
+						Text="Salir"; AutoSize=true;
+						Width = 280;
+						Click{
+							this.Close(); 
+						};
+					};
+				};
+			};
+		};
+	};
+
+	///
+	///Clase de utilidad para generar numeros aleatorios
+	///
+	class Generador{
+		static Random^ rndGen = new Random();
+	public:
+		static double GenerarExponencial(double media) {
+			double aux, nro;
+			nro = rndGen.NextDouble();
+			aux = -media * Math::Log(nro);
+			aux = Math::Round(aux, 4);
+			return aux;
+		}
+		static double GenerarNormal(double media, double desviacion){
+			double aux1, aux2;
+			double raizCuadrada, nro1, nro2;
+			double v1, v2, s, RndN1, RndN2;
+			while(true){
+				do{
+					nro1 = rndGen.NextDouble();
+					nro2 = rndGen.NextDouble();
+					v1 = (2 * nro1) - 1;
+					v2 = (2 * nro2) - 1;
+					s = Math::Pow(v1, 2) + Math::Pow(v2, 2);
+				} while(s >= 1);
+				//nro random con media=0 y desviacion=1
+				raizCuadrada = Math::Sqrt( (-2 * Math::Log(s)) / s );
+				RndN1 = v1 * raizCuadrada;
+				RndN2 = v2 * raizCuadrada;
+				//nro random con media y desviacion correspondiente
+				aux1 = media + RndN1 * desviacion;
+				aux2 = media + RndN2 * desviacion;
+				if(aux1 >= 0 )	return aux1;
+				else if(aux2 >= 0 ) return aux2;
+			}
+		}
+		static int GenerarIntervalo(int minNum, int maxNum){
+			return rndGen.Next(minNum, maxNum);
+		}
+
+	}
+	///
+	///Interfaz y clase base para implementación de Eventos
+	///
+	interface IEvent{
+		void ExecuteEvent(Data^ datos, double time);
+		double property TimeOffset{
+			get;
+		}
+		DatosPersona^ property Persona{
+			get;
+			set;
+		}
+	}
+	abstract class EventBase implements IEvent{
+	protected:
+		DatosPersona^ persona;
+		double p_timeOffset;
+	public:
+		abstract void ExecuteEvent(Data^ datos, double time);
+		double property TimeOffset{
+			get{
+				return p_timeOffset;
+			}
+		}
+		DatosPersona^ property Persona{
+			get{
+				return persona;
+			}
+			set{
+				persona = value;
+			}
+		}
+	}
+	///
+	///Implementación de los eventos
+	///
+	class LlegaPersona inherits EventBase{
+	public:
+		LlegaPersona(){
+			//Las personas llegan segun N(10,6) minutos
+			this.p_timeOffset = Generador::GenerarNormal(10, 6);
+		}
+		override void ExecuteEvent(Data^ datos, double time){
+			Console::Write("Llega Persona: "+ Math::Round(time,4));
+			IEvent^ evento = null, viejoEvento = null;
+			//Primero genero la proxima llegada de persona
+			viejoEvento = evento = new LlegaPersona();
+			datos.AddEvent(evento, time + evento.TimeOffset);
+
+			//Luego proceso la persona que llego actualmente
+			int eleccion = Generador::GenerarIntervalo(0,99);
+			DatosPersona^ nuevaPersona = new DatosPersona(time);
+
+			if(eleccion<60){
+				//60% Entra a comprar algo	[0-59]
+				Console::WriteLine(" - ENTRA A COMPRAR");
+				if(datos.ColaCaja.Count==0 && !datos.CajaOcupada){
+					evento = new FinRetiroTicket();
+					evento.Persona = nuevaPersona;
+					if(time+evento.TimeOffset== time+viejoEvento.TimeOffset)
+						Console::WriteLine("error");
+					else
+						datos.AddEvent(evento, time + evento.TimeOffset);
+					datos.CajaOcupada = true;
+				}
+				else{
+					datos.ColaCaja.Enqueue(nuevaPersona);
+				}
+			}
+			else if(eleccion<90){
+				//30% Viene a utilizar las mesas	[60-89]
+				Console::Write(" - UTILIZA MESAS");
+				if(datos.MesasOcupadas<datos.CantidadMesas){
+					evento = new FinUtilizarMesas();
+					evento.Persona = nuevaPersona;
+					datos.AddEvent(evento, time + evento.TimeOffset);
+					datos.MesasOcupadas++;
+					Console::WriteLine(" - HAY MESAS");
+				}
+				else{
+					//Si no hay mesas y vine a esperar mesas me voy
+					Console::WriteLine(" - NO HAY MESAS ME VOY");
+				}
+			}
+			else{
+				//10% Esta de paso	[90-99]
+				//No hago nada, solo ignoro al que pasa de largo
+				Console::WriteLine(" - ESTA DE PASO");
+			}
+		}
+	}	
+	class FinRetiroTicket inherits EventBase{
+	public:
+		FinRetiroTicket(){
+			//Siempre tardo 20 segundos o 1/3 minutos
+			this.p_timeOffset = (double)1/3;
+		}
+		override void ExecuteEvent(Data^ datos, double time){
+			Console::Write("Fin Retiro de Ticket: "+ Math::Round(time,4));
+			IEvent^ evento = null;
+			if(!datos.Empleado1Ocupado){
+				evento = new FinEntregaDeProducto1();
+				evento.Persona = this.Persona;
+				datos.AddEvent(evento, time + evento.TimeOffset);
+				datos.Empleado1Ocupado = true;
+			}
+			else if(!datos.Empleado2Ocupado){
+				evento = new FinEntregaDeProducto2();
+				evento.Persona = this.Persona;
+				datos.AddEvent(evento, time + evento.TimeOffset);
+				datos.Empleado2Ocupado = true;
+			}
+			else if(datos.ColaEmpleadoEntrega1.Count<datos.ColaEmpleadoEntrega2.Count){
+				//Si hay menos cola en el empleado 1 mando a la persona a esta cola
+				datos.ColaEmpleadoEntrega1.Enqueue(this.Persona);
+			}
+			else{
+				//Si hay menos cola en el empleado 2 mando a la persona a esta cola
+				datos.ColaEmpleadoEntrega2.Enqueue(this.Persona);
+			}
+			//Proceso mi cola si existe
+			if(datos.ColaCaja.Count>0){
+				//Quito a la persona de la cola
+				DatosPersona^ persona = (DatosPersona^)datos.ColaCaja.Dequeue();
+				if(datos.ColaCaja.Count==0)
+					datos.CajaOcupada=false;
+				//Agrego el evento Fin Entrega de Producto 1
+				evento = new FinRetiroTicket();
+				evento.Persona = persona;
+				datos.AddEvent(evento, time + evento.TimeOffset);
+				Console::WriteLine(" - Proximo Fin Ticket: " + Math::Round(time + evento.TimeOffset));
+			}
+			else{
+				Console::WriteLine();
+				datos.CajaOcupada = false;
+			}
+		}
+	}
+	class FinEntregaDeProducto1 inherits EventBase{
+	public:
+		FinEntregaDeProducto1(){
+			//Tarda 50 segundos o 5/6 minutos
+			this.p_timeOffset = Generador::GenerarExponencial((double)5/6);
+		}
+		override void ExecuteEvent(Data^ datos, double time){
+			Console::WriteLine("Fin Entrega de Producto 1: "+ Math::Round(time,4));
+			IEvent^ evento = null;
+			//Primero decido si desea quedarse en las mesas o no
+			//como el enunciado no especifica asumo que la mitad quieren quedarse
+			if(Generador::GenerarIntervalo(0,99)<50){
+				//Desean quedarse solo si hay mesas
+				if(datos.CantidadMesas>datos.MesasOcupadas){
+					evento = new FinUtilizarMesas();
+					evento.Persona = this.Persona;
+					datos.AddEvent(evento, time + evento.TimeOffset);
+					datos.MesasOcupadas++;
+				}
+				else{
+					//Se va del sistema lo debo contabilizar
+					datos.SumaPermanenciaDePersonas += time - this.Persona.HoraEntrada;
+					datos.CantidadDePersonas++;
+				}
+			}
+			//Proceso mi cola si existe
+			if(datos.ColaEmpleadoEntrega1.Count>0){
+				//Quito a la persona de la cola
+				DatosPersona^ persona = (DatosPersona^)datos.ColaEmpleadoEntrega1.Dequeue();
+				if(datos.ColaEmpleadoEntrega1.Count==0)
+					datos.Empleado1Ocupado=false;
+				//Agrego el evento Fin Entrega de Producto 1
+				evento = new FinEntregaDeProducto1();
+				evento.Persona = persona;
+				datos.AddEvent(evento, time + evento.TimeOffset);
+			}
+			else{
+				datos.Empleado1Ocupado = false;
+			}
+		}
+	}
+	class FinEntregaDeProducto2 inherits EventBase{
+	public:
+		FinEntregaDeProducto2(){
+			//Tarda 50 segundos o 5/6 minutos
+			this.p_timeOffset = Generador::GenerarExponencial((double)5/6);
+		}
+		override void ExecuteEvent(Data^ datos, double time){
+			Console::WriteLine("Fin Entrega de Producto 1: "+ Math::Round(time,4));
+			IEvent^ evento = null;
+			//Primero decido si desea quedarse en las mesas o no
+			//como el enunciado no especifica asumo que la mitad quieren quedarse
+			if(Generador::GenerarIntervalo(0,99)<50){
+				//Desean quedarse solo si hay mesas
+				if(datos.CantidadMesas>datos.MesasOcupadas){
+					evento = new FinUtilizarMesas();
+					evento.Persona = this.Persona;
+					datos.AddEvent(evento, time + evento.TimeOffset);
+					datos.MesasOcupadas++;
+				}
+				else{
+					//Se va del sistema lo debo contabilizar
+					datos.SumaPermanenciaDePersonas += time - this.Persona.HoraEntrada;
+					datos.CantidadDePersonas++;
+				}
+			}
+			//Proceso mi cola si existe
+			if(datos.ColaEmpleadoEntrega2.Count>0){
+				//Quito a la persona de la cola
+				DatosPersona^ persona = (DatosPersona^)datos.ColaEmpleadoEntrega2.Dequeue();
+				if(datos.ColaEmpleadoEntrega2.Count==0)
+					datos.Empleado2Ocupado=false;
+				//Agrego el evento Fin Entrega de Producto 2
+				evento = new FinEntregaDeProducto2();
+				evento.Persona = persona;
+				datos.AddEvent(evento, time + evento.TimeOffset);
+			}
+			else{
+				datos.Empleado2Ocupado = false;
+			}
+		}
+	}
+	class FinUtilizarMesas inherits EventBase{
+	public:
+		FinUtilizarMesas(){
+			//Tardo entre 4 y 6 minutos
+			this.p_timeOffset = Generador::GenerarIntervalo(4,6);
+		}
+		override void ExecuteEvent(Data^ datos, double time){
+			Console::WriteLine("Fin Utilizar Mesas: "+ Math::Round(time,4));
+			//El cliente se va por lo tanto lo debo contabilizar y descontar las mesas usadas
+			datos.MesasOcupadas--;
+			datos.SumaPermanenciaDePersonas += time - this.Persona.HoraEntrada;
+			datos.CantidadDePersonas++;
+		}
+	}
+	///
+	///Clase de datos para los Datos de la Persona
+	///
+	class DatosPersona{
+	public:
+		DatosPersona(double horaEntrada){
+			HoraEntrada = horaEntrada;
+		}
+		double HoraEntrada;
+	}
+
+	///
+	///Clase de datos del problema y ciclo de ejecución de eventos
+	///
+	class Data{
+		SortedList^ Events;
+		int mesasOcupadas;
+		int cantidadMesas = 10;
+		double tiempoDeCorte;
+		double sumaPermanenciaDePersonas;
+		int cantidadDePersonas;
+	public:
+		Queue^ ColaCaja;
+		bool CajaOcupada;
+		Queue^ ColaEmpleadoEntrega1;
+		bool Empleado1Ocupado;
+		Queue^ ColaEmpleadoEntrega2;
+		bool Empleado2Ocupado;
+
+		double property SumaPermanenciaDePersonas{
+			get{
+				return sumaPermanenciaDePersonas;
+			}
+			set{
+				sumaPermanenciaDePersonas = value;
+			}
+		}
+		int property CantidadDePersonas{
+			get{
+				return cantidadDePersonas;
+			}
+			set{
+				cantidadDePersonas = value;
+			}
+		}
+		int property MesasOcupadas{
+			get{
+				return mesasOcupadas;
+			}
+			set{
+				if(value<=cantidadMesas)mesasOcupadas=value;
+			}
+		}
+		int property CantidadMesas{
+			get{
+				return cantidadMesas;
+			}
+		}
+		Data(float minutosASimular){
+			tiempoDeCorte = minutosASimular;
+			Events = new SortedList();
+			ColaCaja = new Queue();
+			ColaEmpleadoEntrega1 = new Queue();
+			ColaEmpleadoEntrega2 = new Queue();
+		}
+		void AddEvent(IEvent^ newEvent, double time){
+			//Console::WriteLine("Agregado: "+newEvent.ToString() + " Time: "+time+" Offset: "+newEvent.TimeOffset);
+			if(!Events.ContainsKey(time))
+				Events.Add(time, newEvent);
+			else
+				Console::WriteLine("WARNING: Tiempo duplicado se ignorara un evento: " + newEvent.ToString());
+		}
+		void Run(){
+			while(Events.Count>0){
+				double eventKey = (double)Events.GetKey(0);
+				IEvent^ lastEvent = (IEvent^)Events.GetByIndex(0);
+				lastEvent.ExecuteEvent(this, eventKey);
+
+				Console::WriteLine("Caja: "+ColaCaja.Count.ToString() + " Emp1: "+ColaEmpleadoEntrega1.Count.ToString()+" Emp2: "+ColaEmpleadoEntrega2.Count.ToString()+" Mesas: "+mesasOcupadas.ToString());
+
+				Events.Remove(eventKey);
+				//Si se llego al tiempo de corte finalizo
+				if(eventKey > tiempoDeCorte){
+					ImprimirEventosPendientes();
+					Events.Clear();
+					return;
+				}
+			}
+		}
+		void ImprimirEventosPendientes(){
+			Console::WriteLine();
+			Console::WriteLine("------------------------------");
+			Console::WriteLine("Eventos Pendientes:");
+			while(Events.Count>0){
+				IEvent^ lastEvent = (IEvent^)Events.GetByIndex(0);
+				Console::WriteLine(lastEvent.ToString() + " Time: "+ Events.GetKey(0).ToString());
+				Events.RemoveAt(0);
+			}
+		}
+	}
+	///
+	///El Main de la aplicación
+	///
+	public class App{
+	public:
+		static void Main(string^[] args){
+			Application::EnableVisualStyles();
+			Application::Run(new MainWindow());
+		}
+	}
+	///
+	///Interfaz de usuario
+	///
+	class MainWindow{
+		Data^ simData;
+		int totalPersonas = 0;
+		double totalAcum = 0;
+		int maxCiclos = 0;
+	public:
+		void DoWork(object^ sender, DoWorkEventArgs^ e){
+			totalPersonas = 0;
+			totalAcum = 0;
+			maxCiclos = Convert::ToInt32(cantidadCiclos.Text);
+			pbar.Maximum = maxCiclos-1;
+
+			for(int n=0; n<maxCiclos; n++){
+				simData = new Data(120);
+				IEvent^ evento = new LlegaPersona();
+				simData.AddEvent(evento, evento.TimeOffset);
+
+				Console::WriteLine("Iniciando Simulación ");
+				Console::WriteLine("--------------------");
+				Console::WriteLine();
+
+				simData.Run();
+
+				totalPersonas += simData.CantidadDePersonas;
+				totalAcum += simData.SumaPermanenciaDePersonas;
+
+				Console::WriteLine();
+				Console::WriteLine("--------------------");
+				Console::WriteLine("Cantidad Personas : " + simData.CantidadDePersonas);
+				Console::WriteLine("Tiempo total de Permanencia : " + simData.SumaPermanenciaDePersonas);
+				Console::WriteLine("Tiempo promedio de Personas : " + simData.SumaPermanenciaDePersonas / simData.CantidadDePersonas);
+
+				((BackgroundWorker^)sender).ReportProgress(n);
+			}
+		}
+		void ShowProgress(object^ sender, ProgressChangedEventArgs^ e){
+			pbar.Value = e.ProgressPercentage;			
+		}
+		void Completed(object^ sender, RunWorkerCompletedEventArgs^ e)
+		{
+			Console::WriteLine("Completada Simulación.");
+			MostrarDatos(simData);
+			cantidadPersonas.Text = Math::Round( (double)totalPersonas/maxCiclos , 2 ).ToString();
+			acumuladorPermanencia.Text = Math::Round(totalAcum/maxCiclos, 2).ToString() + " [min]";
+			promedioPermanencia.Text = Math::Round( (totalAcum / totalPersonas) , 2).ToString() + " [min]";
+			Run.Enabled = true;
+			//pbar.Value = pbar.Maximum;
+		}
+		void MostrarDatos(Data^ datos){
+			colaEnCaja.Text = datos.ColaCaja.Count.ToString();
+			colaEmpleado1.Text = datos.ColaEmpleadoEntrega1.Count.ToString();
+			colaEmpleado2.Text = datos.ColaEmpleadoEntrega2.Count.ToString();
+			personasEnMesas.Text = datos.MesasOcupadas.ToString();
+
+			cantidadPersonas.Text = Math::Round( (double)datos.CantidadDePersonas , 2 ).ToString();
+			acumuladorPermanencia.Text = Math::Round(datos.SumaPermanenciaDePersonas,2).ToString() + " [min]";
+			promedioPermanencia.Text = Math::Round( (datos.SumaPermanenciaDePersonas / datos.CantidadDePersonas) , 2).ToString() + " [min]";
+		}
+	}
+
+}

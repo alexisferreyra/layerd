@@ -1,0 +1,95 @@
+using zoe::java::lang;
+using Java;
+
+import "android.app", "platform=Java", "ns=Java";
+using Java::android::app:;
+import "android.os", "platform=Java", "ns=Java";
+using Java::android::os:;
+import "android.view.View", "platform=Java", "ns=Java";
+using Java::android::view::View:;
+import "android.widget", "platform=Java", "ns=Java";
+using Java::android::widget:;
+import "android.view.ViewGroup.LayoutParams", "platform=Java", "ns=Java";
+using Java::android::view::ViewGroup;
+
+namespace Java::test {
+
+    public class HelloCode inherits Activity {
+        extern static Java::java::lang::Class^ property @class{ get; }
+        extern string^ toString();
+        
+        public class TestInner {
+            extern static Java::java::lang::Class^ property @class{ get; }
+            extern string^ toString();
+        }
+        static long b;
+        static HelloCode(){
+            int a = 12 + 34;
+            b = a + 123334;
+        }
+        
+        zoe::java::lang::Java::Annotation( @Override() );
+        public: void onCreate(Bundle^ savedInstanceState) {
+            Map<string^[], int[][], List<string^>^> collection = new Map<string^[], Bundle^>();
+            string^ strTest = new string("Hola");
+            base.onCreate(savedInstanceState);
+            LinearLayout^ mainView = new LinearLayout(this);
+            mainView.setOrientation(LinearLayout.VERTICAL);
+            mainView.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
+            System.@out.println("Hola");
+            TextView^ text = new TextView(this);
+            text.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT));
+            text.setText("Hola desde codigo");
+            mainView.addView(text);
+            text = new TextView(this);
+            text.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT));
+            text.setText("Esto es Android");
+            mainView.addView(text);
+            android::widget::EditText^ edit = new android::widget::EditText(this);
+            edit.setText("Ingrese su nombre");
+            mainView.addView(edit);
+            android::widget::Button^ button = new android::widget::Button(this);
+            button.setText("Change");
+            button.setOnClickListener(new ChangeListener(text, edit));
+            mainView.addView(button);
+            button = new android::widget::Button(this);
+            button.setText("Salir");
+            button.setOnClickListener(new ExitListener(this));
+            mainView.addView(button);
+            setContentView(mainView);
+        }
+        
+        publicclass ExitListener implements View::OnClickListener {
+            extern static Java::java::lang::Class^ property @class{ get; }
+            extern string^ toString();
+            public: Activity^ parent;
+            
+            public: ExitListener(Activity^ parent) {
+                this.parent = parent;
+            }
+            
+            zoe::java::lang::Java::Annotation( @Override() );
+            public: void onClick(View^ v) {
+                ((@object^)v).ToString();
+                this.parent.finish();
+            }
+        }
+        
+        publicclass ChangeListener implements View::OnClickListener {
+            extern static Java::java::lang::Class^ property @class{ get; }
+            extern string^ toString();
+            public: TextView^ label;
+            public: EditText^ edit;
+            
+            public: ChangeListener(TextView^ label, EditText^ edit) {
+                this.label = label;
+                this.edit = edit;
+            }
+            
+            zoe::java::lang::Java::Annotation( @Override() );
+            public: void onClick(View^ v) {
+                label.setText("Hola " + edit.getText() + " desde boton");
+            }
+        }
+    }
+}

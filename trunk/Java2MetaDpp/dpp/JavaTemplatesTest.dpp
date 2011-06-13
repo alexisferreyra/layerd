@@ -1,0 +1,35 @@
+using zoe::java::lang;
+
+namespace test{
+	class main inherits Activity{
+		EditText^ mEditText;
+		JavaAnnotation::Add(Override());
+	public:
+		void^ onCreate(Bundle^ savedInstanceState){
+			base.onCreate(savedInstanceState);
+			this.setContentView(R.layout.main);
+			this.mEditText = (EditText^)this.findViewById(R.id.text1);
+			Button^ temp = (Button^)this.findViewById(R.id.button1);
+			if (temp != null){
+				temp.setOnClickListener(button1Listener);
+			}
+			else {
+				this.mEditText.setText("No se encontro el boton");
+			}
+			int[][] array = new int[][] = {{1,2},{3,4}};
+			java::lang::String^[] array3 = new java::lang::String[] = {"uno","dos"};
+			string^ array2 = new StringBuilder(a,b);
+		}
+	private:
+		hola::com::OnClickListener^ button1Listener = new __iuicdom_fgsg54tc633689112304869677();
+		private class __iuicdom_fgsg54tc633689112304869677 implements OnClickListener{
+		public:
+			void^ onClick(hola::View^ v){
+				hola::TextView^ mView = (sun::com::TextView^[][])(TextView^)main.this.findViewById(R.id.label1);
+				mView.setText("Ingreso: " + mEditText.getText());
+				new AlertDialog::Builder(main.this).setTitle("Atencion").setMessage(mEditText.getText()).setNeutralButton("Ok", null).show();
+			}
+		}
+	}
+}
+

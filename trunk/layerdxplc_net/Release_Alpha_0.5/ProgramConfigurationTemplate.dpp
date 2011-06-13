@@ -1,0 +1,51 @@
+/*
+
+	Meta D++ sample.
+
+	Visit http://layerd.net and http://layerd.blogspot.com to get updates of LayerD SDK and documentation.
+	
+*/
+/*-
+ * 2009 Alexis Ferreyra
+ *
+ * THIS SOFTWARE IS PROVIDED BY CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL COPYRIGHT HOLDERS OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+import "Microsoft", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+using DotNET::System;
+using DotNET::System::IO;
+using DotNET::System::Collections;
+using DotNET::LayerD::CodeDOM;
+using DotNET::LayerD::ZOECompiler;
+
+namespace zoe::tools{
+	public factory class ProgramConfiguration{
+	public:
+		static exp void EnableSimpleMemberAccessAsScopeSeparator(){
+			try{
+				XplDocumentData^ data = program[0].get_DocumentData();
+				XplNode^ configContent = data.get_Config().get_Content();
+				if(configContent is XplLayerDZoeProgramConfig^)
+				{
+					XplLayerDZoeProgramConfig^ config = (XplLayerDZoeProgramConfig^)configContent;
+					config.get_ProgramRequirements().set_UseSimpleMemberAccessAsNamespaceSeparator(true);
+				}
+			}
+			catch(Exception^ error){
+				Console::WriteLine("Error: " + error.Message);
+			}
+			return null;
+		}
+	}
+}
+

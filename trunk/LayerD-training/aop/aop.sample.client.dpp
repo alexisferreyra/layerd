@@ -1,0 +1,70 @@
+import "Microsoft", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+using DotNET::System;
+using DotNET::System::IO;
+using DotNET::System::Collections;
+using Zoe::Tools;
+
+AOP::AddTry{
+	try{
+		// aqui habria que meter el codigo de la funcion
+	}
+	catch(Exception^ error){
+		Console::WriteLine("Excepcion : " + error.ToString());
+	}
+};
+
+namespace Sample{
+	public class App{
+	public:
+		static int Main(string^[] args){
+			// Insert code here
+			A^ aa = new A();
+			B^ bb = new B();
+			
+			aa.foo();
+			aa.foo2();
+			aa.foo3();
+			
+			bb.foo();
+			bb.foo2();
+			bb.foo3();
+			
+			return 0;
+		}
+	}
+	
+	public class A{
+		int c = 0;
+	public:
+		void foo(){
+			Console::WriteLine("A::foo");
+			int a = 12 / c;
+		}
+		void foo2(){
+			Console::WriteLine("A::foo2");
+			int a = 12 / c;
+		}
+		void foo3(){
+			Console::WriteLine("A::foo3");
+			int a = 12 / c;
+		}
+	}
+	public class B{
+		int c = 0;
+	public:
+		void foo(){
+			Console::WriteLine("B::foo");
+			int a = 12 / c;
+		}
+		void foo2(){
+			Console::WriteLine("B::foo2");
+			int a = 12 / c;
+		}
+		void foo3(){
+			Console::WriteLine("B::foo3");
+			int a = 12 / c;
+		}
+	}
+}
+

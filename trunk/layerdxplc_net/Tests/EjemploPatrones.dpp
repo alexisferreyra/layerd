@@ -1,0 +1,38 @@
+import "Microsoft", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+using DotNET::System;
+using DotNET::System::Collections;
+
+namespace Architecture{
+
+	public class SingletOnTest{
+		::Patterns::SingletOn();
+		int counter;
+	public:
+		int property Counter {
+			get {
+				return counter;
+			}
+			set {
+				counter = value;
+			}
+		}
+	}
+
+	public class App{
+	public:
+		static void Main(string^[] args){
+			Console::WriteLine("Test de patrones.");
+			SingletOnTest^ single = SingletOnTest::GetInstance();
+			SingletOnTest^ single2 = SingletOnTest::GetInstance();
+			//single2 = new SingletOnTest();
+			single.Counter = 3;
+			Console::WriteLine("single.Counter: " + single.Counter);
+			Console::WriteLine("single2.Counter: " + single2.Counter);
+			if (Object::Equals(single, single2)){
+				Console::WriteLine("Los objetos single y single2 son iguales.");
+			}
+		}
+	}
+}
+

@@ -1,0 +1,40 @@
+import "java.lang", "platform=java", "ns=Java";
+import "java.awt", "platform=java", "ns=Java";
+import "sun.awt.CausedFocusEvent", "platform=java", "ns=Java";
+import "javax.swing", "platform=java", "ns=Java";
+using Java::java::lang;
+using Java::java::awt;
+using Java::java::awt::event;
+using Java::javax::swing;
+
+namespace EjemploJava{
+
+	class Panel inherits JPanel implements ActionListener
+	{
+	public:
+		JButton^ salir = new JButton("JButton");
+		Panel()
+		{
+			add(new JLabel("Un Label en Meta D++"));
+			salir.addActionListener(this);
+			add(salir);
+			add(new JToggleButton("JToggleButton"));
+			add(new JCheckBox("JCheckBox"));
+			add(new JRadioButton("JRadioButton"));
+		}
+		static void Main(string^[] args)
+		{
+			Panel^ panel = new Panel();
+			JFrame^ ventana = new JFrame();
+			ventana.getContentPane().add(panel, BorderLayout::CENTER);
+			ventana.setSize(300, 200);
+			ventana.setTitle("Ejemplo de Java, Swing");
+			ventana.setVisible(true);
+		}
+		void actionPerformed(ActionEvent^ e)
+		{
+			System::exit(0);
+		}
+	} 
+
+}

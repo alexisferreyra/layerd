@@ -1,0 +1,176 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml-stylesheet href="GraphicalXPL_Test1.xslt" type="text/xsl"?>
+<XPLDocument>
+  <DocumentData DocumentVersion="1.0">
+    <Config>
+      <LayerD_XPL_Document_Config>
+        <Language Source="Meta D++" StandardDefinitionFile="http://layerd.net/standards/metadpp/metadpp_standard_0_9.xml" SourceVersion="0.9"></Language>
+        <LayerDCompiler name="Meta D++ Compiler" version="Beta 0.960" companyName="LayerD.net" copyright="Copyright 2005-2007(R) LayerD.net"></LayerDCompiler>
+      </LayerD_XPL_Document_Config>
+    </Config>
+  </DocumentData>
+  <DocumentBody ldsrc="1,1,Tests\HolaMundo.dpp">
+    <Import ldsrc="1">
+      <ns>Microsoft</ns>
+      <ns>platform=DotNET</ns>
+      <ns>ns=DotNET</ns>
+      <ns>assembly=mscorlib</ns>
+    </Import>
+    <Import ldsrc="2">
+      <ns>System</ns>
+      <ns>platform=DotNET</ns>
+      <ns>ns=DotNET</ns>
+      <ns>assembly=mscorlib</ns>
+    </Import>
+    <Import ldsrc="3">
+      <ns>..\..\Tests\Test_Hello_World.pxpl</ns>
+    </Import>
+    <Using ldsrc="4">
+      <ns>DotNET::System</ns>
+    </Using>
+    <Using ldsrc="5">
+      <ns>Test_HW</ns>
+    </Using>
+    <Using ldsrc="6">
+      <ns>MyFactoryTypes</ns>
+    </Using>
+    <Namespace name="FirstProgram" ldsrc="8,22">
+      <Class name="HelloWorld" ldsrc="9,21">
+        <Function name="Main" access="public" storage="static" ldsrc="11,11">
+          <Parameters>
+            <P name="myCad2" number="1">
+              <type ispointer="true" ldsrc="11">
+                <dt typename="$STRING$"></dt>
+                <pi ref="true"></pi>
+              </type>
+            </P>
+            <P name="args" number="2">
+              <type ispointer="true" ldsrc="11">
+                <dt isarray="true">
+                  <dt ispointer="true">
+                    <dt typename="$STRING$"></dt>
+                    <pi ref="true"></pi>
+                  </dt>
+                </dt>
+                <pi ref="true"></pi>
+              </type>
+            </P>
+          </Parameters>
+          <ReturnType typename="$VOID$"></ReturnType>
+          <FunctionBody ldsrc="11,20">
+            <Decls>
+              <d name="var" ldsrc="12">
+                <type typename="$INTEGER$"></type>
+                <i>
+                  <e ldsrc="0">
+                    <lit str="0" type="integer"></lit>
+                  </e>
+                </i>
+              </d>
+            </Decls>
+            <e ldsrc="14">
+              <a>
+                <l>
+                  <n>var</n>
+                </l>
+                <r>
+                  <fc>
+                    <l>
+                      <n>MyClassfactory::Sumar</n>
+                    </l>
+                    <args>
+                      <e>
+                        <lit str="4" type="integer"></lit>
+                      </e>
+                      <e>
+                        <lit str="3" type="integer"></lit>
+                      </e>
+                    </args>
+                  </fc>
+                </r>
+              </a>
+            </e>
+            <e ldsrc="15">
+              <a>
+                <l>
+                  <n>var</n>
+                </l>
+                <r>
+                  <fc>
+                    <l>
+                      <n>MyClassfactory::Restar</n>
+                    </l>
+                    <args>
+                      <e>
+                        <lit str="4" type="integer"></lit>
+                      </e>
+                      <e>
+                        <lit str="3" type="integer"></lit>
+                      </e>
+                    </args>
+                  </fc>
+                </r>
+              </a>
+            </e>
+            <e ldsrc="16">
+              <a>
+                <l>
+                  <n>var</n>
+                </l>
+                <r>
+                  <fc>
+                    <l>
+                      <n>MyClassfactory::Multiplicar</n>
+                    </l>
+                    <args>
+                      <e>
+                        <lit str="4" type="integer"></lit>
+                      </e>
+                      <e>
+                        <lit str="3" type="integer"></lit>
+                      </e>
+                    </args>
+                  </fc>
+                </r>
+              </a>
+            </e>
+            <e ldsrc="17">
+              <a>
+                <l>
+                  <n>var</n>
+                </l>
+                <r>
+                  <fc>
+                    <l>
+                      <n>MyClassfactory::Dividir</n>
+                    </l>
+                    <args>
+                      <e>
+                        <lit str="4" type="integer"></lit>
+                      </e>
+                      <e>
+                        <lit str="3" type="integer"></lit>
+                      </e>
+                    </args>
+                  </fc>
+                </r>
+              </a>
+            </e>
+            <e ldsrc="19">
+              <fc>
+                <l>
+                  <n>Console::WriteLine</n>
+                </l>
+                <args>
+                  <e>
+                    <lit str="Hola Mundo en Meta-D++.... HUUUUAUAUAAAA!!!!"></lit>
+                  </e>
+                </args>
+              </fc>
+            </e>
+          </FunctionBody>
+        </Function>
+      </Class>
+    </Namespace>
+  </DocumentBody>
+</XPLDocument>

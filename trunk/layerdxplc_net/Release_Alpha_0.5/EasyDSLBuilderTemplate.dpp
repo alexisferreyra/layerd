@@ -1,0 +1,614 @@
+/*
+
+	Meta D++ sample.
+
+	Helper for simple Data Based DSL development.
+
+	Visit http://layerd.net and http://layerd.blogspot.com to get updates of LayerD SDK and documentation.
+	
+*/
+/*-
+ * 2009 Alexis Ferreyra
+ *
+ * THIS SOFTWARE IS PROVIDED BY CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL COPYRIGHT HOLDERS OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+using DotNET::System;
+using DotNET::System::IO;
+using DotNET::System::Collections;
+using DotNET::LayerD::CodeDOM;
+using DotNET::LayerD::ZOECompiler;
+
+namespace Zoe::Tools{
+	
+	public factory class EasyDSLInterpreterBuilder{
+	public:
+		static XplNode^ New(iname void interpreterName, iname void mainClass, block contentTemplate){
+			XplClass^ interpreterClass = writecode{
+				public class $interpreterName{
+					static ZOECompilerCore^ compiler = ClassfactoryBase::compiler;
+					
+					static XplIName^ GetINameFromExpression(XplExpression^ rightExp){
+						return new XplIName( rightExp.get_Content().get_StringValue() );
+					}
+					static string^ GetStringFromExpression(XplExpression^ rightExp){
+						return ((XplLiteral^)rightExp.get_Content()).get_str();
+					}
+					static int GetIntFromExpression(XplExpression^ rightExp){
+						string^ tempstr = ((XplLiteral^)rightExp.get_Content()).get_str();
+						if(tempstr!=null && tempstr.Length>1 && (tempstr[1]=='x' || tempstr[1]=='X')){
+							return Int32::Parse( tempstr.Substring(2),
+								DotNET::System::Globalization::NumberStyles::AllowHexSpecifier,
+								DotNET::System::Globalization::NumberFormatInfo::InvariantInfo );
+						}
+						else{
+							return Int32::Parse( tempstr,
+								DotNET::System::Globalization::NumberStyles::Number ,
+								DotNET::System::Globalization::NumberFormatInfo::InvariantInfo );
+						}
+					}
+					static long GetLongFromExpression(XplExpression^ rightExp){
+						string^ tempstr = ((XplLiteral^)rightExp.get_Content()).get_str();
+						if(tempstr!=null && tempstr.Length>1 && (tempstr[1]=='x' || tempstr[1]=='X')){
+							return Int64::Parse( tempstr.Substring(2),											
+								DotNET::System::Globalization::NumberStyles::AllowHexSpecifier,
+								DotNET::System::Globalization::NumberFormatInfo::InvariantInfo );
+						}
+						else{
+							return Int64::Parse( tempstr,
+								DotNET::System::Globalization::NumberStyles::Number ,
+								DotNET::System::Globalization::NumberFormatInfo::InvariantInfo );
+						}
+					}
+					static float GetFloatFromExpression(XplExpression^ rightExp){
+						return Single::Parse( ((XplLiteral^)rightExp.get_Content()).get_str(),
+							DotNET::System::Globalization::NumberStyles::Number ,
+							DotNET::System::Globalization::NumberFormatInfo::InvariantInfo );
+					}
+					static bool GetBooleanFromExpression(XplExpression^ rightExp){
+						if(((XplLiteral^)rightExp.get_Content()).get_str()=="true")
+							return true;
+						else
+							return false;
+					}
+					static void AddError(Error^ error){
+						error.set_PersistentError(true);
+						compiler.get_ErrorCollection().AddError(error);
+					}
+				public:
+				}
+			};
+			
+			InternalBuilder^ builder = new InternalBuilder();
+			
+			builder.MakeFunctionForType(interpreterClass, mainClass, contentTemplate, null);
+
+			return interpreterClass;
+		}
+		
+		factory class InternalBuilder{
+			Hashtable^ generatedFunctions;
+			Hashtable^ types;
+		public:
+			InternalBuilder(){
+				generatedFunctions = new Hashtable();
+				types = new Hashtable();
+			}
+			// <summary>
+			// Check if className exists on current namespace, if it doesn't exists it creates a new class with that name.
+			// Add class node to current list of data classes used by interpreter
+			// </summary>
+			void FindOrCreateClass(iname void className){
+				XplClass^ classNode = (XplClass^)context.CurrentNamespace.FindNode("/@XplClass[name='" + className.Identifier + "']");
+				if(classNode==null){
+					// create class and add to current namespace
+					classNode = writecode{
+						public class $className{
+						public:
+							// generic dictionary to hold additional metadata
+							Hashtable^ Properties = new Hashtable();
+						}
+					};
+					context.CurrentNamespace += classNode;
+					Console::WriteLine("NEW CLASS: " + className.Identifier);
+				}
+				// add additional members used by DSL interpreter
+				classNode += writecode{%
+				private:
+					Hashtable^ _sourceNodes = new Hashtable();
+				public:
+					void AddSourceNode(string^ nodeName, XplNode^ node){
+						_sourceNodes.Add(nodeName, node);
+					}
+					XplNode^ GetSourceNode(string^ nodeName){
+						return (XplNode^)_sourceNodes[nodeName];
+					}
+				%}.Children();
+				
+				types.Add( className.Identifier, classNode );
+			}
+			
+			void FindOrCreateField(iname void fieldName, iname void className, XplType^ fieldType){
+				XplClass^ classNode = (XplClass^)types[className.Identifier];
+				
+				XplNode^ fieldNode = classNode.FindNode("@XplProperty[name='" + fieldName.Identifier + "']");
+				if(fieldNode==null) fieldNode = classNode.FindNode("@XplField[name='" + fieldName.Identifier + "']");
+				
+				if(fieldNode==null){
+					XplIName^ fieldInternalName = new XplIName( "__" + fieldName.Identifier );
+					// there isn't needed property or field, add one
+					classNode +=
+						writecode{%
+						private:
+							$fieldType $fieldInternalName;
+						public:
+							$fieldType property $fieldName{
+								get{
+									return $fieldInternalName;
+								}
+								set{
+									$fieldInternalName = value;
+								}
+							}
+						%}.Children();
+					Console::WriteLine("Field Created: " + fieldName.Identifier + " On Class: " + className.Identifier);
+				}
+			}
+			
+			void FindOrCreateCollectionField(iname void collectionFieldName, iname void className){
+				XplClass^ classNode = (XplClass^)types[className.Identifier];
+				
+				XplNode^ fieldNode = classNode.FindNode("@XplProperty[name='" + collectionFieldName.Identifier + "']");
+				if(fieldNode==null) fieldNode = classNode.FindNode("@XplField[name='" + collectionFieldName.Identifier + "']");
+				
+				if(fieldNode==null){
+					XplIName^ fieldInternalName = new XplIName( "__" + collectionFieldName.Identifier );
+					// there isn't needed property or field, add one
+					classNode +=
+						writecode{%
+						private:
+							ArrayList^ $fieldInternalName = new ArrayList();
+						public:
+							ArrayList^ property $collectionFieldName{
+								get{
+									return $fieldInternalName;
+								}
+								set{
+									$fieldInternalName = value;
+								}
+							}
+						%}.Children();
+				}
+			}
+			
+			static void AddError(Error^ error){
+				compiler.AddError(error);
+			}
+			
+			XplType^ GetTypeForPropertyType(string^ propertyType, XplNode^ node){
+				switch(propertyType){
+					case "STRING":
+						return gettype(string^);
+					case "INT":
+						return gettype(int);
+					case "LONG":
+						return gettype(long);
+					case "FLOAT":
+						return gettype(float);
+					case "BOOL":
+						return gettype(bool);
+					case "INAME":
+						return gettype(XplIName^);
+					case "EXPRESSION":
+						return gettype(XplExpression^);
+					case "BLOCK":
+						return gettype(XplFunctionBody^);
+					default:
+						AddError(new Error("Non-recognized type " + propertyType, node));
+						return gettype(int);
+				}
+			}
+			
+			void MakeFunctionForType(XplClass^ interpreterClass, iname void classType, XplFunctionBody^ contentTemplate, XplNodeList^ arguments){
+				XplIName^ functionName = new XplIName("Process"+classType.Identifier);
+
+				if(generatedFunctions.ContainsKey(functionName.Identifier)) return;
+
+				// create type if it doesn't exists
+				this.FindOrCreateClass(classType);
+				
+				generatedFunctions.Add(functionName.Identifier, functionName.Identifier);
+
+				XplFunctionBody^ propertysIfs = new XplFunctionBody(), collectionsIfs = new XplFunctionBody(), singleItemsIfs = new XplFunctionBody(), argumentsIf = new XplFunctionBody();
+				XplExpression^ blockArgumentExpression = XplFunctionBody::new_e();
+				blockArgumentExpression.set_Content(XplExpression::new_empty());
+				
+				string^ propertyType = null;
+				string^ propertyName = null;
+				
+				// Process arguments
+				if(arguments!=null){
+					int index = 0;
+					int blockArgumentCount = 0;
+					for(XplNode^ argNode in arguments){
+						XplNode^ node = argNode.get_Content();
+						if(node!=null && node.get_TypeName()==CodeDOMTypes::XplAssing){
+							// if argument is an assignment
+							XplAssing^ assingNode = (XplAssing^)node;
+							XplExpression^ leftExp = assingNode.get_l();
+							XplExpression^ rightExp = assingNode.get_r();
+							
+							if(!CheckAssignment(assingNode)) return;
+							
+							propertyName = leftExp.get_Content().get_StringValue();
+							propertyType = rightExp.get_Content().get_StringValue();
+							XplExpression^ propertyIf = null;
+							//Armo el if para la propiedad actual
+							if(propertyType!="STRING" && propertyType!="INT" && propertyType!="LONG" && propertyType!="FLOAT" && propertyType!="BOOL" && propertyType!="INAME" && propertyType!="EXPRESSION" && propertyType!="BLOCK"){
+								AddError(new Error("A valid type is required as right side of expression (STRING, INT, LONG, FLOAT, BOOL, INAME, EXPRESSION, BLOCK).",node));
+								return;
+							}
+							else{
+								if(propertyType!="BLOCK"){
+									propertyIf = GetExpressionFor(propertyType, writecode( (XplExpression^)arguments.GetNodeAt(n) ) );
+								}
+								else{
+									blockArgumentCount++;
+									if(blockArgumentCount > 1){
+										AddError(new Error("Only one argument of type block is valid.", leftExp));
+										return;
+									}
+									else{
+										FindOrCreateField( new XplIName(propertyName), classType, GetTypeForPropertyType(propertyType, node) );
+										blockArgumentExpression = writecode( instance.$leftExp = instanceData );
+									}
+								}
+							}
+							//Agrego el bloque if al bloque de ifs :-)
+							if(propertyIf!=null){
+								FindOrCreateField( new XplIName(propertyName), classType, GetTypeForPropertyType(propertyType, node) );
+								Console::WriteLine("Property added. " + propertyName);
+								argumentsIf += 
+									writecode{
+										if(n == $index){
+											instance.$leftExp = $propertyIf;
+											instance.AddSourceNode($propertyName, arguments.GetNodeAt(n));
+										}
+									}.Children();
+							}
+						}
+						else{
+							//Error, invalid type of argument
+							AddError(new Error("Unexpected statement.", node));
+							return;
+						}
+						
+						index++;
+					}
+				}
+				
+				// Itero en los nodos del template para generar los Ifs y otras funciones que hagan falta
+				if(contentTemplate!=null && contentTemplate.Children()!=null){
+					for(XplNode^ nodeIt in contentTemplate.Children()){
+						XplNode^ node = nodeIt.get_Content();
+						if(node!=null && node.get_TypeName()==CodeDOMTypes::XplAssing){
+							XplAssing^ assingNode = (XplAssing^)node;
+							XplExpression^ leftExp = assingNode.get_l();
+							XplExpression^ rightExp = assingNode.get_r();
+							
+							if(!CheckAssignment(assingNode)) return;
+							
+							propertyName = leftExp.get_Content().get_StringValue();
+							propertyType = rightExp.get_Content().get_StringValue();
+							XplExpression^ propertyIf = null;
+							//Armo el if para la propiedad actual
+							if(propertyType!="STRING" && propertyType!="INT" && propertyType!="LONG" && propertyType!="FLOAT" && propertyType!="BOOL" && propertyType!="INAME" && propertyType!="EXPRESSION"){
+								AddError(new Error("A supported type is required as right side of expression (STRING, INT, LONG, FLOAT, BOOL, INAME, EXPRESSION).",node));
+							}
+							else{
+								propertyIf = GetExpressionFor(propertyType, writecode( rightExp ));
+							}
+							//Agrego el bloque if al bloque de ifs :-)
+							if(propertyIf!=null){
+								FindOrCreateField( new XplIName(propertyName), classType, GetTypeForPropertyType(propertyType, node));
+								Console::WriteLine("Property added. " + propertyName);
+								propertysIfs += 
+									writecode{
+										if(propertyName == $propertyName){
+											errorFlag = false;
+											instance.$leftExp = $propertyIf;
+											instance.AddSourceNode($propertyName, rightExp);
+										}
+									}.Children();
+							}
+						}
+						else if(node!=null && node.get_TypeName()==CodeDOMTypes::XplFunctioncall){
+							// Si es una llamada a función
+							XplFunctioncall^ functionCall = (XplFunctioncall^)node;
+							XplFunctionBody^ fcBlock = functionCall.get_bk();
+							XplNodeList^ parametersList = functionCall.get_args() != null ? functionCall.get_args().Children() : new XplNodeList();
+							
+							XplNode^ leftNode = functionCall.get_l().get_Content();
+							if(leftNode==null || leftNode.get_TypeName()!=CodeDOMTypes::XplNode){
+								AddError(new Error("An identifier is required for Content Template.",node));
+								return;
+							}
+							// get identifier string for left expression of function call
+							string^ leftStr = leftNode.get_StringValue();
+							
+							if(leftStr=="Collection"){
+							
+								if(fcBlock==null){
+									AddError(new Error("A block is required as Content Template for collection item.", node));
+									return;
+								}
+								
+								// create left expression to add items to collection 
+								XplIName^ collectionFieldName = null;
+								string^ collectionFieldNameStr = null;
+								
+								if(parametersList.GetLength()==1) collectionFieldNameStr = parametersList.GetNodeAt(0).get_Content().get_StringValue();
+								else if(parametersList.GetLength()==0) collectionFieldNameStr = "Items";
+								else{
+									AddError(new Error("More parameters than expected on collection declaration.", node));
+									return;
+								}
+								
+								collectionFieldName = new XplIName( collectionFieldNameStr );
+								FindOrCreateCollectionField(collectionFieldName, classType);
+								
+								// create block for content items
+								XplFunctionBody^ itemsTypesIfs = new XplFunctionBody();
+
+								//Itero en la colección para ver los tipos que contiene la colección
+								for(XplNode^ nodeItCol in fcBlock.Children()){
+									if(nodeItCol.get_Content()!=null && nodeItCol.get_Content().get_TypeName()==CodeDOMTypes::XplFunctioncall){
+										//Obtengo el nombre de tipo de los items
+										XplFunctioncall^ collectionTypeFunc = (XplFunctioncall^)nodeItCol.get_Content();
+										XplIName^ collectionItemTypeName = new XplIName( collectionTypeFunc.get_l().get_Content().get_StringValue() );
+										string^ collectionItemTypeNameStr = collectionItemTypeName.Identifier;
+										XplIName^ functionForItemType = new XplIName( "Process" + collectionItemTypeName.Identifier );
+										//Creo la funcion para el tipo de los items
+										MakeFunctionForType(interpreterClass, collectionItemTypeName, collectionTypeFunc.get_bk(), collectionTypeFunc.get_args() != null ? collectionTypeFunc.get_args().Children() : null );
+										//Creo el código para el interprete
+										itemsTypesIfs +=
+											writecode{
+												if(itemTypeName.Identifier == $collectionItemTypeNameStr){
+													//Creo la instancia del tipo del item
+													$collectionItemTypeName^ item = $functionForItemType( fcbk, fcparameters );
+													//Lo agrego a la coleccion
+													instance.$collectionFieldName.Add( item );
+													errorFlag = false;
+												}
+											}.Children();
+									}
+									else{
+										AddError(new Error("Invalid statement inside Content Template.", nodeItCol ));
+									}
+								}
+								//Código comun
+								if(collectionFieldNameStr=="Items"){
+									collectionsIfs +=  
+										writecode{
+											XplIName^ itemTypeName = new XplIName(collectionName);
+											XplFunctionBody^ fcbk = fcBlock;
+											$itemsTypesIfs;
+										}.Children();
+								}
+								else{
+									collectionsIfs +=  
+										writecode{
+											if(collectionName == $collectionFieldNameStr){
+												errorFlag = false;
+												for(XplNode^ node2 in fcBlock.Children()){
+													XplNode^ node2Content = node2.get_Content();
+													// take for sure that each node is a function call with the form:  "id(args...){ }" or "id{ }"
+													if(node2Content==null || node2.IsA(CodeDOMTypes::XplDocumentation)){
+														if(!node2.IsA(CodeDOMTypes::XplExpression) && !node2.IsA(CodeDOMTypes::XplDocumentation)){
+															AddError(new Error("Statement not recognized as valid inside this item.", node2));
+														}
+													}
+													else if(node2Content.IsA(CodeDOMTypes::XplFunctioncall)){
+														XplFunctioncall^ fc = (XplFunctioncall^)node2.get_Content();
+														XplIName^ itemTypeName = new XplIName(fc.get_l().get_Content().get_StringValue());
+														XplFunctionBody^ fcbk = fc.get_bk();
+														fcparameters = fc.get_args() != null ? fc.get_args().Children() : null;
+
+														$itemsTypesIfs;
+													}
+												}
+											}
+										}.Children();
+								}
+							}
+							else{
+								// It's a single value (not collection)
+								XplIName^ leftName = new XplIName(leftStr); // + "Type");
+								XplIName^ fieldName = new XplIName(leftStr);
+								
+								// Process element type
+								MakeFunctionForType( interpreterClass, leftName, fcBlock, functionCall.get_args() != null ? functionCall.get_args().Children() : null );
+								
+								// Create the field to hold the value
+								FindOrCreateField( fieldName, classType, ZoeHelper::MakeTypeFromString("^_" + leftName.Identifier) );
+								
+								// Create the code to read the value
+								XplIName^ functionForItemType = new XplIName( "Process" + leftName.Identifier );
+								
+								// read the value and set property
+								singleItemsIfs += 
+									writecode{
+										if(collectionName == $leftStr){
+											instance.$fieldName = $functionForItemType( fcBlock, fcparameters );
+											instance.AddSourceNode($leftStr, leftNode);
+											errorFlag = false;
+										}
+									}.Children();
+							}
+						}
+						else{
+							// Tipo de expresión no reconocida, será ignorada.
+							AddError(new Error("Statement not recognized in this item.",node));
+						}
+					}
+				}
+				
+				// create block to process item content
+				XplFunctionBody^ processBlock = new XplFunctionBody();
+				
+				if(contentTemplate!=null && contentTemplate.Children()!=null) {
+					processBlock = writecode{
+						for(XplNode^ nodeIt in instanceData.Children()){
+							XplNode^ node = nodeIt.get_Content();
+							if(node==null || nodeIt.IsA(CodeDOMTypes::XplDocumentation)){
+								if(!nodeIt.IsA(CodeDOMTypes::XplExpression) && !nodeIt.IsA(CodeDOMTypes::XplDocumentation)){
+									AddError(new Error("Statement not recognized as valid inside this item.", nodeIt));
+								}
+							}
+							else if(node.IsA(CodeDOMTypes::XplAssing)){
+								XplAssing^ assingNode = (XplAssing^)node;
+								XplExpression^ leftExp = assingNode.get_l();
+								XplExpression^ rightExp = assingNode.get_r();
+								if(leftExp.get_Content()!=null && leftExp.get_Content().get_TypeName()!=CodeDOMTypes::XplNode)
+								{
+									AddError(new Error("An identifier is required.",node));
+									return null;
+								}
+								string^ propertyName = leftExp.get_Content().get_StringValue();
+								errorFlag = true;
+								errorNode = leftExp;
+
+								$propertysIfs;
+
+								if(errorFlag){
+									AddError(new Error("Property '" + propertyName + "' not supported by this item.", errorNode));
+									return null;
+								}
+							}
+							else if(node.IsA(CodeDOMTypes::XplFunctioncall)){
+								XplFunctioncall^ functionCall = (XplFunctioncall^)node;
+								XplNodeList^ fcparameters = functionCall.get_args() != null ?  functionCall.get_args().Children() : null;
+								XplFunctionBody^ fcBlock = functionCall.get_bk();
+								
+								if(fcBlock==null){
+									// It's an error
+									AddError(new Error("A block is required.",node));
+									return null;
+								}
+								XplNode^ leftNode = functionCall.get_l().get_Content();
+								if(leftNode!=null && leftNode.get_TypeName()!=CodeDOMTypes::XplNode){
+									AddError(new Error("An identifier is required.",node));
+									return null;
+								}
+								string^ collectionName = leftNode.get_StringValue();
+								errorNode = leftNode;
+								
+								errorFlag = true;
+
+								$collectionsIfs;
+								
+								$singleItemsIfs;
+
+								if(errorFlag){
+									AddError(new Error("Collection not supported by this item.", errorNode));
+									return null;
+								}
+							}
+							else{
+								// Tipo de expresión no reconocida, será ignorada.
+								AddError(new Error("Expression not recognized as valid inside this item.", nodeIt));
+							}
+						}
+					};
+				}
+				
+				//Creo la función para procesar el tipo
+				XplNodeList^ functions = 
+					writecode{%
+					public:
+						$classType^ $functionName(XplFunctionBody^ instanceData){
+							return this.$functionName(instanceData, null);
+						}
+						
+						$classType^ $functionName(XplFunctionBody^ instanceData, XplNodeList^ arguments){
+							$classType^ instance = new $classType();
+							bool errorFlag = false;
+							XplNode^ errorNode = null;
+							
+							// process arguments
+							if(arguments!=null){
+								for(int n=0; n < arguments.GetLength(); n++){
+									$argumentsIf;
+								}
+							}
+							
+							$blockArgumentExpression;
+							
+							// process function body elements
+							$processBlock;
+							
+							return instance;
+						}
+					%}
+					.Children();
+
+				interpreterClass += functions;
+			}
+			
+			bool CheckAssignment(XplAssing^ assingNode){
+				XplExpression^ leftExp = assingNode.get_l();
+				XplExpression^ rightExp = assingNode.get_r();
+				
+				if(leftExp.get_Content()!=null && leftExp.get_Content().get_TypeName()!=CodeDOMTypes::XplNode)
+				{
+					AddError(new Error("An identifier is required as left side.", assingNode));
+					return false;
+				}
+				if(rightExp.get_Content()!=null && rightExp.get_Content().get_TypeName()!=CodeDOMTypes::XplNode)
+				{
+					AddError(new Error("An identifier is required as right side.",assingNode));
+					return false;
+				}
+				return true;
+			}
+			
+			XplExpression^ GetExpressionFor(string^ propertyType, XplExpression^  fromExpression){
+				if(propertyType=="EXPRESSION"){
+					return writecode( new XplExpression( $fromExpression.get_Content() ) );
+				}
+				else if(propertyType=="INAME"){
+					return writecode( GetINameFromExpression($fromExpression) );
+				}
+				else if(propertyType=="STRING"){
+					return writecode( GetStringFromExpression($fromExpression) );
+				}
+				else if(propertyType=="INT"){
+					return writecode( GetIntFromExpression($fromExpression) );
+				}
+				else if(propertyType=="LONG"){
+					return writecode( GetLongFromExpression($fromExpression) );
+				}
+				else if(propertyType=="FLOAT"){
+					return writecode( GetFloatFromExpression($fromExpression) );
+				}
+				else if(propertyType=="BOOL"){
+					return writecode( GetBooleanFromExpression($fromExpression) );
+				}
+				else{
+					return null;
+				}
+			}
+		}
+	
+	}
+}

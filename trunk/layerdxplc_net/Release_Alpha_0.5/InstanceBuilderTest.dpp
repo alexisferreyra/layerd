@@ -1,0 +1,350 @@
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+using DotNET::System;
+using DotNET::System::IO;
+using DotNET::System::Collections;
+using Zoe::Tools;
+using Janus::Utils;
+
+namespace Sample{
+	public class Service{
+	public:
+		string^ ServiceName;
+		int StoreID;
+		string^ Description;
+		ArrayList^ Forms = new ArrayList();
+		ArrayList^ DataSources = new ArrayList();
+	}
+	class MenuForm{
+	public:
+		string^ Name;
+		ArrayList^ FieldsTemplate = new ArrayList();
+	}
+	class Field{
+	public:
+		string^ Name;
+		int X;
+		int Y;
+		bool Bold;
+	}
+	class DataSource{
+	public:
+		string^ Name;
+	}
+	public class App{
+	public:
+		static int Main(string^[] args){
+			Console::WriteLine(((MenuForm^)service.Forms[0]).Name);
+			Console::Read();
+			return 0;
+		}
+	}
+	class MyInterpreter{
+	public:
+		Field^ ProcessField(XplFunctionBody^ instanceData){
+			Field^ instance = new Field();
+			bool errorFlag = false;
+			XplNode^ errorNode = null;
+			for (XplNode^  nodeIt;instanceData.Children();_FOR_EACH_){
+				XplNode^ node = nodeIt.get_Content();
+				if (node != null && node.get_TypeName() == CodeDOMTypes.XplAssing){
+					XplAssing^ assingNode = (XplAssing^)node;
+					XplExpression^ leftExp = assingNode.get_l();
+					XplExpression^ rightExp = assingNode.get_r();
+					if (leftExp.get_Content() != null && leftExp.get_Content().get_TypeName() != CodeDOMTypes.XplNode){
+						compiler.get_ErrorCollection().AddError(new Error("Se requiere un identificador en Instance Creator.",node));
+						return ;
+					}
+					string^ propertyName = leftExp.get_Content().get_StringValue();
+					errorFlag = true;
+					{
+						if (propertyName == "Name"){
+							errorFlag = false;
+							instance.Name = new XplIName(rightExp.get_Content().get_StringValue());
+						}
+						if (propertyName == "X"){
+							errorFlag = false;
+							instance.X = Convert::ToInt32(((XplLiteral^)rightExp.get_Content()).get_str());
+						}
+						if (propertyName == "Y"){
+							errorFlag = false;
+							instance.Y = rightExp.get_Content();
+						}
+						if (propertyName == "Bold"){
+							errorFlag = false;
+							if (((XplLiteral^)rightExp.get_Content()).get_str() == "true"){
+								instance.Bold = true;
+							}
+							else {
+								instance.Bold = false;
+							}
+						}
+					}
+					if (errorFlag){
+						compiler.get_ErrorCollection().AddError(new Error("Propiedad no soportada en Instance Creator.",errorNode));
+						return null;
+					}
+				}
+				else {
+					if (node != null && node.get_TypeName() == CodeDOMTypes.XplFunctioncall){
+						XplFunctioncall^ functionCall = (XplFunctioncall^)node;
+						XplFunctionBody^ fcBlock = functionCall.get_bk();
+						if (fcBlock == null){
+							// Es un error
+							compiler.get_ErrorCollection().AddError(new Error("Se requiere un bloque para Instance Creator.",node));
+							return ;
+						}
+						XplNode^ leftNode = functionCall.get_l().get_Content();
+						if (leftNode != null && leftNode.get_TypeName() != CodeDOMTypes.XplNode){
+							compiler.get_ErrorCollection().AddError(new Error("Se requiere un identificador en Instance Creator.",node));
+							return ;
+						}
+						string^ collectionName = leftNode.get_StringValue();
+						errorFlag = true;
+						{
+						}
+						if (errorFlag){
+							compiler.get_ErrorCollection().AddError(new Error("Coleccion no soportada en Instance Creator.",errorNode));
+							return null;
+						}
+					}
+					else {
+						// Tipo de expresión no reconocida, será ignorada.
+						compiler.get_ErrorCollection().AddError(new Error("Expresion no reconocida por Instance Creator.",node));
+					}
+				}
+			}
+			return instance;
+		}
+		MenuForm^ ProcessMenuForm(XplFunctionBody^ instanceData){
+			MenuForm^ instance = new MenuForm();
+			bool errorFlag = false;
+			XplNode^ errorNode = null;
+			for (XplNode^  nodeIt;instanceData.Children();_FOR_EACH_){
+				XplNode^ node = nodeIt.get_Content();
+				if (node != null && node.get_TypeName() == CodeDOMTypes.XplAssing){
+					XplAssing^ assingNode = (XplAssing^)node;
+					XplExpression^ leftExp = assingNode.get_l();
+					XplExpression^ rightExp = assingNode.get_r();
+					if (leftExp.get_Content() != null && leftExp.get_Content().get_TypeName() != CodeDOMTypes.XplNode){
+						compiler.get_ErrorCollection().AddError(new Error("Se requiere un identificador en Instance Creator.",node));
+						return ;
+					}
+					string^ propertyName = leftExp.get_Content().get_StringValue();
+					errorFlag = true;
+					{
+						if (propertyName == "Name"){
+							errorFlag = false;
+							instance.Name = new XplIName(rightExp.get_Content().get_StringValue());
+						}
+					}
+					if (errorFlag){
+						compiler.get_ErrorCollection().AddError(new Error("Propiedad no soportada en Instance Creator.",errorNode));
+						return null;
+					}
+				}
+				else {
+					if (node != null && node.get_TypeName() == CodeDOMTypes.XplFunctioncall){
+						XplFunctioncall^ functionCall = (XplFunctioncall^)node;
+						XplFunctionBody^ fcBlock = functionCall.get_bk();
+						if (fcBlock == null){
+							// Es un error
+							compiler.get_ErrorCollection().AddError(new Error("Se requiere un bloque para Instance Creator.",node));
+							return ;
+						}
+						XplNode^ leftNode = functionCall.get_l().get_Content();
+						if (leftNode != null && leftNode.get_TypeName() != CodeDOMTypes.XplNode){
+							compiler.get_ErrorCollection().AddError(new Error("Se requiere un identificador en Instance Creator.",node));
+							return ;
+						}
+						string^ collectionName = leftNode.get_StringValue();
+						errorFlag = true;
+						{
+							if (collectionName == "FieldsTemplate"){
+								//Código comun
+								errorFlag = false;
+								for (XplNode^  node2;fcBlock.Children();_FOR_EACH_){
+									XplFunctioncall^ fc = (XplFunctioncall^)node2.get_Content();
+									XplIName^ itemTypeName = new XplIName(fc.get_l().get_Content().get_StringValue());
+									XplFunctionBody^ fcbk = fc.get_bk();
+									{
+										if (itemTypeName.Identifier == "Field"){
+											Field^ item = ProcessField(fcbk);
+											//Lo agrego a la coleccion
+											instance.FieldsTemplate.Add(item);
+										}
+									}
+								}
+							}
+						}
+						if (errorFlag){
+							compiler.get_ErrorCollection().AddError(new Error("Coleccion no soportada en Instance Creator.",errorNode));
+							return null;
+						}
+					}
+					else {
+						// Tipo de expresión no reconocida, será ignorada.
+						compiler.get_ErrorCollection().AddError(new Error("Expresion no reconocida por Instance Creator.",node));
+					}
+				}
+			}
+			return instance;
+		}
+		DataSource^ ProcessDataSource(XplFunctionBody^ instanceData){
+			DataSource^ instance = new DataSource();
+			bool errorFlag = false;
+			XplNode^ errorNode = null;
+			for (XplNode^  nodeIt;instanceData.Children();_FOR_EACH_){
+				XplNode^ node = nodeIt.get_Content();
+				if (node != null && node.get_TypeName() == CodeDOMTypes.XplAssing){
+					XplAssing^ assingNode = (XplAssing^)node;
+					XplExpression^ leftExp = assingNode.get_l();
+					XplExpression^ rightExp = assingNode.get_r();
+					if (leftExp.get_Content() != null && leftExp.get_Content().get_TypeName() != CodeDOMTypes.XplNode){
+						compiler.get_ErrorCollection().AddError(new Error("Se requiere un identificador en Instance Creator.",node));
+						return ;
+					}
+					string^ propertyName = leftExp.get_Content().get_StringValue();
+					errorFlag = true;
+					{
+						if (propertyName == "Name"){
+							errorFlag = false;
+							instance.Name = new XplIName(rightExp.get_Content().get_StringValue());
+						}
+					}
+					if (errorFlag){
+						compiler.get_ErrorCollection().AddError(new Error("Propiedad no soportada en Instance Creator.",errorNode));
+						return null;
+					}
+				}
+				else {
+					if (node != null && node.get_TypeName() == CodeDOMTypes.XplFunctioncall){
+						XplFunctioncall^ functionCall = (XplFunctioncall^)node;
+						XplFunctionBody^ fcBlock = functionCall.get_bk();
+						if (fcBlock == null){
+							// Es un error
+							compiler.get_ErrorCollection().AddError(new Error("Se requiere un bloque para Instance Creator.",node));
+							return ;
+						}
+						XplNode^ leftNode = functionCall.get_l().get_Content();
+						if (leftNode != null && leftNode.get_TypeName() != CodeDOMTypes.XplNode){
+							compiler.get_ErrorCollection().AddError(new Error("Se requiere un identificador en Instance Creator.",node));
+							return ;
+						}
+						string^ collectionName = leftNode.get_StringValue();
+						errorFlag = true;
+						{
+						}
+						if (errorFlag){
+							compiler.get_ErrorCollection().AddError(new Error("Coleccion no soportada en Instance Creator.",errorNode));
+							return null;
+						}
+					}
+					else {
+						// Tipo de expresión no reconocida, será ignorada.
+						compiler.get_ErrorCollection().AddError(new Error("Expresion no reconocida por Instance Creator.",node));
+					}
+				}
+			}
+			return instance;
+		}
+		Service^ ProcessService(XplFunctionBody^ instanceData){
+			Service^ instance = new Service();
+			bool errorFlag = false;
+			XplNode^ errorNode = null;
+			for (XplNode^  nodeIt;instanceData.Children();_FOR_EACH_){
+				XplNode^ node = nodeIt.get_Content();
+				if (node != null && node.get_TypeName() == CodeDOMTypes.XplAssing){
+					XplAssing^ assingNode = (XplAssing^)node;
+					XplExpression^ leftExp = assingNode.get_l();
+					XplExpression^ rightExp = assingNode.get_r();
+					if (leftExp.get_Content() != null && leftExp.get_Content().get_TypeName() != CodeDOMTypes.XplNode){
+						compiler.get_ErrorCollection().AddError(new Error("Se requiere un identificador en Instance Creator.",node));
+						return ;
+					}
+					string^ propertyName = leftExp.get_Content().get_StringValue();
+					errorFlag = true;
+					{
+						if (propertyName == "ServiceName"){
+							errorFlag = false;
+							instance.ServiceName = new XplIName(rightExp.get_Content().get_StringValue());
+						}
+						if (propertyName == "StoreID"){
+							errorFlag = false;
+							instance.StoreID = Convert::ToInt32(((XplLiteral^)rightExp.get_Content()).get_str());
+						}
+						if (propertyName == "Description"){
+							errorFlag = false;
+							instance.Description = ((XplLiteral^)rightExp.get_Content()).get_str();
+						}
+					}
+					if (errorFlag){
+						compiler.get_ErrorCollection().AddError(new Error("Propiedad no soportada en Instance Creator.",errorNode));
+						return null;
+					}
+				}
+				else {
+					if (node != null && node.get_TypeName() == CodeDOMTypes.XplFunctioncall){
+						XplFunctioncall^ functionCall = (XplFunctioncall^)node;
+						XplFunctionBody^ fcBlock = functionCall.get_bk();
+						if (fcBlock == null){
+							// Es un error
+							compiler.get_ErrorCollection().AddError(new Error("Se requiere un bloque para Instance Creator.",node));
+							return ;
+						}
+						XplNode^ leftNode = functionCall.get_l().get_Content();
+						if (leftNode != null && leftNode.get_TypeName() != CodeDOMTypes.XplNode){
+							compiler.get_ErrorCollection().AddError(new Error("Se requiere un identificador en Instance Creator.",node));
+							return ;
+						}
+						string^ collectionName = leftNode.get_StringValue();
+						errorFlag = true;
+						{
+							if (collectionName == "Forms"){
+								//Código comun
+								errorFlag = false;
+								for (XplNode^  node2;fcBlock.Children();_FOR_EACH_){
+									XplFunctioncall^ fc = (XplFunctioncall^)node2.get_Content();
+									XplIName^ itemTypeName = new XplIName(fc.get_l().get_Content().get_StringValue());
+									XplFunctionBody^ fcbk = fc.get_bk();
+									{
+										if (itemTypeName.Identifier == "MenuForm"){
+											MenuForm^ item = ProcessMenuForm(fcbk);
+											//Lo agrego a la coleccion
+											instance.Forms.Add(item);
+										}
+									}
+								}
+							}
+							if (collectionName == "DataSources"){
+								//Código comun
+								errorFlag = false;
+								for (XplNode^  node2;fcBlock.Children();_FOR_EACH_){
+									XplFunctioncall^ fc = (XplFunctioncall^)node2.get_Content();
+									XplIName^ itemTypeName = new XplIName(fc.get_l().get_Content().get_StringValue());
+									XplFunctionBody^ fcbk = fc.get_bk();
+									{
+										if (itemTypeName.Identifier == "DataSource"){
+											DataSource^ item = ProcessDataSource(fcbk);
+											//Lo agrego a la coleccion
+											instance.DataSources.Add(item);
+										}
+									}
+								}
+							}
+						}
+						if (errorFlag){
+							compiler.get_ErrorCollection().AddError(new Error("Coleccion no soportada en Instance Creator.",errorNode));
+							return null;
+						}
+					}
+					else {
+						// Tipo de expresión no reconocida, será ignorada.
+						compiler.get_ErrorCollection().AddError(new Error("Expresion no reconocida por Instance Creator.",node));
+					}
+				}
+			}
+			return instance;
+		}
+	}
+}
+

@@ -1,0 +1,24 @@
+import "Microsoft", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+using DotNET::System;
+using DotNET::System::Collections;
+
+Zoe::Tools::APIWrapper::Wrap("DotNET");
+
+namespace Zoe::Tools{
+	public class Test{
+	public:
+		static int Main(string^[] args){
+			Console::WriteLine("This is a test");
+			Console::WriteLine(12.34);
+			Console::WriteLine(14);
+			Console::Write("This is other test");
+			IList^ temp = new ArrayList();
+			temp.Add(1);
+			temp.Add(3);
+			temp.Remove(3);
+			temp.Clear();
+			temp.Count = 12;
+		}
+	}
+}

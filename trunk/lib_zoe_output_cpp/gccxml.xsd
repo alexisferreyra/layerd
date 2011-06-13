@@ -1,0 +1,383 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="GCC_XML" type="tGCC_XML_Content" />
+  <xs:complexType name="tGCC_XML_Content">
+    <xs:sequence maxOccurs="unbounded">
+      <xs:element maxOccurs="unbounded" name="Namespace" type="tNamespace" />
+      <xs:element name="Struct" type="tStruct" />
+      <xs:element maxOccurs="unbounded" name="Function" type="tFunction" />
+      <xs:element name="PointerType" type="tPointerType" />
+      <xs:element name="Typedef" type="tTypedef" />
+      <xs:element name="FundamentalType" type="tFundamentalType" />
+      <xs:element name="Variable" type="tVariable" />
+      <xs:element name="Union" type="tUnion" />
+      <xs:element name="Enumeration" type="tEnumeration" />
+      <xs:element name="FunctionType" type="tFunctionType" />
+      <xs:element name="OperatorFunction" type="tOperatorFunction" />
+      <xs:element name="ArrayType" type="tArrayType" />
+      <xs:element name="Class" type="tClass" />
+      <xs:element name="Field" type="tField" />
+      <xs:element name="Destructor" type="tDestructor" />
+      <xs:element name="OperatorMethod" type="tOperatorMethod" />
+      <xs:element name="Constructor" type="tConstructor" />
+      <xs:element name="CvQualifiedType" type="tCvQualifiedType" />
+      <xs:element name="ReferenceType" type="tReferenceType" />
+      <xs:element name="Method" type="tMethod" />
+      <xs:element name="Converter" type="tConverter" />
+      <xs:element name="File" type="tFile" />
+    </xs:sequence>
+    <xs:attribute name="cvs_revision" type="xs:decimal" use="required" />
+  </xs:complexType>
+  <xs:complexType name="tNamespace">
+    <xs:attribute name="id" type="xs:string" use="required" />
+    <xs:attribute name="name" type="xs:string" use="required" />
+    <xs:attribute name="members" type="xs:string" use="required" />
+    <xs:attribute name="mangled" type="xs:string" use="required" />
+    <xs:attribute name="demangled" type="xs:string" use="required" />
+    <xs:attribute name="context" type="xs:string" use="optional" />
+  </xs:complexType>
+  <xs:complexType name ="tStruct">
+    <xs:sequence minOccurs="0">
+      <xs:element maxOccurs="unbounded" name="Base" type="tStructContent" />
+    </xs:sequence>
+    <xs:attribute name="id" type="xs:string" use="required" />
+    <xs:attribute name="name" type="xs:string" use="optional" />
+    <xs:attribute name="context" type="xs:string" use="required" />
+    <xs:attribute name="mangled" type="xs:string" use="required" />
+    <xs:attribute name="demangled" type="xs:string" use="optional" />
+    <xs:attribute name="location" type="xs:string" use="required" />
+    <xs:attribute name="file" type="xs:string" use="required" />
+    <xs:attribute name="line" type="xs:unsignedShort" use="required" />
+    <xs:attribute name="artificial" type="xs:unsignedByte" use="optional" />
+    <xs:attribute name="size" type="xs:unsignedShort" use="optional" />
+    <xs:attribute name="align" type="xs:unsignedByte" use="required" />
+    <xs:attribute name="members" type="xs:string" use="optional" />
+    <xs:attribute name="bases" type="xs:string" use="optional" />
+    <xs:attribute name="incomplete" type="xs:unsignedByte" use="optional" />
+    <xs:attribute name="befriending" type="xs:string" use="optional" />
+    <xs:attribute name="access" type="xs:string" use="optional" />
+  </xs:complexType>
+  <xs:complexType name="tStructContent">
+    <xs:attribute name="type" type="xs:string" use="required" />
+    <xs:attribute name="access" type="xs:string" use="required" />
+    <xs:attribute name="virtual" type="xs:unsignedByte" use="required" />
+    <xs:attribute name="offset" type="xs:unsignedByte" use="required" />
+  </xs:complexType>
+  <xs:complexType name="tFunction">
+    <xs:sequence minOccurs="0">
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="Argument" type="tFunctionArgument" />
+      <xs:element minOccurs="0" name="Ellipsis" />
+    </xs:sequence>
+    <xs:attribute name="id" type="xs:string" use="required" />
+    <xs:attribute name="name" type="xs:string" use="required" />
+    <xs:attribute name="returns" type="xs:string" use="required" />
+    <xs:attribute name="context" type="xs:string" use="required" />
+    <xs:attribute name="location" type="xs:string" use="required" />
+    <xs:attribute name="file" type="xs:string" use="required" />
+    <xs:attribute name="line" type="xs:unsignedShort" use="required" />
+    <xs:attribute name="extern" type="xs:unsignedByte" use="optional" />
+    <xs:attribute name="attributes" type="xs:string" use="optional" />
+    <xs:attribute name="throw" type="xs:string" use="optional" />
+    <xs:attribute name="mangled" type="xs:string" use="optional" />
+    <xs:attribute name="demangled" type="xs:string" use="optional" />
+    <xs:attribute name="endline" type="xs:unsignedShort" use="optional" />
+    <xs:attribute name="inline" type="xs:unsignedByte" use="optional" />
+    <xs:attribute name="befriending" type="xs:string" use="optional" />
+  </xs:complexType>
+  <xs:complexType name="tFunctionArgument">
+    <xs:attribute name="name" type="xs:string" use="optional" />
+    <xs:attribute name="type" type="xs:string" use="required" />
+    <xs:attribute name="location" type="xs:string" use="optional" />
+    <xs:attribute name="file" type="xs:string" use="optional" />
+    <xs:attribute name="line" type="xs:unsignedShort" use="optional" />
+    <xs:attribute name="attributes" type="xs:string" use="optional" />
+  </xs:complexType>
+  <xs:complexType name="tPointerType">
+    <xs:attribute name="id" type="xs:string" use="required" />
+    <xs:attribute name="type" type="xs:string" use="required" />
+    <xs:attribute name="size" type="xs:unsignedByte" use="required" />
+    <xs:attribute name="align" type="xs:unsignedByte" use="required" />
+  </xs:complexType>
+  <xs:complexType name="tTypedef">
+    <xs:attribute name="id" type="xs:string" use="required" />
+    <xs:attribute name="name" type="xs:string" use="required" />
+    <xs:attribute name="type" type="xs:string" use="required" />
+    <xs:attribute name="context" type="xs:string" use="required" />
+    <xs:attribute name="location" type="xs:string" use="required" />
+    <xs:attribute name="file" type="xs:string" use="required" />
+    <xs:attribute name="line" type="xs:unsignedShort" use="required" />
+    <xs:attribute name="attributes" type="xs:string" use="optional" />
+    <xs:attribute name="access" type="xs:string" use="optional" />
+  </xs:complexType>
+  <xs:complexType name="tFundamentalType">
+    <xs:attribute name="id" type="xs:string" use="required" />
+    <xs:attribute name="name" type="xs:string" use="required" />
+    <xs:attribute name="size" type="xs:unsignedByte" use="optional" />
+    <xs:attribute name="align" type="xs:unsignedByte" use="required" />
+  </xs:complexType>
+  <xs:complexType name="tVariable">
+    <xs:attribute name="id" type="xs:string" use="required" />
+    <xs:attribute name="name" type="xs:string" use="required" />
+    <xs:attribute name="type" type="xs:string" use="required" />
+    <xs:attribute name="context" type="xs:string" use="required" />
+    <xs:attribute name="location" type="xs:string" use="required" />
+    <xs:attribute name="file" type="xs:string" use="required" />
+    <xs:attribute name="line" type="xs:unsignedShort" use="required" />
+    <xs:attribute name="extern" type="xs:unsignedByte" use="optional" />
+    <xs:attribute name="artificial" type="xs:unsignedByte" use="optional" />
+    <xs:attribute name="mangled" type="xs:string" use="optional" />
+    <xs:attribute name="demangled" type="xs:string" use="optional" />
+    <xs:attribute name="access" type="xs:string" use="optional" />
+    <xs:attribute name="init" type="xs:string" use="optional" />
+  </xs:complexType>
+  <xs:complexType name="tUnion">
+    <xs:attribute name="id" type="xs:string" use="required" />
+    <xs:attribute name="name" type="xs:string" use="optional" />
+    <xs:attribute name="context" type="xs:string" use="required" />
+    <xs:attribute name="mangled" type="xs:string" use="required" />
+    <xs:attribute name="demangled" type="xs:string" use="required" />
+    <xs:attribute name="location" type="xs:string" use="required" />
+    <xs:attribute name="file" type="xs:string" use="required" />
+    <xs:attribute name="line" type="xs:unsignedByte" use="required" />
+    <xs:attribute name="size" type="xs:unsignedShort" use="required" />
+    <xs:attribute name="align" type="xs:unsignedByte" use="required" />
+    <xs:attribute name="members" type="xs:string" use="required" />
+    <xs:attribute name="bases" type="xs:string" use="required" />
+    <xs:attribute name="access" type="xs:string" use="optional" />
+    <xs:attribute name="artificial" type="xs:unsignedByte" use="optional" />
+  </xs:complexType>
+  <xs:complexType name="tEnumeration">
+    <xs:sequence>
+      <xs:element maxOccurs="unbounded" name="EnumValue" type="tEnumValue" />
+    </xs:sequence>
+    <xs:attribute name="id" type="xs:string" use="required" />
+    <xs:attribute name="name" type="xs:string" use="required" />
+    <xs:attribute name="context" type="xs:string" use="required" />
+    <xs:attribute name="location" type="xs:string" use="required" />
+    <xs:attribute name="file" type="xs:string" use="required" />
+    <xs:attribute name="line" type="xs:unsignedShort" use="required" />
+    <xs:attribute name="artificial" type="xs:unsignedByte" use="required" />
+    <xs:attribute name="size" type="xs:unsignedByte" use="required" />
+    <xs:attribute name="align" type="xs:unsignedByte" use="required" />
+    <xs:attribute name="access" type="xs:string" use="optional" />
+  </xs:complexType>
+  <xs:complexType name="tEnumValue">
+    <xs:attribute name="name" type="xs:string" use="required" />
+    <xs:attribute name="init" type="xs:int" use="required" />
+  </xs:complexType>
+  <xs:complexType mixed="true" name="tFunctionType">
+    <xs:sequence minOccurs="0">
+      <xs:element maxOccurs="unbounded" name="Argument" type="tFunctionTypeArgument" />
+    </xs:sequence>
+    <xs:attribute name="id" type="xs:string" use="required" />
+    <xs:attribute name="returns" type="xs:string" use="required" />
+  </xs:complexType>
+  <xs:complexType name="tFunctionTypeArgument">
+    <xs:attribute name="type" type="xs:string" use="required" />
+  </xs:complexType>
+  <xs:complexType name="tOperatorFunction">
+    <xs:sequence>
+      <xs:element maxOccurs="unbounded" name="Argument" type="tOperationFunctionArgument" />
+    </xs:sequence>
+    <xs:attribute name="id" type="xs:string" use="required" />
+    <xs:attribute name="name" type="xs:string" use="required" />
+    <xs:attribute name="returns" type="xs:string" use="required" />
+    <xs:attribute name="throw" type="xs:string" use="optional" />
+    <xs:attribute name="context" type="xs:string" use="required" />
+    <xs:attribute name="mangled" type="xs:string" use="required" />
+    <xs:attribute name="demangled" type="xs:string" use="required" />
+    <xs:attribute name="location" type="xs:string" use="required" />
+    <xs:attribute name="file" type="xs:string" use="required" />
+    <xs:attribute name="line" type="xs:unsignedShort" use="required" />
+    <xs:attribute name="endline" type="xs:unsignedByte" use="optional" />
+    <xs:attribute name="inline" type="xs:unsignedByte" use="optional" />
+    <xs:attribute name="extern" type="xs:unsignedByte" use="optional" />
+  </xs:complexType>
+  <xs:complexType name="tOperationFunctionArgument" >
+    <xs:attribute name="type" type="xs:string" use="required" />
+    <xs:attribute name="location" type="xs:string" use="required" />
+    <xs:attribute name="file" type="xs:string" use="required" />
+    <xs:attribute name="line" type="xs:unsignedShort" use="required" />
+    <xs:attribute name="name" type="xs:string" use="optional" />
+  </xs:complexType>
+  <xs:complexType name="tArrayType">
+    <xs:attribute name="id" type="xs:string" use="required" />
+    <xs:attribute name="min" type="xs:unsignedByte" use="required" />
+    <xs:attribute name="max" type="xs:string" use="required" />
+    <xs:attribute name="type" type="xs:string" use="required" />
+    <xs:attribute name="size" type="xs:unsignedShort" use="optional" />
+    <xs:attribute name="align" type="xs:unsignedByte" use="required" />
+  </xs:complexType>
+  <xs:complexType name="tClass">
+    <xs:sequence minOccurs="0">
+      <xs:element maxOccurs="unbounded" name="Base" type="tBaseType" />
+    </xs:sequence>
+    <xs:attribute name="id" type="xs:string" use="required" />
+    <xs:attribute name="name" type="xs:string" use="required" />
+    <xs:attribute name="context" type="xs:string" use="required" />
+    <xs:attribute name="mangled" type="xs:string" use="required" />
+    <xs:attribute name="demangled" type="xs:string" use="required" />
+    <xs:attribute name="location" type="xs:string" use="required" />
+    <xs:attribute name="file" type="xs:string" use="required" />
+    <xs:attribute name="line" type="xs:unsignedShort" use="required" />
+    <xs:attribute name="artificial" type="xs:unsignedByte" use="required" />
+    <xs:attribute name="size" type="xs:unsignedShort" use="optional" />
+    <xs:attribute name="align" type="xs:unsignedByte" use="required" />
+    <xs:attribute name="members" type="xs:string" use="optional" />
+    <xs:attribute name="bases" type="xs:string" use="optional" />
+    <xs:attribute name="befriending" type="xs:string" use="optional" />
+    <xs:attribute name="abstract" type="xs:unsignedByte" use="optional" />
+    <xs:attribute name="incomplete" type="xs:unsignedByte" use="optional" />
+    <xs:attribute name="access" type="xs:string" use="optional" />
+  </xs:complexType>
+  <xs:complexType name="tBaseType">
+    <xs:attribute name="type" type="xs:string" use="required" />
+    <xs:attribute name="access" type="xs:string" use="required" />
+    <xs:attribute name="virtual" type="xs:unsignedByte" use="required" />
+    <xs:attribute name="offset" type="xs:unsignedByte" use="required" />
+  </xs:complexType>
+  <xs:complexType name="tField">
+    <xs:attribute name="id" type="xs:string" use="required" />
+    <xs:attribute name="name" type="xs:string" use="required" />
+    <xs:attribute name="type" type="xs:string" use="required" />
+    <xs:attribute name="offset" type="xs:unsignedShort" use="required" />
+    <xs:attribute name="context" type="xs:string" use="required" />
+    <xs:attribute name="access" type="xs:string" use="required" />
+    <xs:attribute name="location" type="xs:string" use="required" />
+    <xs:attribute name="file" type="xs:string" use="required" />
+    <xs:attribute name="line" type="xs:unsignedShort" use="required" />
+    <xs:attribute name="mutable" type="xs:unsignedByte" use="optional" />
+  </xs:complexType>
+  <xs:complexType name="tDestructor">
+    <xs:attribute name="id" type="xs:string" use="required" />
+    <xs:attribute name="name" type="xs:string" use="required" />
+    <xs:attribute name="artificial" type="xs:unsignedByte" use="optional" />
+    <xs:attribute name="throw" type="xs:string" use="optional" />
+    <xs:attribute name="context" type="xs:string" use="required" />
+    <xs:attribute name="access" type="xs:string" use="required" />
+    <xs:attribute name="mangled" type="xs:string" use="required" />
+    <xs:attribute name="demangled" type="xs:string" use="required" />
+    <xs:attribute name="location" type="xs:string" use="required" />
+    <xs:attribute name="file" type="xs:string" use="required" />
+    <xs:attribute name="line" type="xs:unsignedShort" use="required" />
+    <xs:attribute name="endline" type="xs:unsignedShort" use="optional" />
+    <xs:attribute name="inline" type="xs:unsignedByte" use="optional" />
+    <xs:attribute name="virtual" type="xs:unsignedByte" use="optional" />
+    <xs:attribute name="overrides" type="xs:string" use="optional" />
+    <xs:attribute name="extern" type="xs:unsignedByte" use="optional" />
+  </xs:complexType>
+  <xs:complexType name="tOperatorMethod">
+    <xs:sequence minOccurs="0">
+      <xs:element name="Argument" type="tOperatorArgument" />
+    </xs:sequence>
+    <xs:attribute name="id" type="xs:string" use="required" />
+    <xs:attribute name="name" type="xs:string" use="required" />
+    <xs:attribute name="returns" type="xs:string" use="required" />
+    <xs:attribute name="artificial" type="xs:unsignedByte" use="optional" />
+    <xs:attribute name="throw" type="xs:string" use="optional" />
+    <xs:attribute name="context" type="xs:string" use="required" />
+    <xs:attribute name="access" type="xs:string" use="required" />
+    <xs:attribute name="mangled" type="xs:string" use="required" />
+    <xs:attribute name="demangled" type="xs:string" use="required" />
+    <xs:attribute name="location" type="xs:string" use="required" />
+    <xs:attribute name="file" type="xs:string" use="required" />
+    <xs:attribute name="line" type="xs:unsignedShort" use="required" />
+    <xs:attribute name="endline" type="xs:unsignedShort" use="optional" />
+    <xs:attribute name="inline" type="xs:unsignedByte" use="optional" />
+    <xs:attribute name="extern" type="xs:unsignedByte" use="optional" />
+    <xs:attribute name="const" type="xs:unsignedByte" use="optional" />
+  </xs:complexType>
+  <xs:complexType name="tOperatorArgument">
+    <xs:attribute name="type" type="xs:string" use="required" />
+    <xs:attribute name="location" type="xs:string" use="required" />
+    <xs:attribute name="file" type="xs:string" use="required" />
+    <xs:attribute name="line" type="xs:unsignedShort" use="required" />
+    <xs:attribute name="name" type="xs:string" use="optional" />
+  </xs:complexType>
+  <xs:complexType name="tConstructor" mixed="true">
+    <xs:sequence minOccurs="0">
+      <xs:element maxOccurs="unbounded" name="Argument" type="tStrictFunctionArgument" />
+    </xs:sequence>
+    <xs:attribute name="id" type="xs:string" use="required" />
+    <xs:attribute name="name" type="xs:string" use="optional" />
+    <xs:attribute name="artificial" type="xs:unsignedByte" use="optional" />
+    <xs:attribute name="throw" type="xs:string" use="optional" />
+    <xs:attribute name="context" type="xs:string" use="required" />
+    <xs:attribute name="access" type="xs:string" use="required" />
+    <xs:attribute name="mangled" type="xs:string" use="required" />
+    <xs:attribute name="demangled" type="xs:string" use="required" />
+    <xs:attribute name="location" type="xs:string" use="required" />
+    <xs:attribute name="file" type="xs:string" use="required" />
+    <xs:attribute name="line" type="xs:unsignedShort" use="required" />
+    <xs:attribute name="endline" type="xs:unsignedShort" use="optional" />
+    <xs:attribute name="inline" type="xs:unsignedByte" use="optional" />
+    <xs:attribute name="explicit" type="xs:unsignedByte" use="optional" />
+    <xs:attribute name="extern" type="xs:unsignedByte" use="optional" />
+  </xs:complexType>
+  <!-- Strict means that more attributes are required -->
+  <xs:complexType name="tStrictFunctionArgument">
+    <xs:attribute name="name" type="xs:string" use="optional" />
+    <xs:attribute name="type" type="xs:string" use="required" />
+    <xs:attribute name="location" type="xs:string" use="required" />
+    <xs:attribute name="file" type="xs:string" use="required" />
+    <xs:attribute name="line" type="xs:unsignedShort" use="required" />
+    <xs:attribute name="default" type="xs:string" use="optional" />
+  </xs:complexType>
+  <!-- This means a constant or a volatile variable -->
+  <xs:complexType name="tCvQualifiedType">
+    <xs:attribute name="id" type="xs:string" use="required" />
+    <xs:attribute name="type" type="xs:string" use="required" />
+    <xs:attribute name="restrict" type="xs:unsignedByte" use="optional" />
+    <xs:attribute name="const" type="xs:unsignedByte" use="optional" />
+    <xs:attribute name="volatile" type="xs:unsignedByte" use="optional" />
+  </xs:complexType>
+  <xs:complexType name="tReferenceType">
+    <xs:attribute name="id" type="xs:string" use="required" />
+    <xs:attribute name="type" type="xs:string" use="required" />
+    <xs:attribute name="size" type="xs:unsignedByte" use="required" />
+    <xs:attribute name="align" type="xs:unsignedByte" use="required" />
+  </xs:complexType>
+  <xs:complexType name="tMethod">
+    <xs:sequence minOccurs="0">
+      <xs:element maxOccurs="unbounded" name="tStrictFunctionArgument" />
+    </xs:sequence>
+    <xs:attribute name="id" type="xs:string" use="required" />
+    <xs:attribute name="name" type="xs:string" use="required" />
+    <xs:attribute name="returns" type="xs:string" use="required" />
+    <xs:attribute name="context" type="xs:string" use="required" />
+    <xs:attribute name="access" type="xs:string" use="required" />
+    <xs:attribute name="mangled" type="xs:string" use="required" />
+    <xs:attribute name="demangled" type="xs:string" use="required" />
+    <xs:attribute name="location" type="xs:string" use="required" />
+    <xs:attribute name="file" type="xs:string" use="required" />
+    <xs:attribute name="line" type="xs:unsignedShort" use="required" />
+    <xs:attribute name="endline" type="xs:unsignedShort" use="optional" />
+    <xs:attribute name="inline" type="xs:unsignedByte" use="optional" />
+    <xs:attribute name="const" type="xs:unsignedByte" use="optional" />
+    <xs:attribute name="virtual" type="xs:unsignedByte" use="optional" />
+    <xs:attribute name="overrides" type="xs:string" use="optional" />
+    <xs:attribute name="throw" type="xs:string" use="optional" />
+    <xs:attribute name="extern" type="xs:unsignedByte" use="optional" />
+    <xs:attribute name="static" type="xs:unsignedByte" use="optional" />
+    <xs:attribute name="pure_virtual" type="xs:unsignedByte" use="optional" />
+  </xs:complexType>
+  <xs:complexType name="tConverter">
+    <xs:attribute name="id" type="xs:string" use="required" />
+    <xs:attribute name="name" type="xs:string" use="required" />
+    <xs:attribute name="returns" type="xs:string" use="required" />
+    <xs:attribute name="const" type="xs:unsignedByte" use="required" />
+    <xs:attribute name="context" type="xs:string" use="required" />
+    <xs:attribute name="access" type="xs:string" use="required" />
+    <xs:attribute name="mangled" type="xs:string" use="required" />
+    <xs:attribute name="demangled" type="xs:string" use="required" />
+    <xs:attribute name="location" type="xs:string" use="required" />
+    <xs:attribute name="file" type="xs:string" use="required" />
+    <xs:attribute name="line" type="xs:unsignedShort" use="required" />
+    <xs:attribute name="extern" type="xs:unsignedByte" use="required" />
+    <xs:attribute name="inline" type="xs:unsignedByte" use="required" />
+  </xs:complexType>
+  <xs:complexType name="tFile">
+    <xs:attribute name="id" type="xs:string" use="required" />
+    <xs:attribute name="name" type="xs:string" use="required" />
+  </xs:complexType>
+</xs:schema>

@@ -1,0 +1,520 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<?xml-stylesheet href="GraphicalXPL_Test1.xslt" type="text/xsl"?>
+<XPLDocument>
+  <DocumentData DocumentVersion="1.0">
+    <Config>
+      <LayerD_XPL_Document_Config>
+        <Language Source="Meta D++" StandardDefinitionFile="http://layerd.net/standards/metadpp/metadpp_standard_0_9.xml" SourceVersion="0.9"></Language>
+        <LayerDCompiler name="Meta D++ Compiler" version="Beta 0.960" companyName="LayerD.net" copyright="Copyright 2005-2007(R) LayerD.net"></LayerDCompiler>
+      </LayerD_XPL_Document_Config>
+    </Config>
+  </DocumentData>
+  <DocumentBody ldsrc="1,1,Tests\EjemploRefactor.dpp">
+    <Import ldsrc="1">
+      <ns>System</ns>
+      <ns>platform=DotNET</ns>
+      <ns>ns=DotNET</ns>
+      <ns>assembly=mscorlib</ns>
+    </Import>
+    <Using ldsrc="2">
+      <ns>DotNET::System</ns>
+    </Using>
+    <Using ldsrc="3">
+      <ns>DotNET::System::Collections</ns>
+    </Using>
+    <Using ldsrc="4">
+      <ns>Zoe</ns>
+    </Using>
+    <Namespace name="FirstProgram" ldsrc="6,56">
+      <Class name="HelloWorld" ldsrc="7,24">
+        <Function name="Main" access="public" storage="static" ldsrc="9,9">
+          <Parameters>
+            <P name="args" number="1">
+              <type ispointer="true" ldsrc="9">
+                <dt isarray="true">
+                  <dt ispointer="true">
+                    <dt typename="$STRING$"></dt>
+                    <pi ref="true"></pi>
+                  </dt>
+                </dt>
+                <pi ref="true"></pi>
+              </type>
+            </P>
+          </Parameters>
+          <ReturnType typename="$VOID$"></ReturnType>
+          <FunctionBody ldsrc="9,23">
+            <Decls>
+              <d name="varGrupo" ldsrc="10">
+                <type ispointer="true">
+                  <dt typename="Grupo"></dt>
+                  <pi ref="true"></pi>
+                </type>
+                <i ldsrc="10">
+                  <e>
+                    <new>
+                      <type typename="Grupo"></type>
+                    </new>
+                  </e>
+                </i>
+              </d>
+            </Decls>
+            <Decls>
+              <d name="varPersona" ldsrc="11">
+                <type ispointer="true">
+                  <dt typename="Persona"></dt>
+                  <pi ref="true"></pi>
+                </type>
+                <i ldsrc="11">
+                  <e>
+                    <new>
+                      <type typename="Persona"></type>
+                      <init ldsrc="11">
+                        <list>
+                          <e>
+                            <lit str="juan"></lit>
+                          </e>
+                        </list>
+                      </init>
+                    </new>
+                  </e>
+                </i>
+              </d>
+            </Decls>
+            <e ldsrc="12">
+              <fc>
+                <l>
+                  <bo op="m">
+                    <l>
+                      <n>varPersona</n>
+                    </l>
+                    <r>
+                      <n>setApellido</n>
+                    </r>
+                  </bo>
+                </l>
+                <args>
+                  <e>
+                    <lit str="perez"></lit>
+                  </e>
+                </args>
+              </fc>
+            </e>
+            <e ldsrc="13">
+              <fc>
+                <l>
+                  <bo op="m">
+                    <l>
+                      <n>varPersona</n>
+                    </l>
+                    <r>
+                      <n>setDireccion</n>
+                    </r>
+                  </bo>
+                </l>
+                <args>
+                  <e>
+                    <lit str="Colon 215"></lit>
+                  </e>
+                </args>
+              </fc>
+            </e>
+            <e doc="Agrego una persona" ldsrc="15">
+              <fc>
+                <l>
+                  <bo op="m">
+                    <l>
+                      <n>varGrupo</n>
+                    </l>
+                    <r>
+                      <n>Agregar</n>
+                    </r>
+                  </bo>
+                </l>
+                <args>
+                  <e>
+                    <n>varPersona</n>
+                  </e>
+                </args>
+              </fc>
+            </e>
+            <e ldsrc="16">
+              <a>
+                <l>
+                  <n>varPersona</n>
+                </l>
+                <r>
+                  <new>
+                    <type typename="Persona"></type>
+                    <init ldsrc="16">
+                      <list>
+                        <e>
+                          <lit str="Pedro"></lit>
+                        </e>
+                      </list>
+                    </init>
+                  </new>
+                </r>
+              </a>
+            </e>
+            <e ldsrc="17">
+              <fc>
+                <l>
+                  <bo op="m">
+                    <l>
+                      <n>varPersona</n>
+                    </l>
+                    <r>
+                      <n>setApellido</n>
+                    </r>
+                  </bo>
+                </l>
+                <args>
+                  <e>
+                    <lit str="Picapiedras"></lit>
+                  </e>
+                </args>
+              </fc>
+            </e>
+            <e ldsrc="18">
+              <fc>
+                <l>
+                  <bo op="m">
+                    <l>
+                      <n>varPersona</n>
+                    </l>
+                    <r>
+                      <n>setDireccion</n>
+                    </r>
+                  </bo>
+                </l>
+                <args>
+                  <e>
+                    <lit str="Antiguedad"></lit>
+                  </e>
+                  <e>
+                    <lit str="150" type="integer"></lit>
+                  </e>
+                </args>
+              </fc>
+            </e>
+            <e doc="Agrego otra persona" ldsrc="20">
+              <fc>
+                <l>
+                  <bo op="m">
+                    <l>
+                      <n>varGrupo</n>
+                    </l>
+                    <r>
+                      <n>Agregar</n>
+                    </r>
+                  </bo>
+                </l>
+                <args>
+                  <e>
+                    <n>varPersona</n>
+                  </e>
+                </args>
+              </fc>
+            </e>
+            <e doc="Borro todo" ldsrc="22">
+              <fc>
+                <l>
+                  <bo op="m">
+                    <l>
+                      <n>varGrupo</n>
+                    </l>
+                    <r>
+                      <n>Borrar</n>
+                    </r>
+                  </bo>
+                </l>
+                <args></args>
+              </fc>
+            </e>
+          </FunctionBody>
+        </Function>
+      </Class>
+      <Class name="Persona" access="public" ldsrc="25,45">
+        <Field name="_nombre" ldsrc="26,26">
+          <type ispointer="true">
+            <dt typename="$STRING$"></dt>
+            <pi ref="true"></pi>
+          </type>
+        </Field>
+        <Field name="_apellido" ldsrc="27,27">
+          <type ispointer="true">
+            <dt typename="$STRING$"></dt>
+            <pi ref="true"></pi>
+          </type>
+        </Field>
+        <Field name="_direccion" ldsrc="28,28">
+          <type ispointer="true">
+            <dt typename="$STRING$"></dt>
+            <pi ref="true"></pi>
+          </type>
+        </Field>
+        <Field name="_numero" ldsrc="29,29">
+          <type typename="$INTEGER$"></type>
+        </Field>
+        <Function name="Persona" access="public" ldsrc="31,31">
+          <Parameters>
+            <P name="nombre" number="1">
+              <type ispointer="true" ldsrc="31">
+                <dt typename="$STRING$"></dt>
+                <pi ref="true"></pi>
+              </type>
+            </P>
+          </Parameters>
+          <ReturnType></ReturnType>
+          <FunctionBody ldsrc="31,33">
+            <e ldsrc="32">
+              <a>
+                <l>
+                  <n>_nombre</n>
+                </l>
+                <r>
+                  <n>nombre</n>
+                </r>
+              </a>
+            </e>
+          </FunctionBody>
+        </Function>
+        <Function name="setApellido" access="public" ldsrc="34,34">
+          <Parameters>
+            <P name="apellido" number="1">
+              <type ispointer="true" ldsrc="34">
+                <dt typename="$STRING$"></dt>
+                <pi ref="true"></pi>
+              </type>
+            </P>
+          </Parameters>
+          <ReturnType typename="$VOID$"></ReturnType>
+          <FunctionBody ldsrc="34,36">
+            <e ldsrc="35">
+              <a>
+                <l>
+                  <n>_apellido</n>
+                </l>
+                <r>
+                  <n>apellido</n>
+                </r>
+              </a>
+            </e>
+          </FunctionBody>
+        </Function>
+        <Function name="setDireccion" access="public" ldsrc="37,37">
+          <Parameters>
+            <P name="direccion" number="1">
+              <type ispointer="true" ldsrc="37">
+                <dt typename="$STRING$"></dt>
+                <pi ref="true"></pi>
+              </type>
+            </P>
+          </Parameters>
+          <ReturnType typename="$VOID$"></ReturnType>
+          <FunctionBody ldsrc="37,40">
+            <e ldsrc="38">
+              <a>
+                <l>
+                  <n>_direccion</n>
+                </l>
+                <r>
+                  <fc>
+                    <l>
+                      <bo op="m">
+                        <l>
+                          <n>direccion</n>
+                        </l>
+                        <r>
+                          <n>Substring</n>
+                        </r>
+                      </bo>
+                    </l>
+                    <args>
+                      <e>
+                        <lit str="0" type="integer"></lit>
+                      </e>
+                      <e>
+                        <fc>
+                          <l>
+                            <bo op="m">
+                              <l>
+                                <n>direccion</n>
+                              </l>
+                              <r>
+                                <n>IndexOf</n>
+                              </r>
+                            </bo>
+                          </l>
+                          <args>
+                            <e>
+                              <lit str=" "></lit>
+                            </e>
+                          </args>
+                        </fc>
+                      </e>
+                    </args>
+                  </fc>
+                </r>
+              </a>
+            </e>
+            <e ldsrc="39">
+              <a>
+                <l>
+                  <n>_numero</n>
+                </l>
+                <r>
+                  <fc>
+                    <l>
+                      <n>Convert::ToInt32</n>
+                    </l>
+                    <args>
+                      <e>
+                        <fc>
+                          <l>
+                            <bo op="m">
+                              <l>
+                                <n>direccion</n>
+                              </l>
+                              <r>
+                                <n>Substring</n>
+                              </r>
+                            </bo>
+                          </l>
+                          <args>
+                            <e>
+                              <fc>
+                                <l>
+                                  <bo op="m">
+                                    <l>
+                                      <n>direccion</n>
+                                    </l>
+                                    <r>
+                                      <n>IndexOf</n>
+                                    </r>
+                                  </bo>
+                                </l>
+                                <args>
+                                  <e>
+                                    <lit str=" "></lit>
+                                  </e>
+                                </args>
+                              </fc>
+                            </e>
+                          </args>
+                        </fc>
+                      </e>
+                    </args>
+                  </fc>
+                </r>
+              </a>
+            </e>
+          </FunctionBody>
+        </Function>
+        <Function name="setDireccion" access="public" ldsrc="41,41">
+          <Parameters>
+            <P name="direccion" number="1">
+              <type ispointer="true" ldsrc="41">
+                <dt typename="$STRING$"></dt>
+                <pi ref="true"></pi>
+              </type>
+            </P>
+            <P name="numero" number="2">
+              <type typename="$INTEGER$" ldsrc="41"></type>
+            </P>
+          </Parameters>
+          <ReturnType typename="$VOID$"></ReturnType>
+          <FunctionBody ldsrc="41,44">
+            <e ldsrc="42">
+              <a>
+                <l>
+                  <n>_direccion</n>
+                </l>
+                <r>
+                  <n>direccion</n>
+                </r>
+              </a>
+            </e>
+            <e ldsrc="43">
+              <a>
+                <l>
+                  <n>_numero</n>
+                </l>
+                <r>
+                  <n>numero</n>
+                </r>
+              </a>
+            </e>
+          </FunctionBody>
+        </Function>
+      </Class>
+      <Class name="Grupo" access="public" ldsrc="46,55">
+        <Field name="lista" ldsrc="47,47">
+          <type ispointer="true">
+            <dt typename="ArrayList"></dt>
+            <pi ref="true"></pi>
+          </type>
+          <i ldsrc="47">
+            <e>
+              <new>
+                <type typename="ArrayList"></type>
+              </new>
+            </e>
+          </i>
+        </Field>
+        <Function name="Agregar" access="public" ldsrc="49,49">
+          <Parameters>
+            <P name="persona" number="1">
+              <type ispointer="true" ldsrc="49">
+                <dt typename="Persona"></dt>
+                <pi ref="true"></pi>
+              </type>
+            </P>
+          </Parameters>
+          <ReturnType typename="$VOID$"></ReturnType>
+          <FunctionBody ldsrc="49,51">
+            <e ldsrc="50">
+              <fc>
+                <l>
+                  <bo op="m">
+                    <l>
+                      <n>lista</n>
+                    </l>
+                    <r>
+                      <n>Add</n>
+                    </r>
+                  </bo>
+                </l>
+                <args>
+                  <e>
+                    <n>persona</n>
+                  </e>
+                </args>
+              </fc>
+            </e>
+          </FunctionBody>
+        </Function>
+        <Function name="Borrar" access="public" ldsrc="52,52">
+          <ReturnType typename="$VOID$"></ReturnType>
+          <FunctionBody ldsrc="52,54">
+            <e ldsrc="53">
+              <fc>
+                <l>
+                  <bo op="m">
+                    <l>
+                      <n>lista</n>
+                    </l>
+                    <r>
+                      <n>Clear</n>
+                    </r>
+                  </bo>
+                </l>
+                <args></args>
+              </fc>
+            </e>
+          </FunctionBody>
+        </Function>
+      </Class>
+    </Namespace>
+  </DocumentBody>
+</XPLDocument>

@@ -1,0 +1,24 @@
+// Ternary boolean operator test, test for C# reserved words (C# Zoe code generator), test for float constants
+import "Microsoft", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+using DotNET::System;
+using DotNET::System::Collections;
+
+namespace FirstProgram{
+	class HelloWorld{
+		static const string^ hello = "Hello World";
+	public:
+		static void Main(string^[] args){
+			int event = 12;
+			// Uncomment following line for false test
+			// Console::WriteLine("Ternary operator test: " + (12f ? "Hello" : 12));
+			Console::WriteLine("Ternary operator test: " + (true ? "Hello" : "Hola"));
+			Console::WriteLine("Ternary operator test: " + (false ? "Hello" : "Hola"));
+			Console::WriteLine(HelloWorld::hello);
+			Console::WriteLine(hello + event.ToString());
+			float a = 0;
+			a = 12.34f;
+			event = (int)a;
+		}
+	}
+}

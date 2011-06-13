@@ -1,0 +1,1906 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!--
+	Revisar los espacios de nombres !!!
+-->
+<xs:schema id="ZOE-1.0-Beta2" 
+            targetNamespace="http://layerd.net/ZOE/ZOE-1-Beta2.xsd"
+            elementFormDefault="qualified"
+            xmlns="http://layerd.net/ZOE/ZOE-1-Beta2.xsd"
+            xmlns:zoe="http://layerd.net/ZOE/ZOE-1-Beta2.xsd"
+            xmlns:xs="http://www.w3.org/2001/XMLSchema">
+                  
+	<!-- Este es el elemento Principal del Documento LayerD-Zoe -->
+	<xs:element name="ZoeDocument" type="tDocument"></xs:element>
+	<xs:complexType name="tDocument">
+		<xs:sequence>
+			<xs:element name="DocumentData" type="tDocumentData"></xs:element>
+			<xs:element name="DocumentBody" type="tDocumentBody"></xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<!-- Primero se describen los elementos de la seccion DocumentData-->
+	<xs:complexType name="tDocumentData">
+		<!-- El tipo tDocumentData debe permitir incluir información para lo siguiente:
+				- El documento fuente en el que se define, como historial, archivo fuente origen,
+				tipo de documento (Zoe, EZoe, InfoModulodeSalida, RequerimientosEZoe, InfodePrograma, etc),
+				version de documento.
+				- Para el caso de un info de Zoe o EZoe no debe incluir mucho mas que cosas
+				como el documento origen, el generador, la version, el programa al q pertenece, etc.
+				- Para la definicion de un programa debe incluir info de los archivos fuentes Zoe q 
+				componen el programa, info de las plataformas q se pretenden compilar, quizas
+				informacion de configuraciones como Debug, Release, etc. Info de los requerimientos
+				de caracteristicas para cada plataforma (como clase de modulo de salida o detallado),
+				el tipo de modulo a generar (ejecutable, biblioteca, etc).
+				- Para el caso de EZoe la info de los docuemtos origen, version, plataforma, quizas
+				configuracion (release, debug...), generador, etc.
+				- Para el caso de Info de Modulo de Salida: lista de plataformas soportadas, con
+				caracteristicas soportadas para cada plataforma, version, quizas info de los parametros
+				soportados y de los parametros permitidos en Imports.
+				- Para los Requerimientos EZoe se, justamente eso, version y caracteristicas requeridas, como
+				tipo de expresiones, metodizacion de operadores, aseguramiento de orden de ejecucion de 
+				argumentos, etc.
+				- Tambien puede definirse un tipo de documento de intercambio de errores y advertencias.
+				Tipos de documento de Subprograma Virtual y Documento Parametro y Documento Resultado...
+		-->
+		<xs:sequence>
+			<xs:element name="Title" type="xs:string" minOccurs="0"></xs:element>
+			<xs:element name="Original" type="tFileData" minOccurs="0"></xs:element>
+			<xs:element name="Copyright" type="tCopyright" minOccurs="0"></xs:element>			
+			<xs:element name="Config" type="tConfig" minOccurs="1"></xs:element>			
+			<xs:element name="Documentation" type="tdocumentation" minOccurs="0"></xs:element>
+		</xs:sequence>
+		<xs:attribute name="DocumentType" type="tdocumenttype.enum"  default="layerd_zoe_doc"></xs:attribute>
+		<xs:attribute name="DocumentVersion" type="xs:string" use="required"></xs:attribute>
+		<xs:attribute name="ExternConfig" type="xs:string" use="optional"></xs:attribute>
+	</xs:complexType>
+	
+	<xs:complexType name="tCopyright">
+		<xs:attribute name="copyrightMessage" type="xs:string" use="required"></xs:attribute>
+		<xs:attribute name="company" type="xs:string" use="optional"></xs:attribute>
+		<xs:attribute name="productName" type="xs:string" use="optional"></xs:attribute>
+		<xs:attribute name="productVersion" type="xs:string" use="optional"></xs:attribute>
+		<xs:attribute name="productLicense" type="xs:string" use="optional"></xs:attribute>
+		<xs:attribute name="description" type="xs:string" use="optional"></xs:attribute>
+		<xs:attribute name="contactInfo" type="xs:string" use="optional"></xs:attribute>
+	</xs:complexType>
+	
+	<xs:complexType name="tLayerDCompiler">
+		<xs:attribute name="name" type="xs:string" use="required"></xs:attribute>
+		<xs:attribute name="version" type="xs:string" use="required"></xs:attribute>
+		<xs:attribute name="companyName" type="xs:string" use="optional"></xs:attribute>
+		<xs:attribute name="copyright" type="xs:string" use="optional"></xs:attribute>
+	</xs:complexType>
+
+	<xs:complexType name="tFileData">
+		<xs:attribute name="Autor" type="xs:string" use="optional"></xs:attribute>
+		<xs:attribute name="Date" type="xs:date" use="optional"></xs:attribute>
+		<xs:attribute name="Time" type="xs:time" use="optional"></xs:attribute>
+		<xs:attribute name="Description" type="xs:string" use="optional"></xs:attribute>
+	</xs:complexType>
+
+	<xs:complexType name="tLanguage">
+		<xs:attribute name="Source" type="xs:string" use="required"></xs:attribute>
+    <xs:attribute name="StandardDefinitionFile" type="xs:string" use="optional"></xs:attribute>
+		<xs:attribute name="SourceVersion" type="xs:string" use="optional"></xs:attribute>
+		<xs:attribute name="Destination" type="xs:string" use="optional"></xs:attribute>
+	</xs:complexType>
+	
+	<xs:complexType name="tConfig">
+		<xs:choice>
+			<xs:element name="LayerD_Zoe_Document_Config" type="tLayerDZoeDocumentConfig">
+        <!--Configuracion e información de un Documento Zoe, parte de un Programa Zoe.-->
+      </xs:element>
+			<xs:element name="Extended_LayerD_Zoe_Document_Config" type="tExtendedLayerDZoeDocumentConfig">
+        <!--Configuracion e información de un Documento Extended-Zoe.-->
+      </xs:element>
+			<xs:element name="LayerD_Zoe_Program_Config" type="tLayerDZoeProgramConfig">
+        <!--Configuración de un archivo de Programa Zoe.-->
+      </xs:element>
+      <xs:element name="Import_Process_Config" type="tImportProcessConfig">
+        <!--Configuración de un archivo de Solicitud de Procesamiento de Imports.-->
+      </xs:element>
+			<xs:element name="Info_LayerD_Zoe_Output_Module" type="tInfoLayerZoeOutputModuleConfig">
+        <!--Información de un Modulo de Salida Zoe.-->
+      </xs:element>
+			<xs:element name="Requirements_Extended_LayerD_Zoe" type="tExtendedLayerDZoeRequirementsConfig">
+        <!--Información de Requerimientos de código Extended Zoe de un Modulo de Salida Zoe.-->
+      </xs:element>
+			<xs:element name="LayerD_Error_Interchange_Config" type="tLayerDErrorInterchangeConfig">
+        <!--Elemento para un Documento de Intercambio de Errores estándar LayerD.-->
+      </xs:element>
+			<xs:element name="LayerD_Zoe_Virutal_Subprogram_Config" type="tLayerDZoeDocumentConfig">
+        <!--Configuración de un Subprograma Virtual Zoe.-->
+      </xs:element>
+			<xs:element name="LayerD_Zoe_Parameter_Document_Config" type="tLayerDZoeDocumentConfig">
+        <!--Configuración de un Documento Parametro Zoe.-->
+      </xs:element>
+		</xs:choice>
+	</xs:complexType>
+
+  <xs:complexType name="tImportProcessConfig">
+    <xs:attribute name="OutputFolder" type="xs:string" use="required">
+      <!--El nombre del directorio completo requerido para la salida del proceso de importacion.-->
+    </xs:attribute>
+    <xs:attribute name="OutputPrefix" type="xs:string" use="optional">
+      <!--El prefijo a utilizar en los archivos para la salida del proceso de importacion.-->
+    </xs:attribute>
+    <xs:attribute name="ErrorsFileName" type="xs:string" use="required">
+      <!--El nombre de archivo completo requerido para la salida de archivo de intercambio de errores.-->
+    </xs:attribute>
+  </xs:complexType>
+  
+	<xs:complexType name="tInfoLayerZoeOutputModuleConfig">
+		<xs:sequence>
+			<xs:element name="SupportedPlatform" type="tTargetPlatform" minOccurs="1" maxOccurs="unbounded"></xs:element>
+			<xs:element name="PlatformAlias" type="tPlatformAlias" minOccurs="0" maxOccurs="unbounded"></xs:element>
+			<xs:element name="Capabilities" type="tOutputModuleCapabilities" minOccurs="1" maxOccurs="1"></xs:element>
+		</xs:sequence>
+		<xs:attribute name="name" type="xs:string" use="required">
+			<!--Nombre publico del Modulo de Salida LayerD-Zoe.-->
+		</xs:attribute>
+		<xs:attribute name="especifiedClass" type="xs:string" use="optional">
+			<!--Indica la clase especificada de Modulo de Salida LayerD-Zoe (A,B,C,D,R,X). De todas formas el compilador LayerD-Zoe la determina de acuerdo a la información de capacidades proporcionada.-->
+		</xs:attribute>
+		<xs:attribute name="defaultPlatform" type="xs:string" use="optional">
+			<!--La cadena identificadora de la plataforma de salida por defecto. Debe coincidir con la cadena de identificación de una de las plataformas enumeradas como soportadas.-->
+		</xs:attribute>
+	</xs:complexType>
+	
+	<xs:complexType name="tOutputModuleCapabilities">
+		<xs:sequence>
+			<xs:element name="GarbageCollector" type="tGarbageCollector" minOccurs="0" maxOccurs="unbounded">
+			<!--Una coleccion con información de los Garbage Collectors que estan disponibles. Si no se incluye se asume uno solo disponible.-->
+			</xs:element>
+		</xs:sequence>
+		<xs:attribute name="IsCaseSensitive" type="xs:boolean" default="true">
+			<!--Indica si los identificadores se soportan "caseSensitive" o no.-->
+		</xs:attribute>
+		<xs:attribute name="AllowDefaultSafeArrays" type="xs:boolean" default="false">
+			<!--Indica si se permite establecer una clase para la implementación de arrays.-->
+		</xs:attribute>
+		<xs:attribute name="AllowDisableArrayLimitsChecks" type="xs:boolean" default="false">
+			<!--Indica si se permite que se deshabilite el chequeo de limites en matrices.-->
+		</xs:attribute>
+		<xs:attribute name="AllowUseSinglePointAsNamespaceSeparator" type="xs:boolean" default="false">
+			<!--Indica si se permite que se utiliza el punto "." como separador de espacio de nombres en lugar de "::".-->
+		</xs:attribute>
+		<xs:attribute name="AllowUseSimpleMemberAccessAsNamespaceSeparator" type="xs:boolean" default="false">
+			<!--Indica si se permite que las expresiones binarias de acceso a miembro simple se refieran a espacios de nombres.-->
+		</xs:attribute>
+		<xs:attribute name="AllowMultipleInheritance" type="xs:boolean" default="false">
+			<!--Indica si se soporta el modelo de herencia multiple.-->
+		</xs:attribute>
+		<xs:attribute name="UseUniversalObjectBase" type="xs:boolean" default="true">
+			<!--Indica si se utiliza "System::Object" u otra clase como base de todas las clases o no. Al deshabilitar, tambien se deshabilitan todas las conversiones de empaquetad y desempaquetado por defecto.-->
+		</xs:attribute>
+		<xs:attribute name="AllowSetUniversalObjectBase" type="xs:boolean" default="false">
+			<!--Inidica si se permite establcer la clase a utilizar como clase base universal.-->
+		</xs:attribute>
+		<xs:attribute name="AllowDisableUnifiedTypeSystem" type="xs:boolean" default="false">
+			<!--Indica si se permite deshabilitar el sistema unificado de tipos.-->
+		</xs:attribute>
+		<xs:attribute name="AllowEnableIntegerOverflowExceptions" type="xs:boolean" default="false">
+			<!--Inidica si se permite que se emitan excepciones al producirse Overflows en operaciones con enteros.-->
+		</xs:attribute>
+		<xs:attribute name="AllowEnableFloatOperationsExceptions" type="xs:boolean" default="false">
+			<!--Indica si se permite habilitar excepciones al producirse errores en operaciones de punto flotante.-->
+		</xs:attribute>
+		<xs:attribute name="RequireIntegerOverflowExceptions" type="xs:boolean" default="false">
+			<!--Inidica que se fuerza a lanzar excepciones al producirce integer overflows.-->
+		</xs:attribute>
+		<xs:attribute name="RequireFloatOperationsExceptions" type="xs:boolean" default="false">
+			<!--Indica que se fuerza a lanzar excepciones al producirse errores con operaciones de punto flotante.-->
+		</xs:attribute>
+		<xs:attribute name="FullDecimalImplementation" type="xs:boolean" default="true">
+			<!--Indica que la implementacion del tipo "decimal" es correcta y completa, no simulada con "double".-->
+		</xs:attribute>
+		<!-- SOPORTE DE TIPOS -->
+		<xs:attribute name="SupportASCIIChar" type="xs:boolean" default="false">
+			<!--Indica que se soporta el tipo ASCIIChar.-->
+		</xs:attribute>
+		<xs:attribute name="SupportASCIIString" type="xs:boolean" default="false">
+			<!--Indica que se soporta el tipo ASCIIString.-->
+		</xs:attribute>
+		<xs:attribute name="SupportUnsignedIntegers" type="xs:boolean" default="true">
+			<!--Indica que son soportados los tipos enteros sin signo.-->
+		</xs:attribute>
+		<xs:attribute name="SupportExtendedValueTypes" type="xs:boolean" default="true">
+			<!--Indica que soporta estructuras como variables de pila, parametros, tipo de retorno y campos.-->
+		</xs:attribute>
+		<xs:attribute name="SupportExtendedReferenceTypes" type="xs:boolean" default="true">
+			<!--Indica que soporta parametros por referencia para BasicValueTypes, BasicReferenceTypes, y ExtendedValueTypes en caso de soportarlos.-->
+		</xs:attribute>
+		<xs:attribute name="SupportFunctionPointerTypes" type="xs:boolean" default="true">
+			<!--Indica que soporta tipos de puntero a función.-->
+		</xs:attribute>
+		<xs:attribute name="SupportExtendedTypes" type="xs:boolean" default="true">
+			<!--Soporta todo otro tipo derivado, como punteros de más de un nivel de indirección de cualquier tipo.-->
+		</xs:attribute>
+		<!-- FIN SOPORTE DE TIPOS -->
+		<xs:attribute name="AllowSetASCIIStringClass" type="xs:boolean" default="false">
+			<!--Indica que se permite establecer la clase a utilizar para implementar el tipo ASCIIString.-->
+		</xs:attribute>
+		<xs:attribute name="AllowSetStringClass" type="xs:boolean" default="false">
+			<!--Indica que se permite establecer la clase a utilizar para implementar el tipo String.-->
+		</xs:attribute>
+		<xs:attribute name="AllowDisableNullReferenceCheckOnMemberAccess" type="xs:boolean" default="false">
+			<!--Indica si se permite deshabilitar el chequeo de puntero nulo en operaciones de acceso a miembros en punteros a tipos definidos por el usuario.-->
+		</xs:attribute>
+		<xs:attribute name="SupportPointerArithmetics" type="xs:boolean" default="false">
+			<!--Indica que se soporta aritmetica de punteros (+,-).-->
+		</xs:attribute>
+		<xs:attribute name="AllowSetNullIntegerValue" type="xs:boolean" default="false">
+			<!--Indica que se permite establece el valor de "null" a un valor diferente a todos los bits en 0.-->
+		</xs:attribute>
+		<xs:attribute name="NullIntegerValue" type="xs:integer" use="optional">
+			<!--Establece el valor de "null" a un valor diferente a todos los bits en 0.-->
+		</xs:attribute>
+		<xs:attribute name="AllowDisableBaseTypesArrayItemsInitialization" type="xs:boolean" default="false">
+			<!--Indica que se permite que no se inicialize los elementos de los array con elementos de tipos basicos a su valor por defecto.-->
+		</xs:attribute>
+		<xs:attribute name="AllowDisableStaticsVarsInitialization" type="xs:boolean" default="false">
+			<!--Indica que se permite que no se inicializen las variables estaticas al valor por defecto, solo aplicable a los tipos basicos.-->
+		</xs:attribute>
+		<xs:attribute name="AllowDisableInstanceVarsInitialization" type="xs:boolean" default="false">
+			<!--Indica que se permite que no se inicializen las variables de instancia al valor por defecto, solo aplicable a los tipos basicos.-->
+		</xs:attribute>
+		<xs:attribute name="AllowIgnorePreviousAssingmentRules" type="xs:boolean" default="true">
+			<!--Indica que se permite que no se controlen las reglas de asignación previa a variables locales por parte del compilador LayerD-Zoe. Aún así algunos modulos de salida pueden forzar el chequeo de la asignación previa.-->
+		</xs:attribute>
+		<xs:attribute name="AllowDisableAddressOfExpressionRequirementOnOutArguments" type="xs:boolean" default="false">
+			<!--Indica que se permite que se deshabilite el requerimiento de expresiones "direccion de" en argumentos de invocación que se correspondan con parametros de tipo "out" o "inout".-->
+		</xs:attribute>
+		<xs:attribute name="AllowFinalizeMethod" type="xs:boolean" default="true">
+			<!--Indica que se soporta el metodo Finalize diferenciado de los destructores.-->
+		</xs:attribute>
+		<xs:attribute name="AllowNonNormalVirtualFunctionCallsOnConstructorsBody" type="xs:boolean" default="false">
+			<!--Indica permite no utilizar llamadas virtuales en constructores.-->
+		</xs:attribute>
+		<xs:attribute name="AllowSelectiveVirtualMembers" type="xs:boolean" default="true">
+			<!--Indica que soporta miembros virtuales selectivamente. Si es "false" se supone que la sobreescritura se aplicara automáticamente cuando la firma de un metodo coincida.-->
+		</xs:attribute>
+		<xs:attribute name="AllowNonLimitedGotos" type="xs:boolean" default="false">
+			<!--Indica que soporta semática no limitada de instrucciones "goto".-->
+		</xs:attribute>
+		<xs:attribute name="AllowSetRuntimeTypeInformation" type="xs:boolean" default="true">
+			<!--Indica que permite establecer si se requiere información de tipos en tiempo de ejecución para el programa o no.-->
+		</xs:attribute>
+		<xs:attribute name="AllowSetRuntimeReflection" type="xs:boolean" default="false">
+			<!--Indica que permite establecer si se requiere reflexion de tipos en tiempo de ejecución.-->
+		</xs:attribute>		
+		<xs:attribute name="AllowLimitRuntimeReflectionToModuleOnly" type="xs:boolean" default="false">
+			<!--Indica que se permite limitar la capacidad de reflexion sólo al modulo.-->
+		</xs:attribute>
+		<xs:attribute name="AllowResumeExceptionModel" type="xs:boolean" default="false">
+			<!--Indica si soporta el modelo de errores por continuación.-->
+		</xs:attribute>
+		<xs:attribute name="AllowTerminationExceptionModel" type="xs:boolean" default="true">
+			<!--Inidica si soporta el modelo de errores por terminación.-->
+		</xs:attribute>
+		<xs:attribute name="AllowFinallyBlocks" type="xs:boolean" default="true">
+			<!--Inidica si soporta bloques "finally" en el modelo de errores por terminación.-->
+		</xs:attribute>
+		<xs:attribute name="AllowResumeNext" type="xs:boolean" default="true">
+			<!--Inidica si soporta la instrucción "resume next" en el modelo de errores por continuación.-->
+		</xs:attribute>
+		<xs:attribute name="AllowMixedExceptionModel" type="xs:boolean" default="false">
+			<!--Inidica si soporta la utilización combinada de los modelos de control de errores.-->
+		</xs:attribute>
+		<xs:attribute name="AllowAnyTypeExceptions" type="xs:boolean" default="false">
+			<!--Inidica si soporta cualquier tipo para ser lanzado o capturado como excepción.-->
+		</xs:attribute>
+		<xs:attribute name="AllowStackVarsAsExceptions" type="xs:boolean" default="true">
+			<!--Inidica si soporta variables de almacenamiento de pila a ser lanzadas como excepciones.-->
+		</xs:attribute>
+		<xs:attribute name="AllowRuntimeChecksFragmentedConfiguration" type="xs:boolean" default="false">
+			<!--Inidica si permite establecer los controles de tiempo de ejecución (como chequeo de punteros nulos, overflow y limites de matrices) en regiones de código en lugar de sólo a todo un programa.-->
+		</xs:attribute>
+		<xs:attribute name="SupportedOperators" type="xs:string" use="optional">
+			<!--Si se proporciona una cadena indica los operadores soportados a sobrecargar separada por comas.-->
+		</xs:attribute>
+	</xs:complexType>
+	
+	<xs:complexType name="tExtendedLayerDZoeRequirementsConfig">
+		<xs:attribute name="ConvertUserTypesPointersToReferencies" type="xs:boolean" default="false">
+			<!--Indica si se deben convertir los punteros a tipos definidos por el usuario con un nivel de indirección (o dos para parametros out o inout) a punteros con semántica de referencia, incluyendo la conversion de las expresiones de acceso a miembro y expresiones de indirección seguidas de accesos a miembros o llamada a función.-->
+		</xs:attribute>
+		<xs:attribute name="MarkStructTypeNames" type="xs:boolean" default="false">
+			<!--Indica si se deben marcar los nombres de tipos de estructura con el prefijo especial "$s$" o no.-->
+		</xs:attribute>
+		<xs:attribute name="GuaranteeArgumentExpressionsExecutionOrder" type="xs:boolean" default="false">
+			<!--Indica si se debe garantizar el orden de ejecución de expresiones de argumentos de invocación generando variables temporales, ejecutando en instrucciones ordenadas y separadas cada expresión proporcionada como argumento a una invocación diferente a una referencia simple a una variable.-->
+		</xs:attribute>
+		<xs:attribute name="ConvertSupportedOperatorsToMethods" type="xs:boolean" default="false">
+			<!--Indica que se conviertan todos los operadores definidos por el usuario, incluidos los operadores soportados, a metodos ordinarios. Tanto la definición en clases como la invocación en código cliente.-->
+		</xs:attribute>
+		<xs:attribute name="ConvertAllExplicitOperatorsToMethods" type="xs:boolean" default="false">
+			<!--Inidica si se convertiran todas las invocaciones de operadores de conversión explicita a invocaciones a metodos ordinarios. También convierte la definición en clases de dichos operadores.-->
+		</xs:attribute>
+		<xs:attribute name="ConvertAllImplicitOperatorsToMethods" type="xs:boolean" default="false">
+			<!--Inidica si se convertiran todas las invocaciones de operadores de conversión implicita a invocaciones a metodos ordinarios. También convierte la definición en clases de dichos operadores.-->
+		</xs:attribute>
+		<xs:attribute name="ConvertIndexerCallsToMethodCalls" type="xs:boolean" default="false">
+			<!--Indica si se deben convertir invocaciones de lectura o escritura de indexadores a invocaciones ordinarias a metodos.-->
+		</xs:attribute>
+		<xs:attribute name="MarkIndexerCalls" type="xs:boolean" default="false">
+			<!--Indica si se deben marcar expresiones de referencia a miembro simple cuando es una invocación al acceso de lectura de un indexador y las expresiones de invocación de corchetes cuando es invocado el acceso de escritura de un indexador.-->
+		</xs:attribute>
+		<xs:attribute name="ConvertPropertyCallsToMethodCalls" type="xs:boolean" default="false">
+			<!--Indica si se deben convertir los accesos de lectura y escritura de propiedades a lectura y escritura de propiedades. Incluye la definicion de los metodos apropiados en la declaración de la clase.-->
+		</xs:attribute>		
+		<xs:attribute name="MarkPropertyCalls" type="xs:boolean" default="false">
+			<!--Indica si deben marcarse los accesos de lectura y escritura de propiedades.-->
+		</xs:attribute>
+		<xs:attribute name="UseDefaultForeachImplementation" type="xs:boolean" default="false">
+			<!--Inidica que se utilice la implementación por defecto, proporcionada por el compilador LayerD-Zoe utilizando instrucciones estándar for, de las instrucciones foreach.-->
+		</xs:attribute>
+		<xs:attribute name="MarkBoxingOperations" type="xs:boolean" default="false">
+			<!--Convierte las operaciones de empaquetado implicita en operaciones explicitas de invocación al metodo "System::CompilerServices::BoxValue(value)".-->
+		</xs:attribute>
+		<xs:attribute name="MarkUnboxingOperations" type="xs:boolean" default="false">
+			<!--Convierte las operaciones de desempaquetado de expresiones cast ordinarias a expresiones de invocación explicitas al metodo "System::CompilerServices::UnboxValue(box)".-->
+		</xs:attribute>
+		<xs:attribute name="MarkCallMode" type="xs:boolean" default="false">
+			<!--Indica si se marcan las expresiones de invocación a función como invocación virtual o no virtual.-->
+		</xs:attribute>
+		<xs:attribute name="MarkObjectMembersFunctionCalls" type="xs:boolean" default="false">
+			<!--Indica si se deben marcarse las llamadas a función a la clase base universal.-->
+		</xs:attribute>
+		<xs:attribute name="MarkSimpleTypesMembersFunctionCalls" type="xs:boolean" default="false">
+			<!--Indica si se marcan las llamadas a función miembros de las clases de encapsulación para los tipos basicos byte,sbyte,char,ASCIIchar,short,ushort,int,unsigned,long,ulong,float,double,decimal .-->
+		</xs:attribute>
+		<xs:attribute name="MarkArrayBaseMembersFunctionCalls" type="xs:boolean" default="false">
+			<!--Indica si se marcan las llamadas a funciones miembros de la clase base para matrices.-->
+		</xs:attribute>
+		<xs:attribute name="MarkStringBaseMembersFunctionCalls" type="xs:boolean" default="false">
+			<!--Indica si se marcan las llamadas a funciones miembros de la clase base para cadena.-->
+		</xs:attribute>
+		<xs:attribute name="IncludeCallTargets" type="xs:boolean" default="false">
+			<!--Indica si se debe incluir el nombre del tipo y nombre y numero de miembro a invocar en expresiones de invocación.-->
+		</xs:attribute>
+		<xs:attribute name="IncludeParametersNamesInArguments" type="xs:boolean" default="false">
+			<!--Indica si se debe incluir siempre el nombre de los parametros correspondientes en expresiones de invocación.-->
+		</xs:attribute>
+		<xs:attribute name="ConverEnumsToClasses" type="xs:boolean" default="false">
+			<!--Indica si se deben convertir las enumeraciones a clases con campos constantes estáticos.-->
+		</xs:attribute>
+		<xs:attribute name="ImplementDefaultRuntimeInformation" type="xs:boolean" default="true">
+			<!--Indica si se debe implementar la información de tipos en tiempo de ejecución por defecto.-->
+		</xs:attribute>
+		<xs:attribute name="ImplementDefaultReflectionCode" type="xs:boolean" default="true">
+			<!--Indica si se debe implementar los mecanismos necesarios para soportar la reflexión de tipos por defecto.-->
+		</xs:attribute>
+		<xs:attribute name="ConvertIncrementAndDecrementExpressions" type="xs:boolean" default="false">
+			<!--Indica si se deben convertir las expresiones de incremento y decremento (++,- -) a expresiones más ordinarias.-->
+		</xs:attribute>
+		<xs:attribute name="GuaranteeLogicalOperatorsExecutionSemantic" type="xs:boolean" default="false">
+			<!--Indica si se debe convertir el código para garantizar la semántica en la ejecución de expresiones logicas y su orden de evaluación.-->
+		</xs:attribute>
+		<xs:attribute name="DisableSourceInformation" type="xs:boolean" default="false">
+			<!--Indica que no se emita la información del origen de código como ser el archivo original y la posición en él.-->
+		</xs:attribute>
+		<xs:attribute name="IncludeDebugInformation" type="xs:boolean" default="true">
+			<!--Indica si se incluye o no información de depuración, incluyendo breakpoints.-->
+		</xs:attribute>
+		<xs:attribute name="ImplementDefaultStackTraceInformation" type="xs:boolean" default="false">
+			<!--Indica que se implemente código para implementar seguimiento de la pila de llamadas por defecto. Util para plataformas que no poseen esta capacidad nativamente o para las cuales no disponemos de un entorno de tiempo de ejecución de depuración. Sólo permite hacer el seguimiento de las funciones a las cuales se tenga acceso al código.-->
+		</xs:attribute>
+	</xs:complexType>
+	
+	<xs:complexType name="tLayerDErrorInterchangeConfig">
+		<xs:sequence>
+			<xs:element name="Warning" type="tError" minOccurs="0" maxOccurs="unbounded"></xs:element>
+			<xs:element name="Error" type="tError" minOccurs="0" maxOccurs="unbounded"></xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="tError">
+		<xs:attribute name="str" type="xs:string" use="required"></xs:attribute>
+		<xs:attribute name="level" type="xs:integer" default="1"></xs:attribute>
+		<xs:attribute name="sourcefile" type="xs:string" use="optional"></xs:attribute>
+		<xs:attribute name="sourcepos" type="xs:string" use="optional"></xs:attribute>
+		<xs:attribute name="sourceType" type="terrorsourcetype.enum" default="zoe_doc"></xs:attribute>
+	</xs:complexType>
+	
+	<xs:complexType name="tLayerDZoeDocumentConfig">
+		<xs:sequence>
+			<xs:element name="Language" type="tLanguage"></xs:element>
+			<xs:element name="LayerDCompiler" type="tLayerDCompiler"></xs:element>
+			<xs:element name="History" type="tFileData" minOccurs="0" maxOccurs="unbounded"></xs:element>
+		</xs:sequence>
+		<xs:attribute name="programName" type="xs:string" use="optional"></xs:attribute>
+		<xs:attribute name="programConfig" type="xs:string" use="optional"></xs:attribute>
+	</xs:complexType>
+	
+	<xs:complexType name="tExtendedLayerDZoeDocumentConfig">
+		<xs:sequence>
+			<xs:element name="Language" type="tLanguage" minOccurs="0"></xs:element>
+			<xs:element name="LayerDCompiler" type="tLayerDCompiler" minOccurs="0"></xs:element>
+			<xs:element name="LayerDZoeCompiler" type="tLayerDCompiler" minOccurs="0"></xs:element>
+			<xs:element name="History" type="tFileData" minOccurs="0" maxOccurs="unbounded"></xs:element>
+		</xs:sequence>
+		<xs:attribute name="platform" type="xs:string" use="required"></xs:attribute>
+		<xs:attribute name="outputFileName" type="xs:string" use="optional"></xs:attribute>
+		<xs:attribute name="partNumber" type="xs:integer" use="optional"></xs:attribute>
+		<xs:attribute name="programName" type="xs:string" use="optional"></xs:attribute>
+		<xs:attribute name="programConfig" type="xs:string" use="optional"></xs:attribute>
+	</xs:complexType>
+	
+	<xs:complexType name="tLayerDZoeProgramConfig">
+		<xs:sequence>
+			<xs:element name="SourceFile" type="tSourceFile" minOccurs="1" maxOccurs="unbounded"></xs:element>
+			<xs:element name="OutputPlatform" type="tTargetPlatform" minOccurs="1" maxOccurs="unbounded"></xs:element>
+			<xs:element name="PlatformAlias" type="tPlatformAlias" minOccurs="0" maxOccurs="unbounded"></xs:element>
+			<xs:element name="ProgramRequirements" type="tLayerDZoeProgramRequirements" minOccurs="1" maxOccurs="1"></xs:element>
+		</xs:sequence>
+		<xs:attribute name="name" type="xs:string" use="required"></xs:attribute>
+		<xs:attribute name="moduleType" type="tLayerDZoeProgramModuletype.enum" default="executable"></xs:attribute>
+		<xs:attribute name="defaultPlatform" type="xs:string" use="optional"></xs:attribute>
+		<xs:attribute name="mainProcedureFileName" type="xs:string" use="optional"></xs:attribute>
+		<xs:attribute name="defaultOutputFileName" type="xs:string" use="optional"></xs:attribute>
+	</xs:complexType>
+	
+	<xs:complexType name="tSourceFile">
+		<xs:attribute name="fileName" type="xs:string" use="required"></xs:attribute>
+	</xs:complexType>
+	
+	<xs:complexType name="tTargetPlatform">
+		<xs:attribute name="uniqueName" type="xs:string" use="required"></xs:attribute>
+		<xs:attribute name="simpleName" type="xs:string" use="required"></xs:attribute>
+		<xs:attribute name="minVersion" type="xs:string" use="optional"></xs:attribute>
+		<xs:attribute name="maxVersion" type="xs:string" use="optional"></xs:attribute>
+		<xs:attribute name="description" type="xs:string" use="optional"></xs:attribute>
+		<xs:attribute name="supportLevel" type="tplatformsupportlevel.enum" default="complete"></xs:attribute>
+		<xs:attribute name="operatingsystem" type="xs:string" use="optional"></xs:attribute>
+		<xs:attribute name="aplication" type="xs:string" use="optional"></xs:attribute>
+		<xs:attribute name="multitask" type="xs:string" default="Preemtive" use="optional"></xs:attribute>
+		<xs:attribute name="memorymodel" type="tmemorymodel.enum" default="lineal" use="optional"></xs:attribute>
+		<xs:attribute name="defaultbitorder" type="tbitorder.enum" default="ignore"></xs:attribute>
+		<xs:attribute name="defaultbyteorder" type="tbitorder.enum" default="ignore"></xs:attribute>
+		<xs:attribute name="addresswidth" type="xs:nonNegativeInteger" default="32"></xs:attribute>
+		<xs:attribute name="databus" type="xs:nonNegativeInteger" default="32"></xs:attribute>
+		<xs:attribute name="commonregisterssize" type="xs:nonNegativeInteger" default="32"></xs:attribute>
+		<xs:attribute name="segments" type="xs:nonNegativeInteger" use="optional"></xs:attribute>
+		<xs:attribute name="segmentsize" type="xs:nonNegativeInteger" use="optional"></xs:attribute>
+		<xs:attribute name="threading" type="xs:string" use="optional"></xs:attribute>
+	</xs:complexType>
+	
+	<xs:complexType name="tPlatformAlias">
+		<xs:attribute name="standardName" type="xs:string" use="required"></xs:attribute>
+		<xs:attribute name="standardVersion" type="xs:string" use="optional"></xs:attribute>
+		<xs:attribute name="configAlias" type="xs:string" use="required"></xs:attribute>
+		<!-- Notas:
+				- "standardName": el nombre supuesto estandar para la plataforma como "Win32", "Win", "Unix".
+				- "standarVersion": la version estandar supuesta, como "1.0", "2.0". Si se especifica se relaciona
+				dicha version con el alias y no todas las versiones de dicha plataforma.
+				- "configAlias": el nombre usado en la configuracion como "myWin32", "Some Linux".
+		-->
+	</xs:complexType>
+	
+	<xs:complexType name="tLayerDZoeProgramRequirements">
+		<xs:sequence>
+			<xs:element name="GarbageCollector" type="tGarbageCollector" minOccurs="0" maxOccurs="unbounded">
+			<!--Una coleccion con información de los Garbage Collectors que se esperan disponibles. Si no se incluye se asume uno solo disponible.-->
+			</xs:element>
+		</xs:sequence>
+		<xs:attribute name="UseCaseSensitive" type="xs:boolean" default="true">
+			<!--Indica si los identificadores deben analizarse "caseSensitive" o no.-->
+		</xs:attribute>		
+		<xs:attribute name="SetDefaultSafeArrays" type="xs:string" use="optional">
+			<!--Indica el nombre por defecto a utilizar para arrays seguros. Esta información es procesada por los Modulos de Salida.-->
+		</xs:attribute>
+		<xs:attribute name="DisableArrayLimitsChecks" type="xs:boolean" default="false">
+			<!--Indica que se deshabilite el chequeo de limites en matrices si es posible.-->
+		</xs:attribute>
+		<xs:attribute name="UseSinglePointAsNamespaceSeparator" type="xs:boolean" default="false">
+			<!--Indica que se utiliza el punto "." como separador de espacio de nombres en lugar de "::".-->
+		</xs:attribute>
+		<xs:attribute name="UseSimpleMemberAccessAsNamespaceSeparator" type="xs:boolean" default="false">
+			<!--Indica que las expresiones binarias de acceso a miembro simple pueden referirse a espacios de nombres.-->
+		</xs:attribute>
+    <xs:attribute name="UseInheritsAsImplements" type="xs:boolean" default="false">
+      <!--Indica si los elementos "Inherit" pueden referirse a interfaces implementadas aparte de clases heredadas.-->
+    </xs:attribute>
+    <xs:attribute name="SetDefaultIdentifiersNamespace" type="xs:string" use="optional">
+      <!--Si se establece determina el espacio de nombres de identificadores a utilizar por defecto.-->
+    </xs:attribute>
+		<xs:attribute name="SetDefaultGarbageCollector" type="xs:string" use="optional">
+			<!--Si se definen más de un sólo garbage collector disponible indica el nombre del usado por defecto.-->
+		</xs:attribute>
+		<xs:attribute name="UseSingleInheritance" type="xs:boolean" default="true">
+			<!--Indica si se utiliza sólo herencia simple. Si es establecido a false se indica que el programa utiliza herencia multiple.-->
+		</xs:attribute>
+		<xs:attribute name="UseUniversalObjectBase" type="xs:boolean" default="true">
+			<!--Indica si el programa utiliza "System::Object" u otra clase como base de todas las clases o no. Al deshabilitar, tambien se deshabilitan todas las conversiones de empaquetad y desempaquetado por defecto.-->
+		</xs:attribute>
+		<xs:attribute name="SetUniversalObjectBase" type="xs:string" use="optional">
+			<!--Inidica la clase a utilizar como clase base universal.-->
+		</xs:attribute>
+		<xs:attribute name="DisableUnifiedTypeSystem" type="xs:boolean" default="false">
+			<!--Indica si se deshabilita el sistema unificado de tipos.-->
+		</xs:attribute>
+		<xs:attribute name="EnableIntegerOverflowExceptions" type="xs:boolean" default="false">
+			<!--Inidica si se emiten excepciones al producirse Overflows en operaciones con enteros.-->
+		</xs:attribute>
+		<xs:attribute name="EnableFloatOperationsExceptions" type="xs:boolean" default="false">
+			<!--Indica si se emiten excepciones al producirse errores en operaciones de punto flotante.-->
+		</xs:attribute>
+		<xs:attribute name="RequiereFullDecimalImplementation" type="xs:boolean" default="false">
+			<!--Indica que la implementacion del tipo "decimal" por completo por parte de los modulos de salida.-->
+		</xs:attribute>
+		<xs:attribute name="RequireASCIIChar" type="xs:boolean" default="false">
+			<!--Indica que se requiere el tipo ASCIIChar sea implementado por los modulos de salida.-->
+		</xs:attribute>
+		<xs:attribute name="RequireASCIIString" type="xs:boolean" default="false">
+			<!--Indica que se requiere el tipo ASCIIString sea implementado por los modulos de salida.-->
+		</xs:attribute>
+		<xs:attribute name="SetASCIIStringClass" type="xs:string" use="optional">
+			<!--Indica la clase a utilizar para implementar el tipo ASCIIString.-->
+		</xs:attribute>
+		<xs:attribute name="SetStringClass" type="xs:string" use="optional">
+			<!--Indica la clase a utilizar para implementar el tipo String.-->
+		</xs:attribute>
+		<xs:attribute name="DisableNullReferenceCheckOnMemberAccess" type="xs:boolean" default="false">
+			<!--Indica que se requiere deshabilitar el chequeo de puntero nulo en operaciones de acceso a miembros en punteros a tipos definidos por el usuario.-->
+		</xs:attribute>
+		<xs:attribute name="RequirePointerArithmetics" type="xs:boolean" default="false">
+			<!--Indica que el programa requiere implementar aritmetica de punteros (+,-). Por defecto puede detectarse automáticamente el los fuentes.-->
+		</xs:attribute>
+		<xs:attribute name="DisableUnsafePointerConversionsFromVoid" type="xs:boolean" default="false">
+			<!--Indica deshabilita conversiones desde un puntero "void*" a otro tipo "T*" cuando el entorno en tiempo de ejecución no puede asegurar que sean conversiones seguras (y emita una excepcion cuando la conversión no sea valida).-->
+		</xs:attribute>
+		<xs:attribute name="DisableAllPointerConversionsFromVoid" type="xs:boolean" default="false">
+			<!--Indica deshabilita conversiones desde un puntero "void*" a otro tipo "T*" en todos los casos.-->
+		</xs:attribute>
+		<xs:attribute name="DisableAllPointerConversionsToVoid" type="xs:boolean" default="false">
+			<!--Indica deshabilita conversiones desde un puntero "T*" a otro tipo "void*" en todos los casos.-->
+		</xs:attribute>
+		<xs:attribute name="DisableAllPointerConversionsFromIntegers" type="xs:boolean" default="false">
+			<!--Indica deshabilita conversiones desde un puntero "Tipo Entero*" a otro tipo "T*" en todos los casos.-->
+		</xs:attribute>
+		<xs:attribute name="DisableAllPointerConversionsToIntegers" type="xs:boolean" default="false">
+			<!--Indica deshabilita conversiones desde un puntero "T*" a otro tipo "Tipo Entero*" en todos los casos.-->
+		</xs:attribute>
+		<xs:attribute name="SetNullIntegerValue" type="xs:integer" use="optional">
+			<!--Establece el valor de "null" a un valor diferente a todos los bits en 0.-->
+		</xs:attribute>
+		<xs:attribute name="DisableBaseTypesArrayItemsInitialization" type="xs:boolean" default="false">
+			<!--Indica que no se inicialize los elementos de los array con elementos de tipos basicos a su valor por defecto.-->
+		</xs:attribute>
+		<xs:attribute name="DisableStaticsVarsInitialization" type="xs:boolean" default="false">
+			<!--Indica que no se inicializen las variables estaticas al valor por defecto, solo aplicable a los tipos basicos.-->
+		</xs:attribute>
+		<xs:attribute name="DisableInstanceVarsInitialization" type="xs:boolean" default="false">
+			<!--Indica que no se inicializen las variables de instancia al valor por defecto, solo aplicable a los tipos basicos.-->
+		</xs:attribute>
+		<xs:attribute name="EnableLocalsVarsInitialization" type="xs:boolean" default="false">
+			<!--Indica que se inicializen las variables locales al valor por defecto, solo aplicable a los tipos basicos. Esto deshabilita el chequeo de asignación de variables, ya que todas las variables locales estaran siempre en estado asignada.-->
+		</xs:attribute>
+		<xs:attribute name="IgnorePreviousAssingmentRules" type="xs:boolean" default="false">
+			<!--Indica que no se controlen las reglas de asignación previa a variables locales por parte del compilador LayerD-Zoe. Aún así algunos modulos de salida pueden forzar el chequeo de la asignación previa.-->
+		</xs:attribute>
+		<xs:attribute name="EnablePointerAssingnationWarningsAsErrors" type="xs:boolean" default="false">
+			<!--Indica que las advertencias de asignaciones no seguras de punteros emitan errores.-->
+		</xs:attribute>
+		<xs:attribute name="DisablePointerAssingnationWarnings" type="xs:boolean" default="false">
+			<!--Indica que las advertencias de asignaciones no seguras de punteros no sean emitidas.-->
+		</xs:attribute>
+		<xs:attribute name="DisableAddressOfExpressionRequirementOnOutArguments" type="xs:boolean" default="false">
+			<!--Indica que se deshabilite el requerimiento de expresiones "direccion de" en argumentos de invocación que se correspondan con parametros de tipo "out" o "inout".-->
+		</xs:attribute>
+		<xs:attribute name="DisableForcingFinalizeAsDestructor" type="xs:boolean" default="false">
+			<!--Indica que no se permita forzar a metodos "Finalize" a comportarse como destructores en modulos clases D y C.-->
+		</xs:attribute>
+		<xs:attribute name="ForceNormalVirtualFunctionCallsOnConstructorsBody" type="xs:boolean" default="false">
+			<!--Indica que debe forzarse a utilizar llamadas virtuales normales en el cuerpo de constructores, si se establecer "false" el comportamiento depende del modelo de herencia utilizado y el modulo de salida.-->
+		</xs:attribute>
+		<xs:attribute name="DisableVirtualizationOfMembers" type="xs:boolean" default="false">
+			<!--Indica que se deshabilite el forzado a la virtualización de miembros. Esta configuración evitara la compilación del programa en modulos de salida que requieran forzar a virtualizar uno o más miembros.-->
+		</xs:attribute>
+		<xs:attribute name="ForceLimitedGotos" type="xs:boolean" default="false">
+			<!--Indica que se debe forzar la semática limitada de instrucciones "goto".-->
+		</xs:attribute>
+		<xs:attribute name="UseRuntimeTypeInformation" type="xs:boolean" default="true">
+			<!--Indica si se requiere información de tipos en tiempo de ejecución para el programa o no.-->
+		</xs:attribute>
+		<xs:attribute name="UseRuntimeReflection" type="xs:boolean" default="false">
+			<!--Indica que se requiere reflexion de tipos en tiempo de ejecución.-->
+		</xs:attribute>		
+		<xs:attribute name="LimitRuntimeReflectionToModuleOnly" type="xs:boolean" default="false">
+			<!--Indica que se limite la reflexion de tipos sólo a los tipos definidos en el modulo-->
+		</xs:attribute>
+		<xs:attribute name="UseResumeExceptionModel" type="xs:boolean" default="false">
+			<!--Indica si se utiliza el modelo de errores por continuación.-->
+		</xs:attribute>
+		<xs:attribute name="UseTerminationExceptionModel" type="xs:boolean" default="true">
+			<!--Inidica si se utiliza el modelo de errores por terminación.-->
+		</xs:attribute>
+	</xs:complexType>
+				
+	<xs:complexType name="tGarbageCollector">
+		<xs:attribute name="name" type="xs:string" use="required"></xs:attribute>
+		<xs:attribute name="description" type="xs:string" use="optional"></xs:attribute>
+		<xs:attribute name="sourceFile" type="xs:string" use="optional"></xs:attribute>
+		<xs:attribute name="xplCompilerData" type="xs:string" use="optional"></xs:attribute>
+	</xs:complexType>
+	
+	<!--Fin de los tipos de configuración-->
+	
+	<!--	
+			De aqui en adelante va la declaración de los tipos dentro del elemento
+			DOCUMENTBODY 
+	-->
+	<xs:complexType name="tDocumentBody">
+		<xs:sequence maxOccurs="unbounded">
+			<xs:element name="Namespace" type="tNamespace" minOccurs="0"></xs:element>
+      <xs:element name="Section" type="tNamespace" minOccurs="0"></xs:element>
+      <xs:element name="IdentifiersNamespace" type="xs:string" minOccurs="0"></xs:element>
+			<xs:element name="Using" type="tname" minOccurs="0"></xs:element>
+			<xs:element name="UsingIdentifiers" type="tname" minOccurs="0"></xs:element>
+			<xs:element name="Import" type="tname" minOccurs="0"></xs:element>
+			<xs:element name="BeginCFPermissions" type="tClassfactorysPermissions" minOccurs="0"></xs:element>
+			<xs:element name="EndCFPermissions" minOccurs="0"></xs:element>
+			<xs:element name="e" type="texpression" minOccurs="0"></xs:element>
+      <xs:element name="documentation" type="tdocumentation" minOccurs="0"></xs:element>
+    </xs:sequence>
+		<xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+    <xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+  </xs:complexType>
+
+	<!--Atributos comunes para informacion del Compilador LayerD y las Classfactorys-->
+	<xs:attributeGroup name="tLDDataGroup">
+		<xs:attribute name="ldsrc" type="xs:string" use="optional"></xs:attribute>
+		<xs:attribute name="iny" type="xs:boolean" use="optional"></xs:attribute>
+		<xs:attribute name="inydata" type="xs:string" use="optional"></xs:attribute>
+		<xs:attribute name="inyby" type="xs:string" use="optional"></xs:attribute>
+		<xs:attribute name="lddata" type="xs:string" use="optional"></xs:attribute>		
+	</xs:attributeGroup>
+	<!--Atributos comunes de documentacion-->
+	<xs:attributeGroup name="tDocAttGroup">
+		<xs:attribute name="doc" type="xs:string" use="optional"></xs:attribute>
+		<xs:attribute name="helpURL" type="xs:string" use="optional"></xs:attribute>
+	</xs:attributeGroup>
+	
+	<xs:complexType name="tNamespace">
+		<xs:sequence maxOccurs="unbounded">
+			<!-- ENUMERACIONES: se elimina el tipo tEnum y en su lugar se
+					utilizara el tipo tClass agregando un "IsEnum" y
+					obligando a definir solo campos constantes estaticos
+					de un tipo base cuyos tipos bases para los campos sean
+					todos iguales, para las enumeraciones anidadas es simple
+					con una clase anidada, con esto se globaliza la definicion 
+					de tipos haciendo mas facil el mantenimiento y desarrollo.
+					Tambien se deja una puerta abierta para en futuras revisiones
+					permitir definir otros miembros en una enumeracion.
+					
+			<xs:element name="Enum" type="tEnum" minOccurs="0"></xs:element>
+			-->
+			<xs:element name="Class" type="tClass" minOccurs="0"></xs:element>
+			<xs:element name="Namespace" type="tNamespace" minOccurs="0"></xs:element>
+      <xs:element name="Section" type="tNamespace" minOccurs="0"></xs:element>
+      <xs:element name="e" type="texpression" minOccurs="0"></xs:element>
+			<xs:element name="BeginCFPermissions" type="tClassfactorysPermissions" minOccurs="0"></xs:element>
+			<xs:element name="EndCFPermissions" minOccurs="0"></xs:element>
+      <xs:element name="documentation" type="tdocumentation" minOccurs="0"></xs:element>
+    </xs:sequence>
+		<xs:attribute name="name" type="xs:string" use="required"></xs:attribute>
+    <xs:attribute name="internalname" type="xs:string" use="optional">
+      <!--Nombre a usar por el compilador ZOE para identificar la función
+      de forma única. Este nombre es único y no se repite en una clase.-->
+    </xs:attribute>
+    <xs:attribute name="externalname" type="xs:string" use="optional">
+      <!--Nombre opcional a usar por un Modulo de Salida durante la
+      importación de tipos con el fin de identificar información interna.-->
+    </xs:attribute>
+    <xs:attribute name="external" type="xs:boolean" default="false"></xs:attribute>
+    <xs:attribute name="donotrender" type="xs:boolean" default="false"></xs:attribute>
+    <xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+	
+	<!--Elemento BeginBlockToFactorys-->
+	<xs:complexType name="tClassfactorysPermissions">
+		<xs:sequence maxOccurs="unbounded">
+			<xs:element name="cf" type="xs:string" ></xs:element>
+		</xs:sequence>
+		<xs:attribute name="allowRead" type="xs:boolean" default="true"></xs:attribute>
+		<xs:attribute name="allowAppend" type="xs:boolean" default="true"></xs:attribute>
+		<xs:attribute name="allowChange" type="xs:boolean" default="true"></xs:attribute>
+		<xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+	
+	<!--Tipo de elemento Clase-->
+	<xs:complexType name="tClass">
+		<xs:sequence maxOccurs="unbounded">
+			<xs:element name="Inherits" type="tInherits" minOccurs="0"></xs:element>
+			<xs:element name="Implements" type="tInherits" minOccurs="0"></xs:element>
+
+      <xs:element name="Function" type="tFunction" minOccurs="0"></xs:element>
+      <xs:element name="Operator" type="tFunction" minOccurs="0"></xs:element>
+      <xs:element name="Indexer" type="tFunction" minOccurs="0"></xs:element>
+      <xs:element name="Property" type="tProperty" minOccurs="0"></xs:element>
+      <xs:element name="Field" type="tField" minOccurs="0"></xs:element>
+      <xs:element name="e" type="texpression" minOccurs="0"></xs:element>
+      <!--PARA LLAMADAS A CF-->
+
+      <xs:element name="Class" type="tClass" minOccurs="0"></xs:element>
+			<xs:element name="documentation" type="tdocumentation" minOccurs="0"></xs:element>
+			<xs:element name="BeginCFPermissions" type="tClassfactorysPermissions" minOccurs="0"></xs:element>
+			<xs:element name="EndCFPermissions" minOccurs="0"></xs:element>
+			<xs:element name="SetPlatforms" type="tSetPlatforms" minOccurs="0"></xs:element>
+			<xs:element name="AutoInstance" type="tAutoInstance" minOccurs="0"></xs:element>
+		</xs:sequence>
+		<xs:attribute name="name" type="xs:string" use="required"></xs:attribute>
+    <xs:attribute name="internalname" type="xs:string" use="optional">
+      <!--Nombre a usar por el compilador ZOE para identificar la función
+      de forma única. Este nombre es único y no se repite en una clase.-->
+    </xs:attribute>
+    <xs:attribute name="externalname" type="xs:string" use="optional">
+      <!--Nombre opcional a usar por un Modulo de Salida durante la
+      importación de tipos con el fin de identificar información interna.-->
+    </xs:attribute>
+    <xs:attribute name="access" type="taccesstype.enum" default="private"></xs:attribute>
+
+		<xs:attribute name="isstruct" type="xs:boolean" default="false"></xs:attribute>
+		<xs:attribute name="isinterface" type="xs:boolean" default="false"></xs:attribute>
+		<xs:attribute name="isunion" type="xs:boolean" default="false"></xs:attribute>
+		<xs:attribute name="isenum" type="xs:boolean" default="false"></xs:attribute>
+
+		<xs:attribute name="isfactory" type="xs:boolean" default="false"></xs:attribute>
+		<xs:attribute name="isinteractive" type="xs:boolean" default="false"></xs:attribute>
+		<xs:attribute name="abstract" type="xs:boolean" default="false"></xs:attribute>
+		<xs:attribute name="extension" type="xs:boolean" default="false"></xs:attribute>
+    <xs:attribute name="external" type="xs:boolean" default="false"></xs:attribute>
+    <xs:attribute name="donotrender" type="xs:boolean" default="false"></xs:attribute>
+    <xs:attribute name="final" type="xs:boolean" default="false"></xs:attribute>
+		<xs:attribute name="new" type="xs:boolean" default="false"></xs:attribute>
+		
+		<xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+		<xs:attribute name="alignment" type="xs:nonNegativeInteger" use="optional"></xs:attribute>
+		<xs:attribute name="bitorder" type="tbitorder.enum" default="ignore"></xs:attribute>
+		<xs:attribute name="byteorder" type="tbitorder.enum" default="ignore"></xs:attribute>
+		<xs:attribute name="sizeinbits" type="xs:nonNegativeInteger" use="optional"></xs:attribute>
+	</xs:complexType>
+	
+	<xs:complexType name="tSetPlatforms">
+    <xs:sequence maxOccurs="unbounded">
+      <xs:element name="P" type="tPlatform"></xs:element>
+    </xs:sequence>
+		<xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+  
+	<xs:complexType name="tPlatform">
+		<xs:attribute name="name" type="xs:string" use="required"></xs:attribute>
+		<xs:attribute name="version" type="xs:string" use="optional"></xs:attribute>
+		<xs:attribute name="match" type="tPlatformMatch.enum" default="like"></xs:attribute>
+		<xs:attribute name="customMatcher" type="xs:string" use="optional"></xs:attribute>
+	</xs:complexType>
+	
+	<xs:complexType name="tAutoInstance">
+		<xs:sequence maxOccurs="unbounded">
+			<xs:element name="fn" type="xs:string" minOccurs="0"></xs:element>
+		</xs:sequence>
+		<xs:attribute name="by" type="tAutoInstaceTypes.enum" use="required"></xs:attribute>
+    <xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+    <xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+  </xs:complexType>
+
+	<xs:complexType name="tField">
+		<xs:sequence>
+			<xs:element name="type" type="ttype"></xs:element>
+			<xs:element name="i" type="tInitializerList"></xs:element>
+		</xs:sequence>
+		<xs:attribute name="name" type="xs:string" use="required"></xs:attribute>
+    <xs:attribute name="internalname" type="xs:string" use="optional">
+      <!--Nombre a usar por el compilador ZOE para identificar la función
+      de forma única. Este nombre es único y no se repite en una clase.-->
+    </xs:attribute>
+    <xs:attribute name="externalname" type="xs:string" use="optional">
+      <!--Nombre opcional a usar por un Modulo de Salida durante la
+      importación de tipos con el fin de identificar información interna.-->
+    </xs:attribute>
+    <xs:attribute name="access" type="taccesstype.enum" default="private"></xs:attribute>
+    <xs:attribute name="storage" type="tvarstorage.enum" default="auto"></xs:attribute>
+		<xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+    <xs:attribute name="donotrender" type="xs:boolean" default="false"></xs:attribute>
+    <xs:attribute name="firstbit" type="xs:nonNegativeInteger" use="optional"></xs:attribute>
+		<xs:attribute name="lastbit" type="xs:nonNegativeInteger" use="optional"></xs:attribute>
+		<xs:attribute name="address" type="xs:string" use="optional"></xs:attribute>
+		<xs:attribute name="atomicwrite" type="xs:boolean" use="optional"></xs:attribute>
+		<xs:attribute name="atomicread" type="xs:boolean" use="optional"></xs:attribute>		
+		<xs:attribute name="isfactory" type="xs:boolean" default="false"></xs:attribute>
+		<xs:attribute name="new" type="xs:boolean" default="false"></xs:attribute>
+	</xs:complexType>
+	
+	<xs:complexType name="tProperty">
+		<xs:sequence>
+			<xs:element name="type" type="ttype"></xs:element>
+			<xs:element name="body" type="tFunctionBody" minOccurs="0"></xs:element>
+			<xs:element name="documentation" type="tdocumentation" minOccurs="0"></xs:element>
+		</xs:sequence>
+		<xs:attribute name="name" type="xs:string" use="required"></xs:attribute>
+    <xs:attribute name="getfunction" type="xs:string" use="optional">
+      <!--Indica el nombre de la función que implementa el get, o el nombre
+      reservado de función.-->
+    </xs:attribute>
+    <xs:attribute name="setfunction" type="xs:string" use="optional">
+      <!--Indica el nombre de la función que implementa el set, o el nombre
+      reservado de función.-->
+    </xs:attribute>
+    <xs:attribute name="internalname" type="xs:string" use="optional">
+      <!--Nombre a usar por el compilador ZOE para identificar la función
+      de forma única. Este nombre es único y no se repite en una clase.-->
+    </xs:attribute>
+    <xs:attribute name="externalname" type="xs:string" use="optional">
+      <!--Nombre opcional a usar por un Modulo de Salida durante la
+      importación de tipos con el fin de identificar información interna.-->
+    </xs:attribute>
+    <xs:attribute name="donotrender" type="xs:boolean" default="false"></xs:attribute>
+    <xs:attribute name="access" type="taccesstype.enum" default="private"></xs:attribute>
+    <xs:attribute name="storage" type="tvarstorage.enum" default="auto"></xs:attribute>
+		<xs:attribute name="isfactory" type="xs:boolean" default="false"></xs:attribute>
+		<xs:attribute name="isconst" type="xs:boolean" default="false"></xs:attribute>
+		<xs:attribute name="isexec" type="xs:boolean" default="false"></xs:attribute>
+		<xs:attribute name="virtual" type="xs:boolean" default="false"></xs:attribute>
+		<xs:attribute name="nonvirtual" type="xs:boolean" default="false"></xs:attribute>
+		<xs:attribute name="override" type="xs:boolean" default="false"></xs:attribute>
+		<xs:attribute name="new" type="xs:boolean" default="false"></xs:attribute>
+		<xs:attribute name="final" type="xs:boolean" default="false"></xs:attribute>
+		<xs:attribute name="abstract" type="xs:boolean" default="false"></xs:attribute>
+		<xs:attribute name="external" type="xs:boolean" default="false"></xs:attribute>
+		<xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+		
+	<xs:complexType name="tInherits">
+		<xs:sequence maxOccurs="unbounded">
+			<xs:element name="c" type="tInherit"></xs:element>
+		</xs:sequence>
+		<xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+		
+	<xs:complexType name="tInherit">
+    <xs:sequence>
+      <xs:element name="type" type="ttype" minOccurs="1"></xs:element>
+      <xs:element name="originalType" type="ttype" minOccurs="0"></xs:element>
+    </xs:sequence>
+    <xs:attribute name="access" type="taccesstype.enum" default="public"></xs:attribute>
+		<xs:attribute name="virtual" type="xs:boolean" default="true"></xs:attribute>
+    <xs:attribute name="auto" type="xs:boolean" default="false">
+      <!--If it's true it marks that Zoe compiler must infer if this is an interface implementation or
+      class inheritance from provided type-->
+    </xs:attribute>
+		<xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+	
+	<xs:complexType name="tFunction">
+		<xs:sequence>
+			<xs:element name="Parameters" type="tParameters"></xs:element>
+			<xs:element name="ReturnType" type="ttype" minOccurs="0"></xs:element>
+			<xs:element name="FunctionBody" type="tFunctionBody" minOccurs="0"></xs:element>
+			<xs:element name="BaseInitializers" type="tBaseInitializers" minOccurs="0"></xs:element>
+			<xs:element name="documentation" type="tdocumentation" minOccurs="0"></xs:element>
+		</xs:sequence>
+		<xs:attribute name="name" type="xs:string" use="required"></xs:attribute>
+    <xs:attribute name="internalname" type="xs:string" use="optional">
+      <!--Nombre a usar por el compilador ZOE para identificar la función
+      de forma única. Este nombre es único y no se repite en una clase.-->
+    </xs:attribute>
+    <xs:attribute name="externalname" type="xs:string" use="optional">
+      <!--Nombre opcional a usar por un Modulo de Salida durante la
+      importación de tipos con el fin de identificar información interna.-->
+    </xs:attribute>
+    <xs:attribute name="allowoptimize" type="xs:boolean" default="false">
+      <!--Indica que la funcion factory no requiere modificar o acceso fuera 
+      de su contexto de llamada y argumentos, es decir puede optimizarse
+      su llamada. Este indicador puede ser establecido por el lenguaje LayerD
+      o por el compilador Zoe al analizar la extensión, aunque no de forma 
+      exaustiva siempre :-)-->
+    </xs:attribute>
+    <xs:attribute name="donotrender" type="xs:boolean" default="false"></xs:attribute>
+    <xs:attribute name="access" type="taccesstype.enum" default="private"></xs:attribute>
+    <xs:attribute name="storage" type="tvarstorage.enum" default="auto"></xs:attribute>
+		<xs:attribute name="isfactory" type="xs:boolean" default="false"></xs:attribute>
+		<xs:attribute name="iskeyword" type="xs:boolean" default="false"></xs:attribute>
+		<xs:attribute name="isconst" type="xs:boolean" default="false"></xs:attribute>
+		<xs:attribute name="isexec" type="xs:boolean" default="false"></xs:attribute>
+		<xs:attribute name="virtual" type="xs:boolean" default="false"></xs:attribute>
+		<xs:attribute name="nonvirtual" type="xs:boolean" default="false"></xs:attribute>
+		<xs:attribute name="override" type="xs:boolean" default="false"></xs:attribute>
+		<xs:attribute name="new" type="xs:boolean" default="false"></xs:attribute>
+		<xs:attribute name="final" type="xs:boolean" default="false"></xs:attribute>
+		<xs:attribute name="force" type="xs:boolean" default="false"></xs:attribute>
+		<xs:attribute name="abstract" type="xs:boolean" default="false"></xs:attribute>
+		<xs:attribute name="fp" type="xs:boolean" default="false"></xs:attribute>
+		<xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+	
+	<xs:complexType name="tBaseInitializers">
+		<xs:sequence maxOccurs="unbounded">
+			<xs:element name="i" type="tBaseInitializer"></xs:element>
+		</xs:sequence>
+		<xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+	
+	<xs:complexType name="tBaseInitializer">
+		<xs:sequence>
+			<xs:element name="params" type="texpressionlist"></xs:element>
+		</xs:sequence>
+		<xs:attribute name="className" type="xs:string"></xs:attribute>
+		<xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+	
+	<xs:complexType name="tParameters">
+		<xs:sequence maxOccurs="unbounded">
+			<xs:element name="P" type="tParameter" minOccurs="0"></xs:element>
+		</xs:sequence>
+		<xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+	
+	<xs:complexType name="tParameter">
+		<xs:sequence>
+			<xs:element name="type" type="ttype"></xs:element>
+			<xs:element name="i" type="tInitializerList" minOccurs="0"></xs:element>
+		</xs:sequence>
+		<xs:attribute name="name" type="xs:string" use="optional"></xs:attribute>
+		<xs:attribute name="number" type="xs:nonNegativeInteger" use="required"></xs:attribute>
+		<xs:attribute name="direction" type="tparameterdirection.enum" default="in"></xs:attribute>
+		<xs:attribute name="params" type="xs:boolean" default="false"></xs:attribute>
+    <xs:attribute name="donotrender" type="xs:boolean" default="false"></xs:attribute>
+    <xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+		
+	<!-- Declaración del tipo tFunctionBody, uno de los principales! 
+		Contiene todas las instrucciones que se puede utilizar
+	-->
+	<xs:group name="tFunctionBodyGroup">
+		<xs:sequence>
+			<xs:element name="label" type="xs:string" minOccurs="0"></xs:element>
+			<xs:element name="setonerror" type="tsetonerror" minOccurs="0"></xs:element>
+			<xs:element name="Decls" type="tdeclaratorlist" minOccurs="0"></xs:element>
+			<!--
+			<xs:element name="Enum" type="tEnum" minOccurs="0"></xs:element>
+			-->
+			<xs:element name="e" type="texpression" minOccurs="0"></xs:element>
+			<xs:element name="switch" type="tswitch" minOccurs="0"></xs:element>
+			<xs:element name="if" type="tif" minOccurs="0"></xs:element>
+			<xs:element name="for" type="tfor" minOccurs="0"></xs:element>
+			<xs:element name="do" type="tdowhile" minOccurs="0"></xs:element>
+			<xs:element name="while" type="tdowhile" minOccurs="0"></xs:element>
+			<xs:element name="bk" type="tFunctionBody" minOccurs="0"></xs:element>
+			<xs:element name="Get" type="tFunctionBody" minOccurs="0"></xs:element>
+			<xs:element name="Set" type="tFunctionBody" minOccurs="0"></xs:element>
+			<xs:element name="onpointer" type="tFunctionBody" minOccurs="0"></xs:element>
+			<xs:element name="try" type="ttry" minOccurs="0"></xs:element>
+			<xs:element name="throw" type="texpression" minOccurs="0"></xs:element>
+			<xs:element name="return" type="texpression" minOccurs="0"></xs:element>
+			<xs:element name="jump" type="tjump" minOccurs="0"></xs:element>
+			<!--Elementos de salida directa-->
+			<xs:element name="directoutput" type="tdirectoutput" minOccurs="0"></xs:element>
+			<!--Elemento de documentación-->
+			<xs:element name="documentation" type="tdocumentation" minOccurs="0"></xs:element>
+			<!--Elementos de classfactorys-->
+			<xs:element name="selectoutput" type="tfunctioncall" minOccurs="0"></xs:element>     
+			<!--Elementos de Permisos de Classfactorys-->
+			<xs:element name="BeginCFPermissions" type="tClassfactorysPermissions" minOccurs="0"></xs:element>
+			<xs:element name="EndCFPermissions" minOccurs="0"></xs:element>
+		</xs:sequence>
+	</xs:group>
+		
+	<!--Elemento para establecer punto de captura de excepciones en el modelo
+		de excepciones por reanudacion.-->
+	<xs:complexType name="tsetonerror">
+		<xs:attribute name="label" type="xs:string" use="required"></xs:attribute>
+		<xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+	
+	<xs:complexType name="tjump">
+		<xs:annotation>
+			<xs:appinfo>Nombre:JumpClass</xs:appinfo>
+		</xs:annotation>
+		<xs:attribute name="type" type="tjumptype.enum" default="break"></xs:attribute>
+		<xs:attribute name="label" type="xs:string" use="optional"></xs:attribute>
+		<xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+		
+	<xs:complexType name="tdirectoutput">
+		<xs:attribute name="TargetPlatform" type="xs:string" use="required"></xs:attribute>
+		<xs:attribute name="TargetPlatformDetail" type="xs:string" use="required"></xs:attribute>
+		<xs:attribute name="output" type="xs:string" use="required"></xs:attribute>
+		<xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+	
+	<xs:complexType name="tFunctionBody">
+		<xs:annotation>
+			<xs:appinfo>RequiereOrden</xs:appinfo>
+		</xs:annotation>
+		<xs:group ref="tFunctionBodyGroup" maxOccurs="unbounded"></xs:group>
+		<xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+	
+	<xs:complexType name="tWriteCodeBody">
+		<xs:choice maxOccurs="1">
+			<xs:element name="bk" type="tFunctionBody"></xs:element>
+			<xs:element name="progunit" type="tDocumentBody"></xs:element>
+			<xs:element name="namespace" type="tNamespace"></xs:element>
+			<xs:element name="classmembers" type="tClassMembersList"></xs:element>
+			<xs:element name="class" type="tClass"></xs:element>
+			<xs:element name="e" type="texpression"></xs:element>
+		</xs:choice>
+		<xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+	
+	<xs:complexType name="tClassMembersList">
+		<xs:sequence maxOccurs="unbounded">
+      <!-- 
+      OJO esto es temporal, verificar que se va ha permitir
+      en un bloque argumento cuando el tipo es ClassMembers
+      -->
+      <xs:element name="Inherits" type="tInherits" minOccurs="0"></xs:element>
+      <xs:element name="Implements" type="tInherits" minOccurs="0"></xs:element>
+
+      <xs:element name="Function" type="tFunction" minOccurs="0"></xs:element>
+      <xs:element name="Operator" type="tFunction" minOccurs="0"></xs:element>
+      <xs:element name="Indexer" type="tFunction" minOccurs="0"></xs:element>
+      <xs:element name="Property" type="tProperty" minOccurs="0"></xs:element>
+      <xs:element name="Field" type="tField" minOccurs="0"></xs:element>
+      <xs:element name="e" type="texpression" minOccurs="0"></xs:element>
+
+      <xs:element name="Class" type="tClass" minOccurs="0"></xs:element>
+      <xs:element name="documentation" type="tdocumentation" minOccurs="0"></xs:element>
+      <xs:element name="BeginCFPermissions" type="tClassfactorysPermissions" minOccurs="0"></xs:element>
+      <xs:element name="EndCFPermissions" minOccurs="0"></xs:element>
+      <xs:element name="SetPlatforms" type="tSetPlatforms" minOccurs="0"></xs:element>
+      <xs:element name="AutoInstance" type="tAutoInstance" minOccurs="0"></xs:element>
+    </xs:sequence>
+	</xs:complexType>
+ 
+  <xs:complexType name="ttype">
+    <xs:sequence>
+      <xs:element name="dt" type="ttype" minOccurs="0"></xs:element>
+      <xs:element name="ae" type="texpression" minOccurs="0"></xs:element>
+      <xs:element name="pi" type="tpointerinfo" minOccurs="0"></xs:element>
+      <xs:element name="fc" type="tfunctioncall" minOccurs="0">
+        <!--This must be a function call to static or autoinstance classfactory
+        member that return a type. Returned type will replace this type level or
+        parent type level if replaceParent is seted to true-->
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="typename" type="xs:string" use="optional"></xs:attribute>
+    <xs:attribute name="ispointer" type="xs:boolean" default="false"></xs:attribute>
+    <xs:attribute name="isarray" type="xs:boolean" default="false"></xs:attribute>
+    <xs:attribute name="pointertype" type="tpointertype.enum" default="default"></xs:attribute>
+    
+    <xs:attribute name="ftype" type="tfactorytype.enum" default="none"></xs:attribute>
+    <xs:attribute name="volatile" type="xs:boolean" default="false"></xs:attribute>
+    <xs:attribute name="const" type="xs:boolean" default="false"></xs:attribute>
+    <xs:attribute name="exec" type="xs:boolean" default="false"></xs:attribute>
+    
+    <xs:attribute name="typeStr" type="xs:string" use="optional"></xs:attribute>
+    <xs:attribute name="replaceParent" type="xs:boolean" default="false">
+      <!--If it's true when this is a type returned from a classfactory that have a 
+      RIP this type will replace the full type and not only this type level. 
+      For example, if you have "MyClassfactory^[]" returned type will replace the pointer
+      and matrix declaration. -->
+    </xs:attribute>
+    <xs:attribute name="customTypeCheck" type="xs:boolean" default="false">
+      <!--
+      Si es verdadero indica que el compilador LayerD de alto nivel
+      proporcionara un método para chequear los tipos antes de ser analizados
+      por el compilador ZOE.
+      El método sera proporcionado en forma de una classfactory estandar
+      con un nombre estandar, algo como un metodo estatico en una
+      clase estandar escrita en ZOE. El metodo tomaria como argumento
+      el tipo y una interfaz a la tabla de tipos, teniendo oportunidad
+      de transformar el tipo antes de que lo valide el compilador ZOE,
+      el evento se produciria despues de la primera pasada que recopila 
+      todos los tipos disponibles y antes de generar la descripcion interna
+      del tipo o realizar cualquier analisis.
+      -->
+    </xs:attribute>
+    <xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+    <xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+  </xs:complexType>
+  		
+	<xs:complexType name="tdeclarator">
+		<xs:sequence>
+			<!--Estos elementos son mutuamente excluyentes-->
+			<xs:element name="type" type="ttype" minOccurs="0"></xs:element>
+			<!--El "aliasref" realmente no me parece que lo vaya a usar-->
+			<xs:element name="aliasref" type="xs:string" minOccurs="0"></xs:element>
+			<!--Una expressión que inicializará el tipo.-->
+			<xs:element name="i" type="tInitializerList" minOccurs="0"></xs:element>
+		</xs:sequence>
+		<xs:attribute name="name" type="xs:string" use="required"></xs:attribute>
+    <xs:attribute name="internalname" type="xs:string" use="required"></xs:attribute>
+    <xs:attribute name="externalname" type="xs:string" use="required"></xs:attribute>
+    <xs:attribute name="donotrender" type="xs:boolean" default="false"></xs:attribute>
+    <xs:attribute name="storage" type="tvarstorage.enum" default="auto"></xs:attribute>
+		<xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+		<xs:attribute name="address" type="xs:string" use="optional"></xs:attribute>
+		<xs:attribute name="atomicwrite" type="xs:boolean" default="false"></xs:attribute>
+		<xs:attribute name="atomicread" type="xs:boolean" default="false"></xs:attribute>
+	</xs:complexType>
+	
+	<xs:complexType name="tInitializerList">
+		<xs:sequence maxOccurs="unbounded">
+			<xs:element name="e" type="texpression"></xs:element>
+			<xs:element name="list" type="tInitializerList"></xs:element>
+		</xs:sequence>
+		<xs:attribute name="array" type="xs:boolean" default="false"></xs:attribute>
+		<xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+ 
+	<xs:complexType name="tpointerinfo">
+		<xs:attribute name="memberof" type="xs:string" use="optional"></xs:attribute>
+		<xs:attribute name="const" type="xs:boolean" default="false"></xs:attribute>
+		<xs:attribute name="volatile" type="xs:boolean" default="false"></xs:attribute>
+		<xs:attribute name="ref" type="xs:boolean" default="false"></xs:attribute>
+    <xs:attribute name="removeonvalue" type="xs:boolean" default="false">
+      <!--
+      Si se activa en true indica al compilador ZOE que elimine una indireccion
+      si el tipo apuntado es una estructura o enumeración y no una clase o interface.
+      -->
+    </xs:attribute>
+	</xs:complexType>
+	   
+	<!-- Este es el tipo de dato de las Expresiones, muy importante!! -->
+	<xs:complexType name="texpression">
+		<xs:choice maxOccurs="1">
+			<xs:element name="a" type="tassing"></xs:element>
+			<xs:element name="new" type="tnew"></xs:element>
+			<xs:element name="bo" type="tbinaryoperator"></xs:element>
+			<xs:element name="uo" type="tunaryoperator"></xs:element>
+      <xs:element name="to" type="tternaryoperator"></xs:element>
+      <xs:element name="b" type="tfunctioncall"></xs:element>
+			<xs:element name="n" type="xs:string"></xs:element>
+			<xs:element name="lit" type="tliteral"></xs:element>
+			<xs:element name="fc" type="tfunctioncall"></xs:element>
+			<xs:element name="cfc" type="tcomplexfunctioncall"></xs:element>
+			<xs:element name="cast" type="tcastexpression"></xs:element>
+			<xs:element name="delete" type="texpression"></xs:element>
+			<xs:element name="onpointer" type="texpression"></xs:element>
+ 			<xs:element name="writecode" type="tWriteCodeBody"></xs:element>
+
+      <xs:element name="t" type="ttype">
+        <!--Expression GetType(type). Representa un tipo.-->
+      </xs:element>
+      <xs:element name="toft" type="ttype">
+        <!--Expression TypeOf(type). Devuelve el "type" en tiempo de ejecución, se
+        diferencia con GetType(type) que devuelve el tipo en tiempo de ejecución y no
+        el tipo XplType en tiempo de compilacion.-->
+      </xs:element>
+      <xs:element name="is" type="tcastexpression" >
+        <!--Expresion "exp IS type". Indica si la expresión "exp" es del tipo indicado
+        por "type" (en tiempo de ejecución). -->
+      </xs:element>
+			<xs:element name="empty"></xs:element>
+		</xs:choice>    
+    <xs:attribute name="typeStr" type="xs:string" use="optional">
+      <!--El analizador semántico ZOE establecera el tipo de la expresión
+      cuando pueda ser determinado, si no puede determinarlo el valor
+      sera una cadena vacia.-->
+    </xs:attribute>
+    <xs:attribute name="valueStr" type="xs:string" use="optional">
+      <!--El analizador semántico ZOE establecera el valor cuando
+      la expresión sea una expresión constante y el valor haya podido
+      calcularse correctamente durante el analisis semántico, si no
+      se pudo calcular el valor la expresion o no es constante o 
+      contiene errores. Cuando no se puede calcular el valor constante
+      el valor es una cadena vacia.-->
+    </xs:attribute>
+    <xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+    
+	<xs:complexType name="tcomplexfunctioncall">
+		<xs:sequence>
+			<xs:element name="l" type="texpression"></xs:element>
+			<xs:element name="ce" type="tcexpression" minOccurs="0"></xs:element>
+			<xs:element name="fbk" type="tFunctionBody" minOccurs="0"></xs:element>
+		</xs:sequence>
+		<xs:attribute name="indexer" type="xs:boolean" default="false"></xs:attribute>
+    <xs:attribute name="targetClass" type="xs:string" use="optional"></xs:attribute>
+    <xs:attribute name="targetMember" type="xs:string" use="optional"></xs:attribute>
+    <xs:attribute name="donotrender" type="xs:boolean" default="false">
+      <!--Indica q el generador de código no debe generar código para esta llamada.-->
+    </xs:attribute>
+    <xs:attribute name="evaluate" type="xs:boolean" default="false">
+      <!--Indica que el compilador Zoe debe evaluar la expresiones argumento como pueda
+      durante el analisis semantico.-->
+    </xs:attribute>
+    <xs:attribute name="ignoreforsubprogram" type="xs:boolean" default="false">
+      <!--Indica que no sea considerada para formar parte del subprograma virtual,
+      la llamada pasara directamente al generador de codigo que sera responsable
+      de su renderización-->
+    </xs:attribute>
+    <xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+	
+	<xs:complexType name="tcexpression">
+		<xs:annotation>
+			<xs:appinfo>RequiereOrden</xs:appinfo>
+		</xs:annotation>
+		<xs:sequence maxOccurs="unbounded">
+			<xs:element name="l" type="texpressionlist" minOccurs="0"></xs:element>
+			<xs:element name="ls" minOccurs="0"></xs:element>
+			<xs:element name="lp" minOccurs="0"></xs:element>
+		</xs:sequence>
+    <xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+    <xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+  </xs:complexType>
+		
+	<!--tipo simple para identificadores de clases e interfaces-->	
+	<xs:complexType name="tname">
+		<xs:sequence maxOccurs="unbounded">
+			<xs:element name="ns" type="xs:string" minOccurs="1"></xs:element>
+		</xs:sequence>
+		<xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+
+  <xs:complexType name="tternaryoperator">
+    <xs:sequence>
+      <xs:element name="o1" type="texpression"></xs:element>
+      <xs:element name="o2" type="texpression"></xs:element>
+      <xs:element name="o3" type="texpression"></xs:element>
+    </xs:sequence>
+    <xs:attribute name="op" type="tternaryoperators.enum" use="required"></xs:attribute>
+    <xs:attribute name="targetClass" type="xs:string" use="optional"></xs:attribute>
+    <xs:attribute name="targetMember" type="xs:string" use="optional"></xs:attribute>
+    <xs:attribute name="targetClassExternalName" type="xs:string" use="optional"></xs:attribute>
+    <xs:attribute name="targetMemberExternalName" type="xs:string" use="optional"></xs:attribute>
+    <xs:attribute name="ignoreforsubprogram" type="xs:boolean" default="false">
+      <!--Indica que no sea considerada para formar parte del subprograma virtual,
+      la llamada pasara directamente al generador de codigo que sera responsable
+      de su renderización-->
+    </xs:attribute>
+    <xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+    <xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+  </xs:complexType>
+
+  <xs:complexType name="tbinaryoperator">
+		<xs:sequence>
+			<xs:element name="l" type="texpression"></xs:element>
+			<xs:element name="r" type="texpression"></xs:element>
+		</xs:sequence>
+		<xs:attribute name="op" type="tbinaryoperators.enum" use="required"></xs:attribute>
+    <xs:attribute name="targetClass" type="xs:string" use="optional"></xs:attribute>
+    <xs:attribute name="targetMember" type="xs:string" use="optional"></xs:attribute>
+    <xs:attribute name="targetClassExternalName" type="xs:string" use="optional"></xs:attribute>
+    <xs:attribute name="targetMemberExternalName" type="xs:string" use="optional"></xs:attribute>
+    <xs:attribute name="ignoreforsubprogram" type="xs:boolean" default="false">
+      <!--Indica que no sea considerada para formar parte del subprograma virtual,
+      la llamada pasara directamente al generador de codigo que sera responsable
+      de su renderización-->
+    </xs:attribute>
+    <xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+	
+	<xs:complexType name="tunaryoperator">
+		<xs:sequence>
+			<xs:element name="u" type="texpression"></xs:element>
+		</xs:sequence>
+		<xs:attribute name="op" type="tunaryoperators.enum" use="required"></xs:attribute>
+    <xs:attribute name="targetClass" type="xs:string" use="optional"></xs:attribute>
+    <xs:attribute name="targetMember" type="xs:string" use="optional"></xs:attribute>
+    <xs:attribute name="ignoreforsubprogram" type="xs:boolean" default="false">
+      <!--Indica que no sea considerada para formar parte del subprograma virtual,
+      la llamada pasara directamente al generador de codigo que sera responsable
+      de su renderización-->
+    </xs:attribute>
+    <xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+			
+	<xs:complexType name="tcastexpression"><!--tipo para CAST-->
+		<xs:sequence>
+			<xs:element name="e" type="texpression"></xs:element>
+			<xs:element name="type" type="ttype"></xs:element>
+		</xs:sequence>
+    <xs:attribute name="targetClass" type="xs:string" use="optional"></xs:attribute>
+    <xs:attribute name="targetMember" type="xs:string" use="optional"></xs:attribute>
+    <xs:attribute name="targetClassExternalName" type="xs:string" use="optional"></xs:attribute>
+    <xs:attribute name="targetMemberExternalName" type="xs:string" use="optional"></xs:attribute>
+    <xs:attribute name="castType" type="tcasttype.enum" default="static"></xs:attribute>
+    <xs:attribute name="ignoreforsubprogram" type="xs:boolean" default="false">
+      <!--Indica que no sea considerada para formar parte del subprograma virtual,
+      la llamada pasara directamente al generador de codigo que sera responsable
+      de su renderización-->
+    </xs:attribute>
+    <xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+		
+	<xs:complexType name="tfunctioncall">
+		<xs:sequence>
+			<xs:element name="l" type="texpression"></xs:element>
+			<xs:element name="args" type="texpressionlist" minOccurs="0"></xs:element>
+      <xs:element name="bk" type="tFunctionBody"></xs:element>
+      <!--
+      <xs:element name="progunit" type="tDocumentBody"></xs:element>
+      <xs:element name="classmembers" type="tClassMembersList"></xs:element>
+      <xs:element name="class" type="tClass"></xs:element>
+      -->
+    </xs:sequence>
+		<xs:attribute name="name" type="xs:string" use="optional"></xs:attribute>
+    <xs:attribute name="targetClass" type="xs:string" use="optional"></xs:attribute>
+    <xs:attribute name="targetMember" type="xs:string" use="optional"></xs:attribute>
+    <xs:attribute name="targetClassExternalName" type="xs:string" use="optional"></xs:attribute>
+    <xs:attribute name="targetMemberExternalName" type="xs:string" use="optional"></xs:attribute>
+    <xs:attribute name="ldxplcMods" type="xs:string" use="optional"></xs:attribute>
+    <xs:attribute name="ignoreforsubprogram" type="xs:boolean" default="false">
+      <!--Indica que no sea considerada para formar parte del subprograma virtual,
+      la llamada pasara directamente al generador de codigo que sera responsable
+      de su renderización-->
+    </xs:attribute>
+    <xs:attribute name="evaluateBlock" type="xs:boolean" default="false">
+      <!--Indica si el compilador Zoe debe evaluar el bloque argumento o no.-->
+    </xs:attribute>
+    <xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+	
+	<xs:complexType name="tliteral">
+		<xs:attribute name="str" type="xs:string" use="required"></xs:attribute>
+		<xs:attribute name="type" type="tliteraltype.enum" use="optional"></xs:attribute>
+		<xs:attribute name="subtype" type="xs:string" default="none"></xs:attribute>
+		<xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+	
+	<xs:complexType name="tassing">
+		<xs:sequence>
+			<xs:element name="l" type="texpression"></xs:element>
+			<xs:element name="r" type="texpression"></xs:element>
+		</xs:sequence>
+		<xs:attribute name="operation" type="tassingop.enum" default="none"></xs:attribute>
+    <xs:attribute name="targetClass" type="xs:string" use="optional"></xs:attribute>
+    <xs:attribute name="targetMember" type="xs:string" use="optional"></xs:attribute>
+    <xs:attribute name="ignoreforsubprogram" type="xs:boolean" default="false">
+      <!--Indica que no sea considerada para formar parte del subprograma virtual,
+      la llamada pasara directamente al generador de codigo que sera responsable
+      de su renderización-->
+    </xs:attribute>
+    <xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+	
+	<xs:complexType name="tdowhile">
+		<xs:sequence>
+			<xs:element name="boolean" type="texpression" minOccurs="0"></xs:element>
+			<xs:element name="dobk" type="tFunctionBody" minOccurs="0"></xs:element>
+		</xs:sequence>
+		<xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+	
+	<xs:complexType name="tfor">
+		<xs:sequence>
+			<xs:element name="init" type="tforinit"></xs:element>
+			<xs:element name="condition" type="texpression"></xs:element>
+			<xs:element name="repeat" type="texpressionlist"></xs:element>
+			<xs:element name="forblock" type="tFunctionBody"></xs:element>
+		</xs:sequence>
+		<xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+	
+	<xs:complexType name="tforinit">
+		<xs:choice>
+			<xs:element name="dl" type="tdeclaratorlist"></xs:element>
+			<xs:element name="el" type="texpressionlist"></xs:element>
+		</xs:choice>
+		<xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+	
+	<xs:complexType name="tdeclaratorlist">
+		<xs:sequence maxOccurs="unbounded" minOccurs="0">
+			<xs:element name="d" type="tdeclarator"></xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="texpressionlist">
+		<xs:annotation>
+			<xs:appinfo>RequiereOrden</xs:appinfo>
+		</xs:annotation>
+		<xs:sequence maxOccurs="unbounded" minOccurs="0">
+			<xs:element name="e" type="texpression"></xs:element>
+		</xs:sequence>
+		<xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+	
+	<xs:complexType name="tif">
+		<xs:sequence>
+			<xs:element name="boolean" type="texpression" minOccurs="1" maxOccurs="1"></xs:element>
+			<xs:element name="ifbk" type="tFunctionBody" minOccurs="0"></xs:element>
+			<xs:element name="elseif" type="tif" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:appinfo>RequiereOrden</xs:appinfo>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="else" type="tFunctionBody" minOccurs="0"></xs:element>
+		</xs:sequence>
+		<xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+	
+	<xs:complexType name="tswitch">
+		<xs:sequence>
+			<xs:element name="e" type="texpression" maxOccurs="1" minOccurs="1"></xs:element>
+			<xs:element name="case" type="tcase" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:appinfo>RequiereOrden</xs:appinfo>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+		<xs:attribute name="autobreak" type="xs:boolean" default="true"></xs:attribute>
+		<xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+	
+	<xs:complexType name="tcase">
+		<xs:sequence>
+			<xs:element name="e" type="texpression" minOccurs="1" maxOccurs="1"></xs:element>
+			<xs:element name="bk" type="tFunctionBody" minOccurs="1" maxOccurs="1"></xs:element>
+		</xs:sequence>
+		<xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+		
+	<!-- Elementos para el manejo estructurado de Excepciones -->
+	<xs:complexType name="ttry">
+		<xs:sequence>
+			<xs:element name="trybk" type="tFunctionBody"></xs:element>
+			<xs:element name="catchbk" type="tcatch" minOccurs="1" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:appinfo>RequiereOrden</xs:appinfo>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="finallybk" type="tFunctionBody" minOccurs="0"></xs:element>
+		</xs:sequence>
+		<xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+	
+	<xs:complexType name="tcatch">
+		<xs:sequence>
+			<xs:element name="init" type="tcatchinit"></xs:element>
+			<xs:element name="bk" type="tFunctionBody"></xs:element>
+		</xs:sequence>
+		<xs:attribute name="default" type="xs:boolean" default="true"></xs:attribute>
+		<xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+	
+	<xs:complexType name="tcatchinit">
+		<xs:choice>
+			<xs:element name="d" type="tdeclarator"></xs:element>
+			<xs:element name="e" type="texpression"></xs:element>
+		</xs:choice>
+		<xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+		
+	<xs:complexType name="tnew">
+		<xs:sequence>
+			<xs:element name="type" type="ttype"></xs:element>
+			<xs:element name="init" type="tInitializerList" minOccurs="0" maxOccurs="1"></xs:element>
+			<xs:element name="GCParams" type="texpressionlist" minOccurs="0" maxOccurs="1"></xs:element>
+		</xs:sequence>
+		<xs:attribute name="GCName" type="xs:string" default="default"></xs:attribute>
+		<xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+	
+	<xs:complexType name="tdocumentation">
+		<xs:sequence>
+			<xs:element name="heading" type="xs:string"></xs:element>
+			<xs:element name="title" type="xs:string"></xs:element>
+			<xs:element name="body" type="xs:string"></xs:element>
+			<xs:element name="examples" type="xs:string"></xs:element>
+			<xs:element name="seealso" type="xs:string"></xs:element>
+			<xs:element name="footer" type="xs:string"></xs:element>
+			<xs:element name="summary" type="xs:string"></xs:element>
+			<xs:element name="params" type="xs:string"></xs:element>
+			<xs:element name="returntype" type="xs:string"></xs:element>
+		</xs:sequence>
+		<xs:attribute name="short" type="xs:string"></xs:attribute>
+		<xs:attribute name="source" type="xs:string"></xs:attribute>
+		<xs:attribute name="key"	type="xs:string"></xs:attribute>
+		<xs:attribute name="sourcetype" type="tdocsourcetype.enum"></xs:attribute>
+		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
+	</xs:complexType>
+	
+	<!--
+		TIPOS SIMPLES CON ENUMERACIONES
+	-->
+	<xs:simpleType name="tbitorder.enum">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="little_endian"></xs:enumeration>
+			<xs:enumeration value="big_endian"></xs:enumeration>
+			<xs:enumeration value="ignore"></xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="tAutoInstaceTypes.enum">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="call"></xs:enumeration>
+			<xs:enumeration value="block"></xs:enumeration>
+			<xs:enumeration value="callToFunction"></xs:enumeration>
+			<xs:enumeration value="class"></xs:enumeration>
+			<xs:enumeration value="namespace"></xs:enumeration>
+			<xs:enumeration value="virtualSection"></xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="tPlatformMatch.enum">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="like"></xs:enumeration>
+			<xs:enumeration value="exactName"></xs:enumeration>
+			<xs:enumeration value="exactNameAndVersion"></xs:enumeration>
+			<xs:enumeration value="likeNameAndExactVersion"></xs:enumeration>
+			<xs:enumeration value="customMatch"></xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="tjumptype.enum">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="break"></xs:enumeration>
+			<xs:enumeration value="continue"></xs:enumeration>
+			<xs:enumeration value="resume"></xs:enumeration>
+			<xs:enumeration value="resumenext"></xs:enumeration>
+			<xs:enumeration value="goto"></xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="tplatformsupportlevel.enum">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="complete"></xs:enumeration>
+			<xs:enumeration value="complete_beta"></xs:enumeration>
+			<xs:enumeration value="complete_alpha"></xs:enumeration>
+			<xs:enumeration value="incomplete"></xs:enumeration>
+			<xs:enumeration value="incomplete_beta"></xs:enumeration>
+			<xs:enumeration value="incomplete_alpha"></xs:enumeration>
+			<xs:enumeration value="experimental"></xs:enumeration>
+			<xs:enumeration value="experimental_beta"></xs:enumeration>
+			<xs:enumeration value="experimental_alpha"></xs:enumeration>
+			<xs:enumeration value="possibly_tested"></xs:enumeration>
+			<xs:enumeration value="possibly_nontested"></xs:enumeration>
+			<!--Hasta aqui indica niveles de soporte, de mayor a menor. De aquí para abajo explicitamente no soportadas.-->
+			<xs:enumeration value="explicitly_unsupported"></xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="tmemorymodel.enum">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="lineal"></xs:enumeration>
+			<xs:enumeration value="segmented"></xs:enumeration>
+			<xs:enumeration value="other"></xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+
+	<xs:simpleType name="terrorsourcetype.enum">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="zoe_doc"></xs:enumeration>
+			<xs:enumeration value="layerd_doc"></xs:enumeration>
+			<xs:enumeration value="outputmodule_import"></xs:enumeration>
+			<xs:enumeration value="outputmodule_render"></xs:enumeration>
+			<xs:enumeration value="outputmoudle_compile"></xs:enumeration>
+			<xs:enumeration value="zoe_ezoe_generation"></xs:enumeration>
+			<xs:enumeration value="other"></xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="tLayerDZoeProgramModuletype.enum">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="executable"></xs:enumeration>
+			<xs:enumeration value="static_lib"></xs:enumeration>
+			<xs:enumeration value="dynamic_lib"></xs:enumeration>
+			<xs:enumeration value="script"></xs:enumeration>
+			<xs:enumeration value="other"></xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+
+	<xs:simpleType name="tdocumenttype.enum">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="layerd_zoe_doc"></xs:enumeration> <!-- Documento LayerD-Zoe -->
+			<xs:enumeration value="layerd_ezoe_doc"></xs:enumeration> <!-- Documento Extended LayerD-Zoe -->
+			<xs:enumeration value="layerd_zoe_prog"></xs:enumeration> <!-- Programa LayerD-Zoe -->
+      <xs:enumeration value="import_process"></xs:enumeration><!-- Solicitud de Procesamiento de Imports -->
+      <xs:enumeration value="infoldzoe_outputmodule"></xs:enumeration> <!-- Información de Modlulo de Salida LayerD-Zoe -->
+			<xs:enumeration value="requirements_ezoe"></xs:enumeration> <!-- Requerimientos de código Extended LayerD-Zoe por un Modulo de Salida -->
+			<xs:enumeration value="errors_interchange_doc"></xs:enumeration> <!-- Documento de Intercambio de Errores LayerD -->
+			<xs:enumeration value="virtual_subprogram_layerd_zoe"></xs:enumeration> <!-- Suprograma Virtual LayerD-Zoe -->
+			<xs:enumeration value="parameter_document_layerd_zoe"></xs:enumeration> <!-- Documento Parametro LayerD-Zoe -->
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="ttypename.enum">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="integer"></xs:enumeration>
+			<xs:enumeration value="unsigned"></xs:enumeration>
+			<xs:enumeration value="long"></xs:enumeration>
+			<xs:enumeration value="ulong"></xs:enumeration>
+			<xs:enumeration value="short"></xs:enumeration>
+			<xs:enumeration value="ushort"></xs:enumeration>
+			<xs:enumeration value="sbyte"></xs:enumeration>
+			<xs:enumeration value="byte"></xs:enumeration>			
+			<xs:enumeration value="float"></xs:enumeration>
+			<xs:enumeration value="double"></xs:enumeration>
+			<xs:enumeration value="ldouble"></xs:enumeration>
+			<xs:enumeration value="decimal"></xs:enumeration>
+			<xs:enumeration value="fixed"></xs:enumeration>
+			<xs:enumeration value="boolean"></xs:enumeration>
+			<xs:enumeration value="char"></xs:enumeration>
+			<xs:enumeration value="string"></xs:enumeration>
+			<xs:enumeration value="ASCIIchar"></xs:enumeration>
+			<xs:enumeration value="ASCIIstring"></xs:enumeration>
+			<xs:enumeration value="date"></xs:enumeration>
+			<xs:enumeration value="uuid"></xs:enumeration>
+			<xs:enumeration value="void"></xs:enumeration>
+			<xs:enumeration value="object"></xs:enumeration>
+			<!--Tipo de Classfactorys-->
+			<xs:enumeration value="type"></xs:enumeration>
+			<xs:enumeration value="block"></xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="tfactorytype.enum">
+		<xs:restriction base="xs:string">
+			<!--Tipo de Classfactorys-->
+			<xs:enumeration value="none"></xs:enumeration>
+			<xs:enumeration value="iname"></xs:enumeration>
+			<xs:enumeration value="expression"></xs:enumeration>
+			<xs:enumeration value="expressionlist"></xs:enumeration>
+			<xs:enumeration value="statement"></xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="tassingop.enum">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="none"></xs:enumeration>
+			<xs:enumeration value="add"></xs:enumeration>
+			<xs:enumeration value="sub"></xs:enumeration>
+			<xs:enumeration value="mul"></xs:enumeration>
+			<xs:enumeration value="div"></xs:enumeration>
+			<xs:enumeration value="mod"></xs:enumeration>
+			<xs:enumeration value="lsh"></xs:enumeration>
+			<xs:enumeration value="rsh"></xs:enumeration>
+			<xs:enumeration value="and"></xs:enumeration>
+			<xs:enumeration value="xor"></xs:enumeration>
+			<xs:enumeration value="or"></xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="tliteraltype.enum">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="string"></xs:enumeration>
+			<xs:enumeration value="ASCIIstring"></xs:enumeration>
+			<xs:enumeration value="char"></xs:enumeration>
+			<xs:enumeration value="ASCIIchar"></xs:enumeration>
+			<xs:enumeration value="bool"></xs:enumeration>
+			<xs:enumeration value="integer"></xs:enumeration>
+			<xs:enumeration value="real"></xs:enumeration>
+      <xs:enumeration value="float"></xs:enumeration>
+			<xs:enumeration value="double"></xs:enumeration>
+      <xs:enumeration value="decimal"></xs:enumeration>
+      <xs:enumeration value="oct"></xs:enumeration>
+			<xs:enumeration value="hex"></xs:enumeration>
+			<xs:enumeration value="datetime"></xs:enumeration>
+			<xs:enumeration value="UUID"></xs:enumeration>
+      <xs:enumeration value="null"></xs:enumeration>
+      <xs:enumeration value="other"></xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="tcasttype.enum">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="static"></xs:enumeration>
+			<xs:enumeration value="dynamic"></xs:enumeration>
+			<xs:enumeration value="const"></xs:enumeration>
+			<xs:enumeration value="reinterpret"></xs:enumeration>
+			<xs:enumeration value="other"></xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+
+  <xs:simpleType name="tternaryoperators.enum">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="boolean">
+        <!--Boolean ternary operator ?: -->
+      </xs:enumeration>
+      <xs:enumeration value="reserved">        
+      </xs:enumeration>
+    </xs:restriction>
+  </xs:simpleType>
+  
+  <xs:simpleType name="tunaryoperators.enum">
+		<xs:restriction base="xs:string">
+			<!--operadores aritmeticos-->
+			<xs:enumeration value="min"></xs:enumeration>
+			<xs:enumeration value="inc"></xs:enumeration>
+			<xs:enumeration value="dec"></xs:enumeration>
+			<xs:enumeration value="preinc"></xs:enumeration>					
+			<xs:enumeration value="predec"></xs:enumeration>
+			<!--operadores de identificadores-->
+			<xs:enumeration value="ind"></xs:enumeration>		<!--indireccion(* en C)-->
+			<xs:enumeration value="aof"></xs:enumeration>		<!--address of(& en C)-->
+			<xs:enumeration value="raof"></xs:enumeration>		<!--Reference Address Of(para Referencias)-->
+			<xs:enumeration value="sizeof"></xs:enumeration>
+			<xs:enumeration value="typeof"></xs:enumeration>
+			<!--operadores de bits-->
+			<xs:enumeration value="onecomp"></xs:enumeration>	<!--complemento a uno-->
+			<xs:enumeration value="not"></xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="tbinaryoperators.enum">
+		<xs:restriction base="xs:string">
+			<!--aritmeticos-->
+			<xs:enumeration value="add"></xs:enumeration>
+			<xs:enumeration value="min"></xs:enumeration>
+			<xs:enumeration value="mul"></xs:enumeration>
+			<xs:enumeration value="div"></xs:enumeration>
+			<xs:enumeration value="mod"></xs:enumeration>
+			<xs:enumeration value="exp"></xs:enumeration>
+			<!--desplazamiento-->
+			<xs:enumeration value="lsh"></xs:enumeration>
+			<xs:enumeration value="rsh"></xs:enumeration>
+			<!--comparación logica-->
+			<xs:enumeration value="AND"></xs:enumeration>
+			<xs:enumeration value="OR"></xs:enumeration>
+			<xs:enumeration value="EQ"></xs:enumeration>
+			<xs:enumeration value="NOTEQ"></xs:enumeration>
+			<xs:enumeration value="GR"></xs:enumeration>
+			<xs:enumeration value="LS"></xs:enumeration>
+			<xs:enumeration value="GREQ"></xs:enumeration>
+			<xs:enumeration value="LSEQ"></xs:enumeration>
+			<!--operaciones con bits-->
+			<xs:enumeration value="BAND"></xs:enumeration>
+			<xs:enumeration value="BOR"></xs:enumeration>
+			<xs:enumeration value="XOR"></xs:enumeration>
+			<!--operador de acceso a miembro-->
+			<xs:enumeration value="m"></xs:enumeration>			<!--como "." en C++-->
+			<xs:enumeration value="pm"></xs:enumeration>		<!--como "Felcha" en C++-->
+			<xs:enumeration value="mp"></xs:enumeration>		<!--como ".*" en C++-->
+			<xs:enumeration value="pmp"></xs:enumeration>		<!--como "Flecha*" en C++-->
+      
+      <xs:enumeration value="ms"></xs:enumeration>    <!--como "::" en C++-->
+      <xs:enumeration value="msm"></xs:enumeration>   <!--como "::" o "." en C++, automatico, primero intenta "::"-->
+      
+      <xs:enumeration value="rm"></xs:enumeration>		<!--Reservado para acceso a miembros-->
+			<!--operador de asignacion de nombre a parametro-->
+			<xs:enumeration value="imp"></xs:enumeration>		<!--Igual Mayor, Flecha-->
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="tvarstorage.enum">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="auto"></xs:enumeration>
+			<xs:enumeration value="static"></xs:enumeration>
+			<xs:enumeration value="extern"></xs:enumeration>
+			<xs:enumeration value="static_extern"></xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="taccesstype.enum">
+		<xs:restriction base="xs:string">
+      <xs:enumeration value="internal"></xs:enumeration>
+      <xs:enumeration value="public"></xs:enumeration>
+			<xs:enumeration value="protected"></xs:enumeration>
+			<xs:enumeration value="private"></xs:enumeration>
+			<!-- Inyected ... -->
+      <xs:enumeration value="iinternal"></xs:enumeration>
+      <xs:enumeration value="ipublic"></xs:enumeration>
+			<xs:enumeration value="iprotected"></xs:enumeration>
+			<xs:enumeration value="iprivate"></xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="tpointertype.enum">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="c_native"></xs:enumeration>
+			<xs:enumeration value="default"></xs:enumeration>
+			<xs:enumeration value="safeclass"></xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<xs:simpleType name="tdocsourcetype.enum">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="XML"></xs:enumeration>
+			<xs:enumeration value="HTML"></xs:enumeration>
+			<xs:enumeration value="ZOE"></xs:enumeration>
+			<xs:enumeration value="TEXT"></xs:enumeration>
+			<xs:enumeration value="OTHER"></xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+	
+	<!--
+	<xs:simpleType name="tfactoryblockaccess.enum">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="full"></xs:enumeration>
+			<xs:enumeration value="notwritable"></xs:enumeration>
+			<xs:enumeration value="notannullable"></xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+	-->
+	
+	<xs:simpleType name="tparameterdirection.enum" >
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="in"></xs:enumeration>
+			<xs:enumeration value="out"></xs:enumeration>
+			<xs:enumeration value="inout"></xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+  
+  <!--ESTRUCTURAS DE USO INTERNO POR EL COMPILADOR ZOEC U OTRAS HERRAMIENTAS,
+  NO CONSIDERARSE COMO PARTE REAL DEL CODEDOM!!!-->
+
+  <xs:complexType name="FactoryTypesDatabase">
+    <xs:sequence maxOccurs="unbounded">
+      <xs:element name="Classfactory" type="ClassfactoryData"></xs:element>
+    </xs:sequence>
+    <xs:attribute name="version" type="xs:integer" default="1"></xs:attribute>    
+  </xs:complexType>
+  <xs:complexType name="ClassfactoryData">
+    <xs:attribute name="typeFullName" type="xs:string" use="required">
+      <!--El nombre completo de tipo del tipo factory, por ejemplo
+      MiNamespace.MiTipo, usando "." como separador de alcance.-->
+    </xs:attribute>
+    <xs:attribute name="isInterface" type="xs:boolean" default="false">
+      <!--Indica si el tipo factory es una interface en lugar de una clase.-->
+    </xs:attribute>
+    <xs:attribute name="isInteractive" type="xs:boolean" default="false">
+      <!--Indica si la classfactory es interactiva o no, puede utilizarse
+      para optimizar las classfactorys a cargar durante la compilación interactiva.-->
+    </xs:attribute>
+    <xs:attribute name="active" type="xs:boolean" default="true">
+      <!--Indica si el modulo esta activo, si el modulo no esta activo
+      no se cargara su información de tipos en memoria y por tanto no podrá
+      ser usado por el programa Zoe cliente.
+      Esto permite mantener instalada extensiones de forma pasiva sin que
+      impacten en la performance de compilación o que interfieran con otras
+      extensiones que sean incompatibles.-->
+    </xs:attribute>
+    <xs:attribute name="moduleFileName" type="xs:string" use="required">
+      <!--El nombre del modulo compilado donde se encuentra la clase o interface.-->
+    </xs:attribute>
+    <xs:attribute name="platforms" type="xs:string" use="optional">
+      <!--La plataforma o plataformas que soporta el modulo indicado,
+      si no se especifica se asume que es la version universa (para todas las
+      plataformas), si se indican plataformas separadas con coma se asumen sólo
+      esas plataformas para el modulo compilado.
+      Los nombres de tipos completos para una misma plataforma no pueden repertirse
+      ello es un error.-->
+    </xs:attribute>
+    <xs:attribute name="zoeDocFileName" type="xs:string" use="required">
+      <!--El nombre de archivo Zoe que debe cargarse donde se encuentra
+      la version Zoe de la clase que ya fue validada por el analizador
+      semántico, pero no su version extendida, esta version sin la implementacion
+      en general, de todas formas el compilador debe ignorar el chequeo de la 
+      implementación. Resumiendo seria una copia del fuente original que mantiene
+      la libreria de tipos factory.-->
+    </xs:attribute>
+  </xs:complexType>
+</xs:schema>

@@ -1,0 +1,191 @@
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release All|AnyCPU' ">
+    <OutputPath>bin\Release All\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <BaseAddress>285212672</BaseAddress>
+    <Optimize>true</Optimize>
+    <DebugType>
+    </DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ProjectType>Local</ProjectType>
+    <ProductVersion>9.0.30729</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{A5E96AAA-E255-452C-9F58-AD31D588DEFE}</ProjectGuid>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ApplicationIcon>
+    </ApplicationIcon>
+    <AssemblyKeyContainerName>
+    </AssemblyKeyContainerName>
+    <AssemblyName>lib_layerd_xpl_codedom_net</AssemblyName>
+    <AssemblyOriginatorKeyFile>
+    </AssemblyOriginatorKeyFile>
+    <DefaultClientScript>JScript</DefaultClientScript>
+    <DefaultHTMLPageLayout>Grid</DefaultHTMLPageLayout>
+    <DefaultTargetSchema>IE50</DefaultTargetSchema>
+    <DelaySign>false</DelaySign>
+    <OutputType>Library</OutputType>
+    <RootNamespace>LayerD.CodeDOM</RootNamespace>
+    <StartupObject>
+    </StartupObject>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <UpgradeBackupLocation>
+    </UpgradeBackupLocation>
+    <OldToolsVersion>2.0</OldToolsVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>bin\Debug\</OutputPath>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <BaseAddress>285212672</BaseAddress>
+    <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
+    <ConfigurationOverrideFile>
+    </ConfigurationOverrideFile>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DocumentationFile>bin\Debug\lib_layerd_xpl_codedom_net.XML</DocumentationFile>
+    <DebugSymbols>true</DebugSymbols>
+    <FileAlignment>4096</FileAlignment>
+    <Optimize>false</Optimize>
+    <RegisterForComInterop>false</RegisterForComInterop>
+    <RemoveIntegerChecks>false</RemoveIntegerChecks>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningLevel>4</WarningLevel>
+    <DebugType>full</DebugType>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>bin\Release\</OutputPath>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <BaseAddress>285212672</BaseAddress>
+    <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
+    <ConfigurationOverrideFile>
+    </ConfigurationOverrideFile>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DocumentationFile>
+    </DocumentationFile>
+    <DebugSymbols>true</DebugSymbols>
+    <FileAlignment>4096</FileAlignment>
+    <Optimize>true</Optimize>
+    <RegisterForComInterop>false</RegisterForComInterop>
+    <RemoveIntegerChecks>false</RemoveIntegerChecks>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningLevel>4</WarningLevel>
+    <DebugType>full</DebugType>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug All|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\Debug All\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <BaseAddress>285212672</BaseAddress>
+    <DebugType>full</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System">
+      <Name>System</Name>
+    </Reference>
+    <Reference Include="System.Data">
+      <Name>System.Data</Name>
+    </Reference>
+    <Reference Include="System.Xml">
+      <Name>System.XML</Name>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="CDOMBase.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="CDOM_ClassfactoryData.cs" />
+    <Compile Include="CDOM_FactoryTypesDatabase.cs" />
+    <Compile Include="CDOM_SimpleTypes.cs" />
+    <Compile Include="CDOM_XplAssing.cs" />
+    <Compile Include="CDOM_XplAutoInstance.cs" />
+    <Compile Include="CDOM_XplBaseInitializer.cs" />
+    <Compile Include="CDOM_XplBaseInitializers.cs" />
+    <Compile Include="CDOM_XplBinaryoperator.cs" />
+    <Compile Include="CDOM_XplCase.cs" />
+    <Compile Include="CDOM_XplCastexpression.cs" />
+    <Compile Include="CDOM_XplCatchinit.cs" />
+    <Compile Include="CDOM_XplCatchStatement.cs" />
+    <Compile Include="CDOM_XplCexpression.cs" />
+    <Compile Include="CDOM_XplClass.cs" />
+    <Compile Include="CDOM_XplClassfactorysPermissions.cs" />
+    <Compile Include="CDOM_XplClassMembersList.cs" />
+    <Compile Include="CDOM_XplComplexfunctioncall.cs" />
+    <Compile Include="CDOM_XplConfig.cs" />
+    <Compile Include="CDOM_XplCopyright.cs" />
+    <Compile Include="CDOM_XplDeclarator.cs" />
+    <Compile Include="CDOM_XplDeclaratorlist.cs" />
+    <Compile Include="CDOM_XplDirectoutput.cs" />
+    <Compile Include="CDOM_XplDocument.cs" />
+    <Compile Include="CDOM_XplDocumentation.cs" />
+    <Compile Include="CDOM_XplDocumentBody.cs" />
+    <Compile Include="CDOM_XplDocumentData.cs" />
+    <Compile Include="CDOM_XplDowhileStatement.cs" />
+    <Compile Include="CDOM_XplError.cs" />
+    <Compile Include="CDOM_XplExpression.cs" />
+    <Compile Include="CDOM_XplExpressionlist.cs" />
+    <Compile Include="CDOM_XplExtendedLayerDZoeDocumentConfig.cs" />
+    <Compile Include="CDOM_XplExtendedLayerDZoeRequirementsConfig.cs" />
+    <Compile Include="CDOM_XplField.cs" />
+    <Compile Include="CDOM_XplFileData.cs" />
+    <Compile Include="CDOM_XplForinit.cs" />
+    <Compile Include="CDOM_XplForStatement.cs" />
+    <Compile Include="CDOM_XplFunction.cs" />
+    <Compile Include="CDOM_XplFunctionBody.cs" />
+    <Compile Include="CDOM_XplFunctioncall.cs" />
+    <Compile Include="CDOM_XplGarbageCollector.cs" />
+    <Compile Include="CDOM_XplIfStatement.cs" />
+    <Compile Include="CDOM_XplImportProcessConfig.cs" />
+    <Compile Include="CDOM_XplInfoLayerZoeOutputModuleConfig.cs" />
+    <Compile Include="CDOM_XplInherit.cs" />
+    <Compile Include="CDOM_XplInherits.cs" />
+    <Compile Include="CDOM_XplInitializerList.cs" />
+    <Compile Include="CDOM_XplJump.cs" />
+    <Compile Include="CDOM_XplLanguage.cs" />
+    <Compile Include="CDOM_XplLayerDCompiler.cs" />
+    <Compile Include="CDOM_XplLayerDErrorInterchangeConfig.cs" />
+    <Compile Include="CDOM_XplLayerDZoeDocumentConfig.cs" />
+    <Compile Include="CDOM_XplLayerDZoeProgramConfig.cs" />
+    <Compile Include="CDOM_XplLayerDZoeProgramRequirements.cs" />
+    <Compile Include="CDOM_XplLiteral.cs" />
+    <Compile Include="CDOM_XplName.cs" />
+    <Compile Include="CDOM_XplNamespace.cs" />
+    <Compile Include="CDOM_XplNewExpression.cs" />
+    <Compile Include="CDOM_XplOutputModuleCapabilities.cs" />
+    <Compile Include="CDOM_XplParameter.cs" />
+    <Compile Include="CDOM_XplParameters.cs" />
+    <Compile Include="CDOM_XplPlatform.cs" />
+    <Compile Include="CDOM_XplPlatformAlias.cs" />
+    <Compile Include="CDOM_XplPointerinfo.cs" />
+    <Compile Include="CDOM_XplProperty.cs" />
+    <Compile Include="CDOM_XplSetonerror.cs" />
+    <Compile Include="CDOM_XplSetPlatforms.cs" />
+    <Compile Include="CDOM_XplSourceFile.cs" />
+    <Compile Include="CDOM_XplSwitchStatement.cs" />
+    <Compile Include="CDOM_XplTargetPlatform.cs" />
+    <Compile Include="CDOM_XplTernaryoperator.cs" />
+    <Compile Include="CDOM_XplTryStatement.cs" />
+    <Compile Include="CDOM_XplType.cs" />
+    <Compile Include="CDOM_XplUnaryoperator.cs" />
+    <Compile Include="CDOM_XplWriteCodeBody.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="License.txt" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PreBuildEvent>
+    </PreBuildEvent>
+    <PostBuildEvent>
+    </PostBuildEvent>
+  </PropertyGroup>
+</Project>

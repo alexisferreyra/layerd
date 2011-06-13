@@ -1,0 +1,59 @@
+using DataSample;
+using XmlSample;
+using Zoe;
+
+namespace Test{
+
+Utils::WindowsNetImports();
+
+//Ventana usando un DSL para .NET
+GUI::Window(MiVentana3){
+	//Errores varios :-)
+	top=10;left=30;heigh=150;widh=200;
+	tet = "Una ventanita con un DSL en LayerD - Meta D++.";
+	Controls{ FlowLayoutPanel(f1){ 
+		Dock = DockStyle::Fill; 
+		Controls{
+			Button(CSalir){
+				text="Salir"; autosze=true;
+				Click{ 
+					this.Close();
+				};
+			};
+			Button(CMsg){
+				//Más errores varios :-)
+				text="Test XML"; autos=true;
+				Click{					
+					string^ strA = "Cadena A", strB = "Cadena B", str;
+					//Uso un DSL para armar cadenas XML
+					str = Markup::XML('
+						table(id = "miClase", background = "black", comment = strA + "-" + strB):
+							tr: td["Nombre"]	td["Apellido"] ;
+							tr: td[strA]		td[strB] ;
+							tr:	td[strB]		td[strA] ;
+							tr:	td["Juan"]		td["Gonzalez"] ;
+							tr:	td["Gustavo"]	td["Lopez"] ;
+							tr:	td["Daniel"]	td["Perez"] ;
+							tr:	td["UTN"]		td["FRC"] ;
+						; 
+					');	
+					MessageBox::Show(str);
+					//Corrigo algunos errores
+					Tools::Correct();
+				};
+			};
+		};
+	};};
+};
+
+//Clase con el Main :-)
+class Principal{
+public:
+	static void Main(string^ []args){
+		Application::EnableVisualStyles();
+		Application::Run(new MiVentana3());
+	}
+}
+
+
+}
