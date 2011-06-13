@@ -1,0 +1,24 @@
+import "Microsoft", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+using DotNET::System;
+using DotNET::System::IO;
+using DotNET::System::Collections;
+using DotNET::LayerD::CodeDOM;
+using DotNET::LayerD::ZOECompiler;
+
+
+namespace Zoe::Tools{
+	public factory class AOP{
+	public:
+		static exp void AddTry(block tryBlock){
+			// Buscar todas las clases en el programa a compilar actual
+			
+			// por cada clase iterar en todas las funciones de esa clase (ignorar la funcion Main)
+				// por cada funcion inyectar el bloque try que asumimos existe en el bloque tryBlock
+				// por parametro
+			
+			return null;
+		}
+	}
+}
+

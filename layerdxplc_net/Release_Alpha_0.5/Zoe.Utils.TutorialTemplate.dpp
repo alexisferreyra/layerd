@@ -1,0 +1,13 @@
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+using DotNET::System;
+using DotNET::System::IO;
+using DotNET::System::Collections;
+using DotNET::LayerD::CodeDOM;
+using DotNET::LayerD::ZOECompiler;
+
+namespace Zoe::Utils::Help{
+	public factory class Tutorial{
+	public:
+	}
+}
+

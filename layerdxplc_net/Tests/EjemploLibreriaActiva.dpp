@@ -1,0 +1,31 @@
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+import "System.Data", "platform=DotNET", "ns=DotNET", "assembly=System.Data";
+import "System.Xml", "platform=DotNET", "ns=DotNET", "assembly=System.Xml";
+using DotNET::System;
+using DotNET::System::Data;
+using DotNET::System::Data::SqlClient;
+using ActiveLibrary;
+
+namespace ConsoleApplication2
+{
+    class Program
+    {
+	public:
+        static void Main(string^[] args)
+        {
+			for(int n2=0; n2<4;n2++){
+				DataConnection^ conn = new DataConnection("Data Source=localhost\\SQLEXPRESS;Initial Catalog=test;Integrated Security=True;Pooling=False");
+				conn.Open();
+				SqlDataAdapter^ adapter = new SqlDataAdapter("select * from clientes;",conn);
+				DataTable^ clientes = new DataTable();
+				adapter.Fill(clientes);
+				for (int n = 0; n < clientes.Rows.Count; n++)
+				{
+					Console::WriteLine("Nombre : " + clientes.Rows[n]["nombre"].ToString() + " Apellido: " + clientes.Rows[n]["apellido"].ToString());
+				}
+				conn.Close();
+			}
+			Console::ReadLine();
+        }
+    }
+}

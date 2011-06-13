@@ -1,0 +1,46 @@
+import "Microsoft", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+using DotNET::System;
+using DotNET::System::IO;
+using DotNET::System::Collections;
+using DotNET::LayerD::CodeDOM;
+
+
+namespace zoe::test{
+	public factory class Factory{
+	public:
+		static exp string^ property Name{
+			get{
+				return writecode(Something::Name);
+			}
+			set{
+				return writecode(Something::Name = $value);
+			}
+		}
+		exp string^ property Test{
+			get{
+				return writecode(ileft.Juan);
+			}
+			set{
+				return writecode(ileft.Pedro = $value);
+			}
+		}
+		exp string^ property Test2{
+			get{
+				return writecode(ileft.get_Test2());
+			}
+			set{
+				return writecode(ileft.set_Test2($value));
+			}
+		}
+		/*
+			exp string^ __get_Test2(){
+				return writecode(ileft.get_Test2());
+			}
+			exp string^ __set_Test2(exp string^ value){
+				return writecode(ileft.set_Test2($value));
+			}
+		*/
+	}
+}
+

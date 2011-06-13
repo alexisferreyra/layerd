@@ -1,0 +1,266 @@
+/*
+
+	Meta D++ sample.
+
+	Implementation of DSL for .NET Windows Forms.
+
+	Visit http://layerd.net and http://layerd.blogspot.com to get updates of LayerD SDK and documentation.
+	
+*/
+/*-
+ * 2009 Alexis Ferreyra
+ *
+ * THIS SOFTWARE IS PROVIDED BY CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL COPYRIGHT HOLDERS OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+using DotNET::System;
+using DotNET::System::IO;
+using DotNET::System::Collections;
+using DotNET::LayerD::CodeDOM;
+using DotNET::LayerD::ZOECompiler;
+
+namespace Zoe::DotNET::Utils{
+	public factory class Print{
+		static void Replace(XplNodeList^ args, XplExpression^ leftExp){
+			if(args==null)return;
+			for(XplNode^ node in args){
+				if(node.get_TypeName()==CodeDOMTypes::XplExpression){
+					XplExpression^ innerExp = new XplExpression(node.get_Content());
+					switch(node.get_Content().get_TypeName()){
+						case CodeDOMTypes::XplBinaryoperator:
+						case CodeDOMTypes::XplUnaryoperator:
+						case CodeDOMTypes::XplLiteral:
+						case CodeDOMTypes::XplCastexpression:
+							node.set_Content(
+								writecode(
+									$leftExp($innerExp)
+								).get_Content()
+							);
+							break;
+					}
+				}
+				else{
+					Replace(node.ChildNodes(), leftExp);
+				}
+			}
+		}
+	public:
+		static block Lines(block args){
+			XplExpression^ leftExp = writecode(DotNET::System::Console::WriteLine);
+			Replace(args.Children(), leftExp);
+			return args;
+		}
+		static block ToTextFile(exp string^ filename, block args){
+			return ToTextFile(filename, writecode(false), args);
+		}
+		static block ToTextFile(exp string^ filename, exp bool append, block args){
+			XplExpression^ leftExp = writecode(__buffer.AppendLine);
+			Replace(args.Children(), leftExp);
+			return writecode{
+                DotNET::System::Text::StringBuilder^ __buffer = new DotNET::System::Text::StringBuilder();
+                DotNET::System::IO::StreamWriter^ __writer = null;
+				try{
+					__writer = new DotNET::System::IO::StreamWriter($filename, $append);
+					$args;
+					__writer.WriteLine(__buffer.ToString());
+				}
+				catch(DotNET::System::IO::IOException^ ioError){
+					Console::WriteLine("IO ERROR: " + ioError.Message);
+				}
+				finally{
+					if(__writer!=null) __writer.Close();
+				}
+			};
+		}
+	}
+	public interactive class iGUI{
+	public:
+		static exp void Help(){
+			//To define a window
+			return writecode(
+				GUI::Window(window1){
+					Text = "Sample Window with DSL for .NET Windows Forms.";
+					Controls{
+						Button(cmdSalir){
+							//Button text and autosize
+							Text="Salir"; AutoSize=true;
+							//Click event
+							Click{
+								this.Close(); 
+							};
+						};
+					};
+				}
+			);
+		}
+		static exp void Example(){
+			return Help();
+		}
+	}
+
+	//
+	// Classfactory que implementa un DSL para Windows Forms en .NET.
+	// Vea los ejemplos de utilización en EjemploGUI.dpp, funciona con cualquier clase
+	// windows forms.
+	//
+	public factory class GUI{
+		static void RenderControl(XplNode^ controlDef, XplFunction^ constructor, XplExpression^ containerExp, XplClass^ containerClass){
+			if(controlDef.get_TypeName()!=CodeDOMTypes::XplExpression)return;
+
+			XplExpression^ leftExp = null;
+			XplExpression^ rigthExp = null;
+			XplExpression^ resExp = null;
+			XplType^ claseControl = new XplType();
+			claseControl.set_typename(controlDef.FindNode("/n").get_StringValue());
+			XplExpression^ nombreControl = (XplExpression^)controlDef.FindNode("/e/n");
+			XplNodeList^ blockInfo = ((XplFunctioncall^)controlDef.get_Content()).get_bk().Children();
+			//Declaro el control en la clase
+			XplField^ fieldDecl = (XplField^)writecode{%
+				$claseControl^ nombreControl = new $claseControl();
+			%}.Children().FirstNode();
+			fieldDecl.set_name(nombreControl.FindNode("/n").get_StringValue());
+			containerClass.Children().InsertAtEnd(fieldDecl);
+			//Agrego el control al contenedor
+			resExp = writecode( $containerExp.Controls.Add($nombreControl) );
+			constructor.get_FunctionBody().Children().InsertAtEnd(resExp);
+
+			for(XplNode^ node in blockInfo){
+				if (node.get_Content()!=null)
+					if (node.get_Content().get_TypeName() == CodeDOMTypes::XplAssing){
+					//Es una propiedad
+					leftExp = ((XplAssing^)node.get_Content()).get_l();
+					rigthExp = ((XplAssing^)node.get_Content()).get_r();
+					resExp = writecode( $nombreControl.$leftExp = $rigthExp );
+					constructor.get_FunctionBody().Children().InsertAtEnd(resExp);
+				}
+				else {
+					if (node.get_ElementName() == "e" && node.get_Content().get_ElementName() == "fc" && node.FindNode("/n").get_StringValue() == "Controls"){
+						XplNodeList^ list = ((XplFunctioncall^)node.get_Content()).get_bk().Children();
+						for(XplNode^ node2 in list){
+							RenderControl(node2, constructor, writecode( $nombreControl ), containerClass);
+						}
+					}
+					else {
+						if (node.get_ElementName() == "e" && node.get_Content().get_ElementName() == "fc"){
+							XplFunctionBody^ eventLogic = ((XplFunctioncall^)node.get_Content()).get_bk();
+							XplExpression^ eventName = ((XplFunctioncall^)node.get_Content()).get_l();
+							XplFunction^ eventFunction = (XplFunction^)writecode{%
+								void eventFunc(object^ sender, EventArgs^ e){
+									$eventLogic;
+								}
+							%}.Children().FirstNode();
+							eventFunction.set_name(fieldDecl.get_name() + "_" + eventName.get_Content().get_StringValue());
+							containerClass.Children().InsertAtEnd(eventFunction);
+							XplExpression^ addEventFuncName = null;
+							addEventFuncName = writecode( id );
+							addEventFuncName.get_Content().set_Value("add_" + eventName.get_Content().get_StringValue());
+							XplExpression^ addEvent = null;
+							eventName.get_Content().set_Value(eventFunction.get_name());
+							addEvent = writecode( $nombreControl.$addEventFuncName(new EventHandler(&this.$eventName)) );
+							constructor.get_FunctionBody().Children().InsertAtEnd(addEvent);
+						}
+					}
+				}
+			}
+		}
+	public:
+		static int count = 0;
+		static exp void Window(block info){			
+			return Window(new XplIName(), info);
+		}
+		static exp void Window(iname void className, block info){
+			// get simple name
+			className.Identifier = ZoeHelper::GetSimpleNameFromQualified(className.Identifier);
+			
+			XplExpression^ thisExp = null;
+			thisExp = writecode( this );
+			XplClass^ claseVentana = writecode{
+				private class $className inherits Form{
+				public:
+					//Creo la clase para la ventana
+					$className(){
+					}
+				}
+			};
+			//claseVentana.set_name(className);
+			XplFunction^ constructor = (XplFunction^)claseVentana.FindNode("/@XplFunction");
+			//constructor.set_name(claseVentana.get_ElementName());
+			for(XplNode^ node in info.Children()){
+				XplExpression^ leftExp = null;
+				XplExpression^ rigthExp = null;
+				XplExpression^ resExp = null;
+				if (node.get_ElementName() == "e" && node.get_Content().get_ElementName() == "a"){
+					//Es una asignacion a una propiedad
+					leftExp = ((XplAssing^)node.get_Content()).get_l();
+					rigthExp = ((XplAssing^)node.get_Content()).get_r();
+					resExp = writecode( this.$leftExp = $rigthExp );
+					constructor.get_FunctionBody().Children().InsertAtEnd(resExp);
+				}
+				if (node.get_ElementName() == "e" && node.get_Content().get_ElementName() == "fc" && node.FindNode("/n").get_StringValue() == "Controls"){
+					XplNodeList^ list = ((XplFunctioncall^)node.get_Content()).get_bk().Children();
+					for(XplNode^ node2 in list){
+						RenderControl(node2, constructor, thisExp, claseVentana);
+					}
+				}
+			}
+			XplClass^ backClass = (XplClass^)context.CurrentNamespace.FindNode("/@XplClass[name='" + claseVentana.get_name() + "']");
+			if (backClass != null){
+				//context.CurrentNamespace.Children().Remove(backClass);
+				backClass.Children().InsertAtEnd( claseVentana.Children() );
+			}
+			else{
+				context.CurrentNamespace.Children().InsertAtEnd(claseVentana);
+			}
+			return null;
+		}
+	}
+	
+	//
+	// Classfactory para ejecución de instrucciones en forma concurrente usando hilos 
+	// sencillos de .NET.
+	//
+	public factory class Concurrent{
+	public:
+		// Función sencilla para ejecutar instrucciones en hilos separados usando .NET
+		static exp void ExecuteParallel(block parallelStatements){
+			int counter = 0;
+			// Por cada instrucción en el bloque proporcionado
+			for(XplNode^ sta in parallelStatements.Children()){
+				if(sta.get_TypeName()!=CodeDOMTypes::XplDocumentation){
+					counter++;
+					// Creo un nombre aleatorio para la función de ayuda
+					XplIName^ funcName = new XplIName();
+					// Creo la función de ayuda vacia
+					// La funcion para ejecutar el hilo
+					XplFunction^ func = (XplFunction^)writecode{%
+					private:
+						static void $funcName(){
+						}
+					%}.Children().FirstNode();
+					// Inserto la instrucción dentro del bloque de funcion
+					func.get_FunctionBody().Children().InsertAtEnd(sta);
+					// Inserto la función dentro de la clase actual
+					context.CurrentClass.Children().InsertAtEnd(func);
+					// Creo la expresion de inicialización del hilo
+					XplExpression^ startExp = null;
+					startExp = writecode( new DotNET::System::Threading::Thread( new DotNET::System::Threading::ThreadStart( & $funcName ) ).Start() );
+					// Inyecto la expresion de inicializacion del hilo en el contexto actual;
+					context.CurrentBlock.Children().InsertBefore(startExp, context.CurrentExpression);
+				}
+			}
+			return null;
+		}
+	}
+
+}
+

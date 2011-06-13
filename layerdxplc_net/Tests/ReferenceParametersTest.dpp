@@ -1,0 +1,47 @@
+import "Microsoft", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+using DotNET::System;
+using DotNET::System::IO;
+using DotNET::System::Collections;
+
+namespace Sample{
+	public class Test{
+	public:
+		string^ Name;
+		int Value;
+		override string^ ToString(){
+			return "Name : "+ Name+ " , Value: "+Value.ToString();
+		}
+	}
+	public class App{
+	public:
+		static int Main(string^[] args){
+			Test^ myVar = new Test();
+			myVar.Name = "Adriel";
+			myVar.Value = 5;
+			Test^ myVar2 = new Test();
+			myVar2.Name = "Adriel2";
+			myVar2.Value = 15;
+
+			Console::WriteLine(myVar.ToString());
+			Console::WriteLine(myVar2.ToString());
+
+			TestMethod(&myVar, &myVar2);
+
+			Console::WriteLine(myVar.ToString());
+			Console::WriteLine(myVar2.ToString());
+
+			Console::ReadLine();
+			return 0;
+		}
+		static void TestMethod(inout Test*^ testParam, out Test*^ testParam2){
+			testParam.Name = "Alexis";
+			testParam.Value = 12;
+
+			testParam2 = new Test();
+			testParam2.Name = "Ferreyra";
+			testParam2.Value = 20;
+		}
+	}
+}
+

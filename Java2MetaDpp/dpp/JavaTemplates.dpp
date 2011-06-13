@@ -1,0 +1,83 @@
+import "System", "ns=DotNET", "platform=DotNET", "assembly=mscorlib";
+
+using DotNET::LayerD::CodeDOM;
+using DotNET::LayerD::ZOECompiler;
+using DotNET::System;
+
+namespace zoe::java::lang{
+	public factory class Java{
+	public:
+		static exp void AddJavaNativeTypesMethods(){
+			XplClass^ stringClass = (XplClass^)((TypeInfo^)compiler.LastTypesTable["zoe.lang.String"]).get_TypeNode();
+			XplClass^ objectClass = (XplClass^)((TypeInfo^)compiler.LastTypesTable["zoe.lang.Object"]).get_TypeNode();
+			XplClass^ arrayClass = (XplClass^)((TypeInfo^)compiler.LastTypesTable["zoe.lang.Array"]).get_TypeNode();
+			// add members to string class
+			stringClass.Children().InsertAtEnd(
+				writecode{%
+				public:
+					extern bool equals(string*ref otherString);
+					extern string^ toString();
+					extern int property length{
+						get;
+					}
+					extern string^ substring(int from);
+					extern string^ substring(int from, int size);
+					extern int lastIndexOf(string*ref str);
+				%}.Children()
+			);
+			// add members to object class
+			objectClass.Children().InsertAtEnd(
+				writecode{%
+				public:
+					extern string^ toString();
+				%}.Children()
+			);			
+			return null;
+		}
+		static exp void Annotation(exp void annotation){
+			return null;
+		}
+		static exp void AnnonimClass(exp void newExp, exp void annonimClassExp){
+			try{
+				XplIName^ newExpTypename = new XplIName( ((XplNewExpression^)newExp.get_Content()).get_type().get_typename() );
+				XplIName^ annonimClassName = new XplIName();
+				// create the annonim class 
+				XplClass^ annonimClass = writecode{
+					class $annonimClassName implements $newExpTypename{
+					}
+				};
+				// add members to annonim class
+				annonimClass.Children().InsertAtEnd(
+					annonimClassExp.FindNode("/@XplClass").Children()
+				);
+				// insert the class
+				context.CurrentClass.Children().InsertAtEnd( annonimClass );
+				// return new expression
+				return writecode( new $annonimClassName() );
+			}
+			catch(Exception^ error){
+				Console::WriteLine("Warning error while creating annonim class.");
+				return newExp;
+			}
+		}
+	}
+}
+
+/*
+OnClickListener^ buttonListener = Java::AnnonimClass( new OnClickListener(), writecode{ class Annonim {
+            public: void onClick(View^ v) {
+				// user code
+            }
+        } } 
+		);
+		
+Convert to:
+
+OnClickListener^ buttonListener = new OnClickListener1();
+class OnClickListener1{
+	public: void onClick(View^ v) {
+		// user code
+	}
+}
+
+*/

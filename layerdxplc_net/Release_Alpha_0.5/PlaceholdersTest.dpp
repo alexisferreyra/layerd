@@ -1,0 +1,51 @@
+import "Microsoft", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+using DotNET::System;
+using DotNET::System::IO;
+using DotNET::System::Collections;
+using Zoe::Structures;
+
+namespace Sample{
+	Placeholders::New(place1);
+
+	public class App{
+	public:
+		static int Main(string^[] args){
+			Placeholders::Set(place1);
+			func();
+			func2();
+			return 0;
+		}
+		static void func(){
+			int a;
+			Placeholders::Set(place1);
+		}
+		static void func2(){
+			Placeholders::Return{
+				Placeholders::Attach(place1){
+					Console::WriteLine("Hola Mundo 2");
+				};
+			};
+			Placeholders::Attach(place1){
+				Console::WriteLine("Hola Mundo 1");
+			};
+			Placeholders::Return{
+				Placeholders::Return{
+					Placeholders::Return{
+						Placeholders::Set(place1);
+						Placeholders::Return{
+							Placeholders::Attach(place1){
+								Console::WriteLine("Hola Mundo 4");
+							};
+						};
+					};
+					Placeholders::Attach(place1){
+						Console::WriteLine("Hola Mundo 3");
+					};										
+				};
+			};
+		}
+	}
+
+}
+

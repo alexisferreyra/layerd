@@ -1,0 +1,43 @@
+import "Microsoft", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+using DotNET::System;
+using DotNET::System::IO;
+using DotNET::System::Collections;
+//using zoe::test;
+
+namespace Sample{
+
+	namespace t{
+		public class App inherits zoe::test::Factory{
+		public:
+			static int Main(string^[] args){
+				Name = "hola";
+				foo(Name);
+				// Insert code here
+				zoe::test::Factory::Name = "Alexis";
+				string^  test = null;
+				test = zoe::test::Factory::Name;
+				zoe::test::Factory^  a = new zoe::test::Factory();
+				a.Test = test;
+				a.Test2 = test;
+				test = a.Test;
+				test = a.Test2;
+				test = getItem().Test2;
+
+				return 0;
+			}
+			static zoe::test::Factory^ getItem(){
+				return null;
+			}
+			int foo(){
+				this.Test2 = "Hola";
+				Test2 = "chau";
+				string^ foo2;
+				foo2 = Test2;
+				foo2 = this.Test2;
+			}
+		}
+	}
+
+}
+

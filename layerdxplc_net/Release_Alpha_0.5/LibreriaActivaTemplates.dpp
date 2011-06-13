@@ -1,0 +1,65 @@
+/*
+
+	Meta D++ sample.
+
+	Visit http://layerd.net and http://layerd.blogspot.com to get updates of LayerD SDK and documentation.
+	
+*/
+/*-
+ * 2009 Alexis Ferreyra
+ *
+ * THIS SOFTWARE IS PROVIDED BY CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL COPYRIGHT HOLDERS OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+import "Microsoft", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+import "System.Data", "platform=DotNET", "ns=DotNET", "assembly=System.Data";
+
+using DotNET::System;
+using DotNET::System::IO;
+using DotNET::System::Data::SqlClient;
+using DotNET::System::Collections;
+using DotNET::LayerD::CodeDOM;
+using DotNET::LayerD::ZOECompiler;
+
+namespace ActiveLibrary{
+
+	public factory class DataConnection{
+	public:
+		type DataConnection(){
+			return gettype(DotNET::System::Data::SqlClient::SqlConnection);
+		}
+		exp void DataConnection(exp string^ constr){
+			return writecode(new DotNET::System::Data::SqlClient::SqlConnection($constr));
+		}
+		exp void Open(){
+			XplNode^ temp=context;
+			while(temp!=null){
+				if(temp.get_ElementName()=="for"){
+					AddError("No puede utilizar el metodo Open adentro de un ciclo for.",context);
+				}
+				temp=temp.get_Parent();
+			}
+			return writecode(ileft.Open());
+		}
+		exp void Close(){
+			return writecode(ileft.Close());
+		}
+	private:
+		static void AddError(string^ errorMsg, XplNode^ contextNode){
+			Error^ newError = new Error(errorMsg, contextNode);
+			newError.set_ErrorType(ErrorType::SemanticError);
+			newError.set_PersistentError(true);
+			compiler.Errors.AddError(newError);
+		}
+	}
+}

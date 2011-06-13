@@ -1,0 +1,34 @@
+import "Microsoft", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+using DotNET::System;
+using DotNET::System::IO;
+using DotNET::System::Collections;
+using zoe::tools;
+
+
+namespace Sample{
+
+	CompileTime::WaitOne{
+		CompileTime::PrintLine("HolaMundo1");
+	};
+	CompileTime::WaitOne{
+		CompileTime::WaitOne{
+			CompileTime::PrintLine("HolaMundo2");
+		};
+	};
+	CompileTime::WaitCycles(1){
+		CompileTime::PrintLine("HolaMundo3");
+	};
+	CompileTime::WaitCycles(5){
+		CompileTime::PrintLine("HolaMundo4");
+	};
+
+	public class App{
+	public:
+		static int Main(string^[] args){
+			// Insert code here
+			return 0;
+		}
+	}
+}
+

@@ -1,0 +1,46 @@
+import "Microsoft", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+using DotNET::System;
+using DotNET::System::IO;
+using DotNET::System::Collections;
+using Sample::App2;
+
+zoe::tools::ProgramConfiguration::EnableSimpleMemberAccessAsScopeSeparator();
+
+namespace Sample{
+	class Test{
+	public:
+		static string^ ConstStr = "Hello World";
+	}
+	public class App{
+	public:
+		static int Main(string^[] args){
+			// Insert code here
+			Console.Write("This is a test" + Sample.Test.ConstStr);
+			DotNET.System.Console.WriteLine(". This is a test" + Sample.Test.ConstStr);
+			console("Hello world !!");
+			Sample.App.console("bye");
+			Sample.App.console("Yuhuu" + App2.Inner.ConstString);
+			Sample.App.console("Yuhuu" + Inner.ConstString);
+			Sample.App.@class(12);
+			@class(10);
+			App::@class(14);
+			Sample.App.@class(11);
+			Console.Read();
+			return 0;
+		}
+		static void @class(int @float){
+			Console.WriteLine(@float);
+		}
+		static void console(string^ arg){
+			Console.WriteLine(arg);
+		}
+	}
+	class App2{
+		public class Inner{
+		public:
+			static string^ ConstString = "Huau";
+		}
+	}
+}
+

@@ -1,0 +1,93 @@
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+using DotNET::System;
+using DotNET::System::IO;
+using DotNET::System::Collections;
+
+namespace Sample{
+	enum MyEnum{
+		One,
+		Two = 1,
+		Three = 2, 
+		Four = One
+	} 
+	enum MyEnum2 : long {
+		One,
+		Two,
+		Three,
+		Four
+	}
+
+	struct A{
+		int value;
+	public:
+		A(int val){
+			this.value=val;
+		}
+		int property Value{
+			get{return value;}
+		}
+	}
+
+	class App{
+	public:
+		static int Main(string^[] args){
+			///Insert code here
+
+			//A^ varA = new A(2);
+
+			A varA2;
+			
+			//(4);
+
+			Console::WriteLine("Hola");
+			
+			varA2 = foo4();
+
+			MyEnum value = MyEnum::One;
+
+			MyEnum2 value2;
+
+			value2 = foo(value);
+
+			int intvalue;
+            intvalue = (int)value2;
+
+			Console::WriteLine(
+				"value: " + value.ToString() + " value2: " + value2.ToString() 
+			);
+
+			if(value2 == (MyEnum2)(MyEnum::One | MyEnum::Two))
+				Console::WriteLine("One or Two");
+
+			Console::Read();
+
+			return 0;
+		}
+
+		static A foo4(){
+			return new A(12);
+		}
+
+		static MyEnum2 foo(MyEnum value){
+			switch(value){
+				case MyEnum::One:
+					return MyEnum2::One;
+					break;
+				case MyEnum::Two:
+					return MyEnum2::Two;
+					break;
+				case MyEnum::Three:
+					return MyEnum2::Three;
+					break;
+				//case MyEnum::Four:
+				//	return MyEnum2::Four;
+				//	break;
+				//case 12:
+				//	break;
+				default:
+					return MyEnum2::One;
+			}
+		}
+	}
+}
+

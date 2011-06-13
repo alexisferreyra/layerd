@@ -1,0 +1,178 @@
+import "Microsoft", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+import "LayerD.CodeDOM", "platform=DotNET", "ns=DotNET", "assemblyfilename=lib_layerd_xpl_codedom_net.dll";
+import "LayerD.ZOECompiler", "platform=DotNET", "ns=DotNET", "assemblyfilename=lib_zoec_core.dll";
+using DotNET::System;
+using DotNET::System::IO;
+using DotNET::System::Collections;
+using DotNET::LayerD::CodeDOM;
+using DotNET::LayerD::ZOECompiler;
+
+namespace ESCastellano{
+
+	//Clase Excepcion
+	//
+	//Encapsula clase general de excepciones
+	//compatible con .NET y Java
+	public factory class Excepcion{
+	public:
+		type Excepcion(){
+			if(compiler.get_OutputPlatform().Contains("DotNET")){
+				return gettype(DotNET::System::Exception);
+			}
+			else{
+				return gettype(java::lang::Exception);
+			}
+		}
+		exp string^ GetMensaje(){
+			if(compiler.get_OutputPlatform().Contains("DotNET")){
+				return writecode(ileft.Message);
+			}
+			else{
+				return writecode(ileft.getMessage());
+			}
+		}
+	}
+
+	//Clase Consola
+	//
+	//Encapsula salida basica a consola
+	//compatible con .NET y Java
+	public factory class Consola {
+		static bool flag;
+	public:
+		type Consola(){
+			if(!flag){
+				flag=true;
+				XplDocumentBody^ body = writecode{
+					import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+				};
+				XplNode^ docBody = context.Node;
+				while (docBody != null && docBody.get_TypeName() != CodeDOMTypes.XplDocumentBody)
+					docBody = docBody.get_Parent();			
+				for (XplNode^  node=body.Children().FirstNode();node != null;node = body.Children().NextNode())
+					docBody.Children().InsertAtBegin(node);
+			}
+			XplNodeList^  funcs = currentDTE.FindNodes("/@XplFunction");
+			for(XplFunction^ func=(XplFunction^)funcs.FirstNode();func!=null;func=(XplFunction^)funcs.NextNode()){
+				if(func.get_name()=="Main"){
+					func.set_storage(XplVarstorage_enum::STATIC);
+				}
+			}
+			return gettype(int);
+		}
+		exp void Escribir(exp void toWrite){
+			if(compiler.get_OutputPlatform().Contains("DotNET")){
+				return writecode(DotNET::System::Console::Write(toWrite));
+			}
+			else{
+				return writecode(System::@out::print(toWrite));
+			}
+		}
+		exp void EscribirLinea(exp void toWrite){
+			if(compiler.get_OutputPlatform().Contains("DotNET")){
+				return writecode(DotNET::System::Console::WriteLine(toWrite));
+			}
+			else{
+				return writecode(System::@out::println(toWrite));
+			}
+		}
+		exp void EscribirLinea(){
+			if(compiler.get_OutputPlatform().Contains("DotNET")){
+				return writecode(DotNET::System::Console::WriteLine());
+			}
+			else{
+				return writecode(System::@out::println());
+			}
+		}
+	}
+
+	//Clase LectorDeArchivo
+	//
+	//Encapsula un lector de archivos de texto
+	//compatible con .NET y Java
+	public factory class LectorDeArchivo {
+	public:
+		type LectorDeArchivo(){
+			if(compiler.get_OutputPlatform().Contains("DotNET")){
+				return gettype(DotNET::System::IO::StreamReader);
+			}
+			else{
+				return gettype(java::io::FileReader);
+			}
+		}
+		exp void LectorDeArchivo(exp string^ fileName){
+			if(compiler.get_OutputPlatform().Contains("DotNET")){
+				return writecode(new DotNET::System::IO::StreamReader(fileName));
+			}
+			else{
+				return writecode(new java::io::FileReader(fileName));
+			}
+		}
+		exp int Leer(exp string^ buffer){
+			if(compiler.get_OutputPlatform().Contains("DotNET")){
+				return writecode( (buffer=ileft.ReadLine()) );
+			}
+			else{
+				return writecode(ileft.read(buffer));
+			}
+		}
+		exp bool FinArchivo(){
+			if(compiler.get_OutputPlatform().Contains("DotNET")){
+				return writecode(ileft.EndOfStream);
+			}
+			else{
+				return writecode(!ileft.ready());
+			}			
+		}
+		exp void Cerrar(){
+			if(compiler.get_OutputPlatform().Contains("DotNET")){
+				return writecode(ileft.Close());
+			}
+			else{
+				return writecode(ileft.close());
+			}			
+		}
+	}
+
+	//Clase EscritorDeArchivo
+	//
+	//Encapsula un escritor de archivos de texto
+	//compatible con .NET y Java
+	public factory class EscritorDeArchivo {
+	public:
+		type EscritorDeArchivo(){
+			if(compiler.get_OutputPlatform().Contains("DotNET")){
+				return gettype(DotNET::System::IO::StreamWriter);
+			}
+			else{
+				return gettype(java::io::FileWriter);
+			}
+		}
+		exp void EscritorDeArchivo(exp string^ fileName){
+			if(compiler.get_OutputPlatform().Contains("DotNET")){
+				return writecode(new DotNET::System::IO::StreamWriter(fileName));
+			}
+			else{
+				return writecode(new java::io::FileWriter(fileName));
+			}
+		}
+		exp int Escribir(exp string^ buffer){
+			if(compiler.get_OutputPlatform().Contains("DotNET")){
+				return writecode(ileft.Write(buffer));
+			}
+			else{
+				return writecode(ileft.Write(buffer));
+			}			
+		}
+		exp void Cerrar(){
+			if(compiler.get_OutputPlatform().Contains("DotNET")){
+				return writecode(ileft.Close());
+			}
+			else{
+				return writecode(ileft.close());
+			}			
+		}
+	}
+
+}

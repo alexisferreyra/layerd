@@ -1,0 +1,15 @@
+
+namespace Sample{
+	public class App{
+	public:
+		int f;		
+		static int Main(string^[] args){
+			sumar(2,3);
+			return 0;
+		}
+		static int sumar(int a, int b){
+			return a+b;
+		}
+	}
+}
+

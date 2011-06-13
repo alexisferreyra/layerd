@@ -1,0 +1,39 @@
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+import "System", "platform=DotNET", "ns=DotNET", "assembly=System";
+import "System", "platform=DotNET", "ns=DotNET", "assembly=System.Windows.Forms";
+import "System.Drawing", "platform=DotNET", "ns=DotNET", "assembly=System.Drawing";
+using DotNET::System;
+using DotNET::System::IO;
+using DotNET::System::Drawing;
+using DotNET::System::Collections;
+using DotNET::System::Windows::Forms;
+using Zoe::DotNET::Utils;
+
+namespace Sample{
+
+	// To define a window
+	GUI::Window(window1){
+		Text = "Sample Window with DSL for .NET Windows Forms.";
+		Controls{
+			Button(cmdSalir){
+				// Button text and autosize
+				Text = "Salir";	AutoSize = true;
+				// Click event
+				Click{
+					this.Close();
+				};
+			};
+		};
+	};
+
+	public class App{
+	public:
+		static int Main(string^[] args){
+			Application::EnableVisualStyles();
+			Application::Run(new window1());
+			return 0;
+		}
+	}
+
+}
+

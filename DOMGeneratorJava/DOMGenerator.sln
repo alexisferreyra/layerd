@@ -1,0 +1,56 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 9.00
+# Visual Studio 2005
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DOMGeneratorJava", "DOMGeneratorJava.csproj", "{CCB5A92C-34E5-43F3-B03C-05C70C3E870B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "lib_layerd_xpl_importer_net", "..\lib_layerd_xpl_importer_net\lib_layerd_xpl_importer_net.csproj", "{3E833611-78CB-4AD0-92AE-842F4623785D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "lib_layerd_xpl_importer_test", "..\lib_layerd_xpl_importer_test\lib_layerd_xpl_importer_test.csproj", "{27974E2E-65F1-4E8D-A89D-EA664CD050A1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "lib_layerd_xpl_codedom_net", "..\lib_layerd_xpl_codedom_cs\lib_layerd_xpl_codedom_net.csproj", "{A5E96AAA-E255-452C-9F58-AD31D588DEFE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug All|Any CPU = Debug All|Any CPU
+		Debug|Any CPU = Debug|Any CPU
+		Release All|Any CPU = Release All|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CCB5A92C-34E5-43F3-B03C-05C70C3E870B}.Debug All|Any CPU.ActiveCfg = Debug All|Any CPU
+		{CCB5A92C-34E5-43F3-B03C-05C70C3E870B}.Debug All|Any CPU.Build.0 = Debug All|Any CPU
+		{CCB5A92C-34E5-43F3-B03C-05C70C3E870B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CCB5A92C-34E5-43F3-B03C-05C70C3E870B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CCB5A92C-34E5-43F3-B03C-05C70C3E870B}.Release All|Any CPU.ActiveCfg = Release All|Any CPU
+		{CCB5A92C-34E5-43F3-B03C-05C70C3E870B}.Release All|Any CPU.Build.0 = Release All|Any CPU
+		{CCB5A92C-34E5-43F3-B03C-05C70C3E870B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CCB5A92C-34E5-43F3-B03C-05C70C3E870B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3E833611-78CB-4AD0-92AE-842F4623785D}.Debug All|Any CPU.ActiveCfg = Debug All|Any CPU
+		{3E833611-78CB-4AD0-92AE-842F4623785D}.Debug All|Any CPU.Build.0 = Debug All|Any CPU
+		{3E833611-78CB-4AD0-92AE-842F4623785D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3E833611-78CB-4AD0-92AE-842F4623785D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3E833611-78CB-4AD0-92AE-842F4623785D}.Release All|Any CPU.ActiveCfg = Release All|Any CPU
+		{3E833611-78CB-4AD0-92AE-842F4623785D}.Release All|Any CPU.Build.0 = Release All|Any CPU
+		{3E833611-78CB-4AD0-92AE-842F4623785D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3E833611-78CB-4AD0-92AE-842F4623785D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{27974E2E-65F1-4E8D-A89D-EA664CD050A1}.Debug All|Any CPU.ActiveCfg = Debug All|Any CPU
+		{27974E2E-65F1-4E8D-A89D-EA664CD050A1}.Debug All|Any CPU.Build.0 = Debug All|Any CPU
+		{27974E2E-65F1-4E8D-A89D-EA664CD050A1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{27974E2E-65F1-4E8D-A89D-EA664CD050A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{27974E2E-65F1-4E8D-A89D-EA664CD050A1}.Release All|Any CPU.ActiveCfg = Release All|Any CPU
+		{27974E2E-65F1-4E8D-A89D-EA664CD050A1}.Release All|Any CPU.Build.0 = Release All|Any CPU
+		{27974E2E-65F1-4E8D-A89D-EA664CD050A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{27974E2E-65F1-4E8D-A89D-EA664CD050A1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A5E96AAA-E255-452C-9F58-AD31D588DEFE}.Debug All|Any CPU.ActiveCfg = Debug All|Any CPU
+		{A5E96AAA-E255-452C-9F58-AD31D588DEFE}.Debug All|Any CPU.Build.0 = Debug All|Any CPU
+		{A5E96AAA-E255-452C-9F58-AD31D588DEFE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A5E96AAA-E255-452C-9F58-AD31D588DEFE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A5E96AAA-E255-452C-9F58-AD31D588DEFE}.Release All|Any CPU.ActiveCfg = Release All|Any CPU
+		{A5E96AAA-E255-452C-9F58-AD31D588DEFE}.Release All|Any CPU.Build.0 = Release All|Any CPU
+		{A5E96AAA-E255-452C-9F58-AD31D588DEFE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A5E96AAA-E255-452C-9F58-AD31D588DEFE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

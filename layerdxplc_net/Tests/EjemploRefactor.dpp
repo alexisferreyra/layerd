@@ -1,0 +1,57 @@
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+using DotNET::System;
+using DotNET::System::Collections;
+using Zoe;
+
+namespace FirstProgram{
+	class HelloWorld{
+	public:
+		static void Main(string^[] args){
+			Grupo^ varGrupo = new Grupo();
+			Persona^ varPersona = new Persona("Romina");
+			varPersona.setApellido("Perez");
+			varPersona.setDireccion("Colon 215");
+			//Agrego una persona
+			varGrupo.Agregar(varPersona);
+			varPersona = new Persona("Pedro");
+			varPersona.setApellido("Picapiedras");
+			varPersona.setDireccion("Antiguedad", 150);
+			//Agrego otra persona
+			varGrupo.Agregar(varPersona);
+			//Borro todo
+			varGrupo.Borrar();
+		}
+	}
+	public class Persona{
+		string^ _nombre;
+		string^ _apellido;
+		string^ _direccion;
+		int _numero;
+	public:
+		Persona(string^ nombre){
+			_nombre = nombre;
+		}
+		void setApellido(string^ apellido){
+			_apellido = apellido;
+		}
+		void setDireccion(string^ direccion){
+			_direccion = direccion.Substring(0, direccion.IndexOf(" "));
+			_numero = Convert::ToInt32(direccion.Substring(direccion.IndexOf(" ")));
+		}
+		void setDireccion(string^ direccion, int numero){
+			_direccion = direccion;
+			_numero = numero;
+		}
+	}
+	public class Grupo{
+		ArrayList^ lista = new ArrayList();
+	public:
+		void Agregar(Persona^ persona){
+			lista.Add(persona);
+		}
+		void Borrar(){
+			lista.Clear();
+		}
+	}
+}
+

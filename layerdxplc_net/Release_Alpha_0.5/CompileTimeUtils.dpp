@@ -1,0 +1,128 @@
+/*
+
+	Meta D++ sample.
+
+	Visit http://layerd.net and http://layerd.blogspot.com to get updates of LayerD SDK and documentation.
+	
+*/
+/*-
+ * 2009 Alexis Ferreyra
+ *
+ * THIS SOFTWARE IS PROVIDED BY CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL COPYRIGHT HOLDERS OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+import "Microsoft", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+using DotNET::System;
+using DotNET::System::IO;
+using DotNET::System::Collections;
+using DotNET::LayerD::CodeDOM;
+using DotNET::LayerD::ZOECompiler;
+
+namespace zoe::tools{
+	// <summary>
+	// Helper class for common compile time tasks
+	// </summary>
+	public factory class CompileTime{
+	public:
+		// <summary>
+		// Wait for next compile time cycle
+		// </summary>
+		static exp void WaitOne(block arg){
+			context.get_Parent().get_Parent().Children().InsertBefore( arg.Children(), context.get_Parent() );
+			return null;
+		}
+		// <summary>
+		// Wait for "cyclesToWait" compile time cycles
+		// </summary>
+		static exp void WaitCycles(int cyclesToWait, block arg){
+			if(cyclesToWait<=1){
+				context.get_Parent().get_Parent().Children().InsertBefore( arg.Children(), context.get_Parent() );
+				return null;
+			}
+			else{
+				int count = cyclesToWait - 1;
+				return writecode( 
+					zoe::tools::CompileTime::WaitCycles( $count){ $arg; } 
+				);
+			}
+		}
+		// <summary>
+		// Print a line of text to console
+		// </summary>
+		static exp void PrintLine(string^ text){
+			Console::WriteLine(text);
+			return null;
+		}
+		// <summary>
+		// Print text to console
+		// </summary>
+		static exp void Print(string^ text){
+			Console::Write(text);
+			return null;
+		}
+	}
+	// <summary>
+	// Helper class for common task with compiler object of classfactorys
+	// like adding new persistent errors, warnings, advices
+	// </summary>
+	public factory class CompilerHelper{
+	public:
+		// <summary>
+		// Marks the error as persistent and adds it to Zoe compiler error
+		// </summary>
+		static void AddError(Error^ error){
+			error.set_PersistentError(true);
+			compiler.Errors.AddError(error);
+		}
+		// <summary>
+		// Creates a new error object, mark it as persistent and adds it to Zoe compiler error
+		// </summary>
+		static void AddError(string^ errorStr, XplNode^ sourceNode){
+			Error^ error = new Error(errorStr, sourceNode);
+			error.set_PersistentError(true);
+			compiler.Errors.AddError(error);
+		}
+		// <summary>
+		// Marks the warning as persistent and adds it to Zoe compiler error
+		// </summary>
+		static void AddWarning(Warning^ error){
+			error.set_PersistentError(true);
+			compiler.Errors.AddError(error);
+		}
+		// <summary>
+		// Creates a new warning object, mark it as persistent and adds it to Zoe compiler error
+		// </summary>
+		static void AddWarning(string^ errorStr, XplNode^ sourceNode){
+			Warning^ error = new Warning(errorStr, sourceNode);
+			error.set_PersistentError(true);
+			compiler.Errors.AddError(error);
+		}
+		// <summary>
+		// Marks the advice as persistent and adds it to Zoe compiler error
+		// </summary>
+		static void AddAdvice(Advice^ error){
+			error.set_PersistentError(true);
+			compiler.Errors.AddError(error);
+		}
+		// <summary>
+		// Creates a new warning object, mark it as persistent and adds it to Zoe compiler error
+		// </summary>
+		static void AddAdvice(string^ errorStr, XplNode^ sourceNode){
+			Advice^ error = new Advice(errorStr);
+			error.set_ErrorNode(sourceNode);
+			error.set_PersistentError(true);
+			compiler.Errors.AddError(error);
+		}
+	}
+}
+

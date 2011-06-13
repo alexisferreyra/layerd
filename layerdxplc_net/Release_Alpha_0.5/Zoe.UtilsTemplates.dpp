@@ -1,0 +1,293 @@
+/*
+
+	Meta D++ sample.
+
+	Visit http://layerd.net and http://layerd.blogspot.com to get updates of LayerD SDK and documentation.
+	
+*/
+/*-
+ * 2009 Alexis Ferreyra
+ *
+ * THIS SOFTWARE IS PROVIDED BY CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL COPYRIGHT HOLDERS OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+ 
+import "Microsoft", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+using DotNET::System;
+using DotNET::System::IO;
+using DotNET::System::Collections;
+using DotNET::LayerD::CodeDOM;
+using DotNET::LayerD::ZOECompiler;
+
+namespace Zoe{
+
+	public factory class ConsoleProgram{
+	public:
+		static XplNode^ New(block programData){
+			context.CurrentDocumentBody.Children().InsertAtBegin(
+					writecode{
+						import "Microsoft", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+						import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+						using DotNET::System;
+						using DotNET::System::IO;
+						using DotNET::System::Collections;
+					}.Children()
+				);
+			return writecode{
+				namespace MyApplication{
+					public class Application{
+					public:
+						static void Main(string^[] args){
+							$programData;
+						}
+					}
+				}
+			}.Children().FirstNode();
+		}
+	}
+	public factory class Utils{
+	public:
+		static exp void Iterate(exp void arrayExp, iname void iteratorName, block bloque){
+			XplFunctionBody^ iterateSta = null;
+			XplType^ inameType = iteratorName.Type;
+			iterateSta = writecode{
+				for (int _n=0; _n < $arrayExp.Length;_n++){
+					$iteratorName = $arrayExp[_n];
+					$bloque;
+				}
+			};
+			context.CurrentBlock.Children().InsertBefore(iterateSta.Children().FirstNode(), context.get_Parent());
+			return null;
+		}
+		static exp void IterateNodeList(exp XplNodeList^ list, iname void iteratorName, block bloque){
+			XplFunctionBody^ iterateSta = null;
+			XplType^ inameType = iteratorName.Type;
+			if (inameType.get_typename() == DotNET::LayerD::ZOECompiler::NativeTypes::Void){
+				iterateSta = writecode{
+					for (XplNode^  $iteratorName=$list.FirstNode();$iteratorName != null;$iteratorName = $list.NextNode()){
+						$bloque;
+					}
+				};
+			}
+			else {
+				iterateSta = writecode{
+					for ($iteratorName = ($inameType)$list.FirstNode();$iteratorName != null;$iteratorName = ($inameType)$list.NextNode()){
+						$bloque;
+					}
+				};
+			}
+			context.CurrentBlock.Children().InsertBefore(iterateSta.Children().FirstNode(), context.get_Parent());
+			return null;
+		}
+		static exp void DefaultNetImports(){
+			XplDocumentBody^ body = writecode{
+				import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+				import "System", "platform=DotNET", "ns=DotNET", "assembly=System";
+				using DotNET::System;
+				using DotNET::System::IO;
+				using DotNET::System::Collections;
+
+			};
+
+			XplNode^ docBody = context;
+			while (docBody != null && docBody.get_TypeName() != CodeDOMTypes::XplDocumentBody){
+				docBody = docBody.get_Parent();
+			}
+			for (XplNode^  node=body.Children().FirstNode();node != null;node = body.Children().NextNode()){
+				docBody.Children().InsertAtBegin(node);
+			}
+			return null;
+		}
+		static exp void WindowsNetImports(){
+			XplDocumentBody^ body = writecode{
+				import "Microsoft", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+				import "System", "platform=DotNET", "ns=DotNET", "assembly=System";
+				import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+				import "System.Windows.Forms", "platform=DotNET", "ns=DotNET", "assembly=System.Windows.Forms";
+				import "System.Drawing", "platform=DotNET", "ns=DotNET", "assembly=System.Drawing";
+				import "System.Component", "platform=DotNET", "ns=DotNET", "assembly=System.Windows.Forms";
+				using DotNET::System;
+				using DotNET::System::IO;
+				using DotNET::System::Drawing;
+				using DotNET::System::Collections;
+				using DotNET::System::Windows::Forms;
+
+			};
+			XplNode^ docBody = context;
+			while (docBody != null && docBody.get_TypeName() != CodeDOMTypes::XplDocumentBody){
+				docBody = docBody.get_Parent();
+			}
+			for (XplNode^  node=body.Children().FirstNode();node != null;node = body.Children().NextNode()){
+				docBody.Children().InsertAtBegin(node);
+			}
+			return null;
+		}
+		static exp void DefaultAspNetImports(){
+			XplDocumentBody^ body = writecode{
+				import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+				import "System", "platform=DotNET", "ns=DotNET", "assembly=System";
+				import "System.Web", "platform=DotNET", "ns=DotNET", "assembly=System.Web";
+				using DotNET::System;
+				using DotNET::System::Web;
+				using DotNET::System::Web::Security;
+				using DotNET::System::Web::UI;
+				using DotNET::System::Web::UI::WebControls;
+				using DotNET::System::Web::UI::WebControls::WebParts;
+				using DotNET::System::Web::UI::HtmlControls;
+
+			};
+			XplNode^ docBody = context;
+			while (docBody != null && docBody.get_TypeName() != CodeDOMTypes::XplDocumentBody){
+				docBody = docBody.get_Parent();
+			}
+			for (XplNode^  node=body.Children().FirstNode();node != null;node = body.Children().NextNode()){
+				docBody.Children().InsertAtBegin(node);
+			}
+			return null;
+		}
+	}
+	public interactive class iUtils{
+	public:
+		static exp void IterateNodeList(exp XplNodeList^ list, iname void iteratorName, block bloque){
+			XplFunctionBody^ iterateSta = null;
+			XplType^ inameType = iteratorName.Type;
+			if (inameType.get_typename() == DotNET::LayerD::ZOECompiler::NativeTypes::Void){
+				iterateSta = writecode{
+					for (XplNode^  $iteratorName=$list.FirstNode();$iteratorName != null;$iteratorName = $list.NextNode()){
+						$bloque;
+					}
+				};
+			}
+			else {
+				iterateSta = writecode{
+					for ($iteratorName = ($inameType)$list.FirstNode();$iteratorName != null;$iteratorName = ($inameType)$list.NextNode()){
+						$bloque;
+					}
+				};
+			}
+			context.CurrentBlock.Children().InsertBefore(iterateSta.Children().FirstNode(), context.get_Parent());
+			return null;
+		}
+		static exp void DefaultNetImports(){
+			XplDocumentBody^ body = writecode{
+				import "Microsoft", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+				import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+				using DotNET::System;
+				using DotNET::System::IO;
+				using DotNET::System::Collections;
+
+			};
+			XplNode^ docBody = context;
+			while (docBody != null && docBody.get_TypeName() != CodeDOMTypes::XplDocumentBody){
+				docBody = docBody.get_Parent();
+			}
+			for (XplNode^  node=body.Children().FirstNode();node != null;node = body.Children().NextNode()){
+				docBody.Children().InsertAtBegin(node);
+			}
+			return null;
+		}
+		static XplNode^ InsertMain(){
+			XplDocumentBody^ body = writecode{
+				import "Microsoft", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+				import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+				using DotNET::System;
+				using DotNET::System::IO;
+				using DotNET::System::Collections;
+
+				namespace Sample{
+					public class App{
+					public:
+						static int Main(string^[] args){
+							//Insert code here
+							return 0;
+						}
+					}
+				}
+			};
+
+			XplNode^ docBody = program[1].get_DocumentBody();
+			docBody.Children().InsertAtEnd(body.Children());
+			return null;
+		}
+		static exp void WindowsNetImports(){
+			XplDocumentBody^ body = writecode{
+				import "Microsoft", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+				import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+				import "System", "platform=DotNET", "ns=DotNET", "assembly=System.Windows.Forms";
+				import "System.Drawing", "platform=DotNET", "ns=DotNET", "assembly=System.Drawing";
+				using DotNET::System;
+				using DotNET::System::IO;
+				using DotNET::System::Drawing;
+				using DotNET::System::Collections;
+				using DotNET::System::Windows::Forms;
+
+			};
+			//XplNode^ docBody = context.Node;
+			XplDocumentBody^ docBody = program[1].get_DocumentBody();
+			for (XplNode^  node=body.Children().FirstNode();node != null;node = body.Children().NextNode()){
+				docBody.Children().InsertAtBegin(node);
+			}
+			return null;
+		}
+		static exp void DefaultAspNetImports(){
+			XplDocumentBody^ body = writecode{
+				import "Microsoft", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+				import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+				import "System.Web", "platform=DotNET", "ns=DotNET", "assembly=System.Web";
+				using DotNET::System;
+				using System::Web;
+				using System::Web::Security;
+				using System::Web::UI;
+				using System::Web::UI::WebControls;
+				using System::Web::UI::WebControls::WebParts;
+				using System::Web::UI::HtmlControls;
+
+			};
+			XplNode^ docBody = context;
+			while (docBody != null && docBody.get_TypeName() != CodeDOMTypes::XplDocumentBody){
+				docBody = docBody.get_Parent();
+			}
+			for (XplNode^  node=body.Children().FirstNode();node != null;node = body.Children().NextNode()){
+				docBody.Children().InsertAtBegin(node);
+			}
+			return null;
+		}
+	}	
+
+	// Classfactory mínima para insertar logs a funciones del programa
+	factory public class Logger{
+	public:
+		// Funcion mínima para agregar log a todas las funciones de un programa LayerD
+		static exp void Log(){
+			XplExpression^ logExp = null;
+			// Uso "currentDTE" para buscar todas las funciones del programa
+            XplNodeList^ funcs = currentDTE.FindNodes("/@XplFunction");
+			// Itero en todos los nodos de funcion encontrados
+			for(XplFunction^ func in funcs){
+				// Si posee cuerpo de funcion inserto un mensaje por la consola
+				if(func.get_FunctionBody()!=null){
+					//El mensaje de Entrada
+					string^ logMessage = "Entrando a la función \""+func.get_name()+"\".";
+					// Creo la expresion de log
+					logExp = writecode( Console::WriteLine($logMessage) );
+					// Inserto la expresion como primera instruccion de la funcion
+					func.get_FunctionBody().Children().InsertAtBegin(logExp);
+				}
+			}
+			// Retorno nulo para evitar llamar nuevamente a la funcion de log en el proximo tiempo de compilacion
+			return null;
+		}
+	}
+
+}
+

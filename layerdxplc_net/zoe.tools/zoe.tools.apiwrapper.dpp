@@ -1,0 +1,244 @@
+import "Microsoft", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
+using DotNET::System;
+using DotNET::System::Collections;
+using DotNET::LayerD::CodeDOM;
+using DotNET::LayerD::ZOECompiler;
+
+namespace Zoe::Tools{
+	public interactive class APIWrapper{
+		static string^ _typesPrefix;
+		static Hashtable^ _types = new Hashtable();
+		
+		static void Print(string^ message){
+			Console::WriteLine(message);
+		}
+		static void AddType(string^ typeStr){
+			if (typeStr.Length>=_typesPrefix.Length && 
+				typeStr.Substring(0, _typesPrefix.Length) == _typesPrefix && 
+				!_types.ContainsKey(typeStr))
+			{
+				_types.Add(typeStr, new ArrayList());
+			}
+		}
+		static void AddMember(string^ typeStr, string^ memberName){
+			if (_types.ContainsKey(typeStr)){
+				ArrayList^ members = (ArrayList^)_types[typeStr];
+				if (!members.Contains(memberName)){
+					members.Add(memberName);
+				}
+			}
+		}
+		static void ProcessDeclarations(){
+			Print("Checking declarations");
+			XplNodeList^ declarations = currentDTE.FindNodes("/@XplDeclarator");
+			for (XplDeclarator^  decl in declarations){
+				if (decl.get_type() != null){
+					AddType(decl.get_type().get_typeStr());
+				}
+			}
+		}
+		static void ProcessFunctioncalls(){
+			Print("Checking function calls");
+			XplNodeList^ functionCalls = currentDTE.FindNodes("/@XplFunctioncall");
+			for (XplFunctioncall^  fc in functionCalls){
+				AddType(fc.get_targetClass());
+				AddMember(fc.get_targetClass(), fc.get_targetMember());
+			}
+		}
+		static void ProcessMemberAccess(){
+			Print("Checking members access");
+			XplNodeList^ memberAccess = currentDTE.FindNodes("/@XplBinaryoperator[op='M']");
+			for (XplBinaryoperator^  bo in memberAccess){
+				if(!(bo.get_Parent().get_Parent() is XplFunctioncall)){
+					AddType(bo.get_targetClass());
+					AddMember(bo.get_targetClass(), bo.get_targetMember());
+				}
+			}
+		}
+		static void PrintDebug(){
+			for (string^  typeName in _types.Keys){
+				Print("Included Types:" + typeName);
+				for (string^  memberName in (ArrayList^)_types[typeName]){
+					Print("\t" + memberName);
+				}
+			}
+		}
+		static void GenerateWrappers(){
+			WrapperGenerator^ generator = new WrapperGenerator(_types);
+			program[1].get_DocumentBody().Children().InsertAtEnd(generator.Generate());
+		}
+		private factory class WrapperGenerator{
+		private:
+			Hashtable^ _types;
+			Hashtable^ _generatedTypes = new Hashtable();
+			void GenerateType(string^ typeStr){
+				TypeInfo^ typeInfo = (TypeInfo^)compiler.LastTypesTable[typeStr];
+				if (typeInfo != null){
+					XplIName^ className = new XplIName(typeInfo.get_Name());
+					XplClass^ typeClass = writecode{
+						public factory class $className{
+						public:
+							type $className(){
+								return ZoeHelper::MakeTypeFromString("^_ChangeMe");
+							}
+						}
+					};
+					// add inherited members
+					ICollection^ baseMembers = typeInfo.get_BaseInfoCollection().get_BaseInfoList();
+					foreach(BaseInfo^ baseInfo in baseMembers){
+						if(!baseInfo.get_IsBadBase()){
+							string^ baseFullName = baseInfo.get_BaseTypeInfo().get_FullName();
+							// if the base is on list of types to generate add it as inheritance
+							if(_types.ContainsKey(baseFullName)){
+								XplInherits^ inhs = XplClass::new_Inherits();
+								XplInherit^ inh = XplInherits::new_c();
+								XplType^ itype = XplInherit::new_type();
+								inh.set_type(itype);
+								itype.set_typename(baseFullName);
+								inh.set_access(XplAccesstype_enum::PUBLIC);
+								inhs.Children().InsertAtEnd(inh);
+								typeClass.Children().InsertAtEnd(inhs);
+							}
+						}
+					}
+					// generate container namespaces or classes
+					AddAndGenerateContainer(typeStr, typeInfo, typeClass);
+				}
+			}
+			void AddAndGenerateContainer(string^ typeStr, TypeInfo^ typeInfo, XplClass^ typeClass){
+				string^ containerName = typeStr.Substring(0, typeStr.Length - typeInfo.get_Name().Length - 1);
+				if (_generatedTypes.ContainsKey(containerName)){
+					((XplNode^)_generatedTypes[containerName]).Children().InsertAtEnd(typeClass);
+					_generatedTypes.Add(typeStr, typeClass);
+				}
+				else {
+					TypeInfo^ containerTypeInfo = (TypeInfo^)compiler.LastTypesTable[containerName];
+					if (containerTypeInfo != null){
+						if (containerTypeInfo.get_TypeNode() is XplClass^){
+							GenerateType(containerName);
+						}
+						else {
+							if (containerTypeInfo.get_TypeNode() is XplNamespace^){
+								XplIName^ containerNamespaceName = new XplIName(containerName);
+								_generatedTypes.Add(containerName, writecode{
+
+									namespace $containerNamespaceName{
+									}
+
+								}.Children().FirstNode());
+							}
+							else {
+								// Error
+							}
+						}
+						AddAndGenerateContainer(typeStr, typeInfo, typeClass);
+					}
+				}
+			}
+			void GenerateMembers(string^ typeStr){
+				TypeInfo^ typeInfo = (TypeInfo^)compiler.LastTypesTable[typeStr];
+				if (typeInfo != null){
+					XplClass^ typeClass = (XplClass^)_generatedTypes[typeStr];
+					ArrayList^ members = (ArrayList^)_types[typeStr];
+					for (string^  memberName in members){
+						GenerateMember(memberName, typeClass, typeInfo);
+					}
+				}
+			}
+			void GenerateMember(string^ memberName, XplClass^ typeClass, TypeInfo^ typeInfo){
+				MemberInfo^ member = null;
+				if(typeInfo!=null && typeInfo.get_MemberInfoCollection()!=null){
+					if(memberName.Contains("#")){
+						member = typeInfo.get_MemberInfoCollection().get_MembersInfoFromInternalName(memberName);
+					}
+					else{
+						MemberInfo^[] members = typeInfo.get_MemberInfoCollection().get_MembersInfo(memberName);
+						if(members!=null) member = members[0];
+					}
+				}
+				if (member != null){
+					if (member.IsMethod()){
+						GenerateMethod(member, typeClass, typeInfo);
+					}
+					if (member.IsField() || member.IsProperty() ){
+						GenerateField(member, typeClass, typeInfo);
+					}
+				}
+			}
+			void GenerateMethod(MemberInfo^ member, XplClass^ typeClass, TypeInfo^ typeInfo){
+				XplIName^ memberName = new XplIName(member.get_MemberName());
+				XplType^ memberReturnType = member.get_ReturnType();
+				// mark return type as expression
+				memberReturnType.set_ftype(XplFactorytype_enum::EXPRESSION);
+				// generate function skeleton
+				XplFunction^ function = (XplFunction^)writecode{%
+				public:
+					$memberReturnType $memberName(){
+						return writecode( ileft.$memberName() );
+					}
+				%}.Children().FirstNode();
+				// add parameters and mark parameters of type expression
+				if (member.get_Parameters() != null){
+					function.set_Parameters((XplParameters^)member.get_Parameters().Clone());
+					for (XplParameter^  parameter in function.get_Parameters().Children()){
+						parameter.get_type().set_ftype(XplFactorytype_enum::EXPRESSION);
+					}
+				}
+				// add new function to generated class
+				typeClass.Children().InsertAtEnd(function);
+			}
+			void GenerateField(MemberInfo^ member, XplClass^ typeClass, TypeInfo^ typeInfo){
+				XplIName^ memberName = new XplIName(member.get_MemberName());
+				XplType^ memberType = member.get_ReturnType();
+				// mark return type as expression
+				memberType.set_ftype(XplFactorytype_enum::EXPRESSION);
+				// generate property skeleton
+				XplProperty^ @property = (XplProperty^)writecode{%
+				public:
+					$memberType property $memberName{
+						get{
+							return writecode( ileft.$memberName );
+						}
+					}
+				%}.Children().FirstNode();
+				// add new property to generated class
+				typeClass.Children().InsertAtEnd(@property);
+			}
+		public:
+			WrapperGenerator(Hashtable^ typesAndMethods){
+				_types = typesAndMethods;
+			}
+			XplNodeList^ Generate(){
+				for (string^  typeStr in _types.Keys){
+					GenerateType(typeStr);
+					GenerateMembers(typeStr);
+				}
+				XplNodeList^ retNodeList = new XplNodeList();
+				for (XplNode^  node in _generatedTypes.Values){
+					if(node is XplNamespace^)retNodeList.Add(node);
+				}
+				return retNodeList;
+			}
+		}
+	public:
+		static exp void Wrap(string^ startWith){
+			_typesPrefix = startWith;
+			if (_typesPrefix == null){
+				_typesPrefix = "";
+			}
+			// declarations
+			ProcessDeclarations();
+			// members access
+			ProcessMemberAccess();
+			// function calls
+			ProcessFunctioncalls();
+			// generate wrappers
+			GenerateWrappers();
+			// return
+			PrintDebug();
+			return null;
+		}
+	}
+}
+
