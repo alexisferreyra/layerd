@@ -13,7 +13,7 @@ LayerD is made up of a framework of technologies that provide a means to constru
 
 <br>
 
-http://layerd.net/imagenes_articulos/art_fastguide_img2.jpg
+http://sourceforge.net/apps/mediawiki/layerd/nfs/project/l/la/layerd/thumb/c/c1/LayerD_Process.jpg/552px-LayerD_Process.jpg
 
 <br>
 
