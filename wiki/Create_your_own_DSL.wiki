@@ -203,7 +203,7 @@ More complex DSL can be created using complex function calls
 
 {{{
 
-       str = Markup::XML('
+       str = Markup::XML(''
         table(id = "miClase", background = "black", comment = strA + "-" + strB):
           tr: td["Nombre"] td["Apellido"] ;
           tr: td[strA] td[strB] ;
@@ -213,22 +213,22 @@ More complex DSL can be created using complex function calls
           tr: td["Daniel"] td["Perez"] ;
           tr: td["UTN"] td["FRC"] ;
         ; 
-      ');  
+      '');  
 
-      // complex function calls use a special syntax "foo(' arguments here ')"
+      // complex function calls use a special syntax "foo('' arguments here '')"
       // where arguments is a sequence of expressions list and punctuators ; or : 
       // like: arg1 + arg2, arg3 : : : ; ; ; arg2: arg2(1,2) ;
       // because expressions can take normal function call form like "foo(arg1){blockArg;}"
       // it's possible to design complex DSL that are constructed from syntax primitives of
       // Meta D++ language
 
-      var result = SQL::Query('
+      var result = SQL::Query(''
         Select( name, address ), 
         From ( customers ), 
         Where {
            name="A*" && address="C*" 
         }
-      ');
+      '');
 
       // because, all DSL are implemented by transformation and analysis done at 
       // compile time by ordinary classes, you can combine any number of DSL
@@ -244,13 +244,13 @@ More complex DSL can be created using complex function calls
             Top = 520; Left = 320;
             Text = "Query"; AutoSize = true;
             Click {
-               Query^ result = SQL::Query('
+               Query^ result = SQL::Query(''
                  Select( name, address ), 
                  From ( customers ), 
                  Where {
                     name="A*" && address="C*" 
                  }
-               ');
+               '');
                this.queryResult.Text = result.ToString();
             };
           };
