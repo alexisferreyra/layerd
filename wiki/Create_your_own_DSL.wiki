@@ -258,3 +258,6 @@ More complex DSL can be created using complex function calls
       };
 
 }}}
+
+Textual DSL are very powerful, allowing a perfect integration with standard engineering tools for version control, code revision, etc.
+With the flexibility of running and checking DSL at compile time it's possible to follow useful programming paradigms like language oriented programming.
