@@ -131,7 +131,7 @@ public:
 
 Meta D++ allows to overloading of binary, unary and conversions operators.
 You can override following operators:
- < > ! == <= >= != && || ++ -- * / & | % << >> new delete - +
+ `< > ! == <= >= != && || ++ -- * / & | % << >> new delete - +`
 
 Operator new and delete can´t be overriden for all Zoe output modules.
 
