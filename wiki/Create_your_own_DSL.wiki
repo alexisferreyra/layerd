@@ -62,7 +62,8 @@ namespace Zoe::DotNET::Utils{
   // Classfactory that implements a DSL for Windows Forms in .NET.
   //
   public factory class GUI{
-    static void RenderControl(XplNode^ controlDef, XplFunction^ constructor, XplExpression^ containerExp, XplClass^ containerClass){
+    static void RenderControl(XplNode^ controlDef, XplFunction^ constructor, XplExpression^ containerExp, XplClass^ containerClass)
+    {
       if(controlDef.get_TypeName()!=CodeDOMTypes::XplExpression)return;
 
       XplExpression^ leftExp = null;
@@ -84,29 +85,38 @@ namespace Zoe::DotNET::Utils{
       resExp = writecode( $containerExp.Controls.Add($nombreControl) );
       constructor.get_FunctionBody().Children().InsertAtEnd(resExp);
 
-      for(XplNode^ node in blockInfo){
-        if (node.get_Content()!=null)
-          if (node.get_Content().get_TypeName() == CodeDOMTypes::XplAssing){
+      for(XplNode^ node in blockInfo)
+      {
+        if (node.get_Content() == null) continue;
+
+        if (node.get_Content().get_TypeName() == CodeDOMTypes::XplAssing)
+        {
           // It's a property
           leftExp = ((XplAssing^)node.get_Content()).get_l();
           rigthExp = ((XplAssing^)node.get_Content()).get_r();
           resExp = writecode( $nombreControl.$leftExp = $rigthExp );
           constructor.get_FunctionBody().Children().InsertAtEnd(resExp);
         }
-        else {
-          if (node.get_ElementName() == "e" && node.get_Content().get_ElementName() == "fc" && node.FindNode("/n").get_StringValue() == "Controls"){
+        else 
+        {
+          if (node.get_ElementName() == "e" && node.get_Content().get_ElementName() == "fc" &&
+              node.FindNode("/n").get_StringValue() == "Controls")
+          {
             XplNodeList^ list = ((XplFunctioncall^)node.get_Content()).get_bk().Children();
-            for(XplNode^ node2 in list){
+            for(XplNode^ node2 in list)
+            {
               RenderControl(node2, constructor, writecode( $nombreControl ), containerClass);
             }
           }
           else {
-            if (node.get_ElementName() == "e" && node.get_Content().get_ElementName() == "fc"){
+            if (node.get_ElementName() == "e" && node.get_Content().get_ElementName() == "fc")
+            {
               // it's an event for the control 
               XplFunctionBody^ eventLogic = ((XplFunctioncall^)node.get_Content()).get_bk();
               XplExpression^ eventName = ((XplFunctioncall^)node.get_Content()).get_l();
               XplFunction^ eventFunction = (XplFunction^)writecode{%
-                void eventFunc(object^ sender, EventArgs^ e){
+                void eventFunc(object^ sender, EventArgs^ e)
+                {
                   $eventLogic;
                 }
               %}.Children().FirstNode();
@@ -126,11 +136,12 @@ namespace Zoe::DotNET::Utils{
     }
     
   public:
-    static int count = 0;
-    static exp void Window(block info){      
+    static exp void Window(block info)
+    {
       return Window(new XplIName(), info);
     }
-    static exp void Window(iname void className, block info){
+    static exp void Window(iname void className, block info)
+    {
       // get simple name
       className.Identifier = ZoeHelper::GetSimpleNameFromQualified(className.Identifier);
       
@@ -140,41 +151,110 @@ namespace Zoe::DotNET::Utils{
         private class $className inherits Form{
         public:
           // Create the class for main window
-          $className(){
-          }
+          $className() { }
         }
       };
       
-      for(XplNode^ node in info.Children()){
+      for(XplNode^ node in info.Children())
+      {
         XplExpression^ leftExp = null;
         XplExpression^ rigthExp = null;
         XplExpression^ resExp = null;
-        if (node.get_ElementName() == "e" && node.get_Content().get_ElementName() == "a"){
+        if (node.get_ElementName() == "e" && node.get_Content().get_ElementName() == "a")
+        {
           // it's a property
           leftExp = ((XplAssing^)node.get_Content()).get_l();
           rigthExp = ((XplAssing^)node.get_Content()).get_r();
           resExp = writecode( this.$leftExp = $rigthExp );
           constructor.get_FunctionBody().Children().InsertAtEnd(resExp);
         }
-        if (node.get_ElementName() == "e" && node.get_Content().get_ElementName() == "fc" && node.FindNode("/n").get_StringValue() == "Controls"){
+        if (node.get_ElementName() == "e" && node.get_Content().get_ElementName() == "fc" && 
+            node.FindNode("/n").get_StringValue() == "Controls")
+        {
           // process child controls
           XplNodeList^ list = ((XplFunctioncall^)node.get_Content()).get_bk().Children();
-          for(XplNode^ node2 in list){
+          for(XplNode^ node2 in list)
+          {
             RenderControl(node2, constructor, thisExp, claseVentana);
           }
         }
       }
+      
+      // if class already exists, add members to existing class. Otherwise, add the new class
       XplClass^ backClass = (XplClass^)context.CurrentNamespace.FindNode("/@XplClass[name='" + claseVentana.get_name() + "']");
-      if (backClass != null){
+      if (backClass != null)
+      {
         backClass.Children().InsertAtEnd( claseVentana.Children() );
       }
-      else{
+      else
+      {
         context.CurrentNamespace.Children().InsertAtEnd(claseVentana);
       }
+      // return null to remove compile time function call
       return null;
     }
   }
   
 }
+
+}}}
+
+More complex DSL can be created using complex function calls
+
+{{{
+
+       str = Markup::XML('
+        table(id = "miClase", background = "black", comment = strA + "-" + strB):
+          tr: td["Nombre"] td["Apellido"] ;
+          tr: td[strA] td[strB] ;
+          tr: td[strB] td[strA] ;
+          tr: td["Juan"] td["Gonzalez"] ;
+          tr: td["Gustavo"] td["Lopez"] ;
+          tr: td["Daniel"] td["Perez"] ;
+          tr: td["UTN"] td["FRC"] ;
+        ; 
+      ');  
+
+      // complex function calls use a special syntax "foo(' arguments here ')"
+      // where arguments is a sequence of expressions list and punctuators ; or : 
+      // like: arg1 + arg2, arg3 : : : ; ; ; arg2: arg2(1,2) ;
+      // because expressions can take normal function call form like "foo(arg1){blockArg;}"
+      // it's possible to design complex DSL that are constructed from syntax primitives of
+      // Meta D++ language
+
+      var result = SQL::Query('
+        Select( name, address ), 
+        From ( customers ), 
+        Where {
+           name="A*" && address="C*" 
+        }
+      ');
+
+      // because, all DSL are implemented by transformation and analysis done at 
+      // compile time by ordinary classes, you can combine any number of DSL
+      GUI::Window(QueryWindow){
+        Text = "Results of query here";
+        Width = 800; Height = 600;
+        Controls{
+          Label(queryResult){
+            Top = 10; Left = 10;
+            Width = 780; Height = 500;
+          };
+          Button(run){
+            Top = 520; Left = 320;
+            Text = "Query"; AutoSize = true;
+            Click {
+               Query^ result = SQL::Query('
+                 Select( name, address ), 
+                 From ( customers ), 
+                 Where {
+                    name="A*" && address="C*" 
+                 }
+               ');
+               this.queryResult.Text = result.ToString();
+            };
+          };
+        };
+      };
 
 }}}
