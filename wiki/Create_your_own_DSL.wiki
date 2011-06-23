@@ -226,7 +226,7 @@ More complex DSL can be created using complex function calls
         Select( name, address ), 
         From ( customers ), 
         Where {
-           name="A*" && address="C*" 
+           name="A*" && address="C*" ;
         }
       '');
 
@@ -248,7 +248,7 @@ More complex DSL can be created using complex function calls
                  Select( name, address ), 
                  From ( customers ), 
                  Where {
-                    name="A*" && address="C*" 
+                    name="A*" && address="C*" ;
                  }
                '');
                this.queryResult.Text = result.ToString();
