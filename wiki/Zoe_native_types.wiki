@@ -5,11 +5,12 @@
 Zoe native types are defined as follow (in Meta D++ syntax):
 
 {{{
-/*
-    Zoe base types
 
-    2007(R) Alexis, Ferreyra.
-*/
+//
+//    Zoe native types
+//
+//    2007(R) Alexis, Ferreyra.
+//
 
 namespace zoe::lang{
   public class Object{
@@ -128,8 +129,8 @@ namespace zoe::lang{
   }
   public struct Null{
   public:
-    extern static bool operator==(object^ opA, object^ OpB);
-    extern static bool operator!=(object^ opA, object^ OpB);
+    extern static bool operator==(object^ opA, object^ opB);
+    extern static bool operator!=(object^ opA, object^ opB);
   }
   public struct Boolean {
   public:
@@ -140,18 +141,18 @@ namespace zoe::lang{
     extern static const long MaxValue;
     extern static const int Size;
 
-    extern static bool operator|(bool opA, bool OpB);
-    extern static bool operator&(bool opA, bool OpB);
-    extern static bool operator^(bool opA, bool OpB);
+    extern static bool operator|(bool opA, bool opB);
+    extern static bool operator&(bool opA, bool opB);
+    extern static bool operator^(bool opA, bool opB);
     extern static bool operator!(bool opA);
-    extern static bool operator==(bool opA, bool OpB);
-    extern static bool operator!=(bool opA, bool OpB);
-    extern static bool operator>(bool opA, bool OpB);
-    extern static bool operator<(bool opA, bool OpB);
-    extern static bool operator>=(bool opA, bool OpB);
-    extern static bool operator<=(bool opA, bool OpB);
-    extern static bool operator&&(bool opA, bool OpB);
-    extern static bool operator||(bool opA, bool OpB);
+    extern static bool operator==(bool opA, bool opB);
+    extern static bool operator!=(bool opA, bool opB);
+    extern static bool operator>(bool opA, bool opB);
+    extern static bool operator<(bool opA, bool opB);
+    extern static bool operator>=(bool opA, bool opB);
+    extern static bool operator<=(bool opA, bool opB);
+    extern static bool operator&&(bool opA, bool opB);
+    extern static bool operator||(bool opA, bool opB);
   }
   public struct Char {
   public:
@@ -171,23 +172,23 @@ namespace zoe::lang{
     extern static const long MaxValue;
     extern static const int Size;
 
-    extern static byte operator+(byte opA, byte OpB);
-    extern static byte operator-(byte opA, byte OpB);
-    extern static byte operator*(byte opA, byte OpB);
-    extern static byte operator/(byte opA, byte OpB);
-    extern static byte operator|(byte opA, byte OpB);
-    extern static byte operator&(byte opA, byte OpB);
-    extern static byte operator^(byte opA, byte OpB);
-    extern static byte operator%(byte opA, byte OpB);
+    extern static byte operator+(byte opA, byte opB);
+    extern static byte operator-(byte opA, byte opB);
+    extern static byte operator*(byte opA, byte opB);
+    extern static byte operator/(byte opA, byte opB);
+    extern static byte operator|(byte opA, byte opB);
+    extern static byte operator&(byte opA, byte opB);
+    extern static byte operator^(byte opA, byte opB);
+    extern static byte operator%(byte opA, byte opB);
     extern static byte operator-(byte opA);
     extern static byte operator!(byte opA);
     extern static byte operator~(byte opA);
-    extern static bool operator==(byte opA, byte OpB);
-    extern static bool operator!=(byte opA, byte OpB);
-    extern static bool operator>(byte opA, byte OpB);
-    extern static bool operator<(byte opA, byte OpB);
-    extern static bool operator>=(byte opA, byte OpB);
-    extern static bool operator<=(byte opA, byte OpB);
+    extern static bool operator==(byte opA, byte opB);
+    extern static bool operator!=(byte opA, byte opB);
+    extern static bool operator>(byte opA, byte opB);
+    extern static bool operator<(byte opA, byte opB);
+    extern static bool operator>=(byte opA, byte opB);
+    extern static bool operator<=(byte opA, byte opB);
   }
   public struct SByte {
   public:
@@ -196,25 +197,25 @@ namespace zoe::lang{
     extern static const long MaxValue;
     extern static const int Size;
 
-    extern static sbyte operator+(sbyte opA, sbyte OpB);
-    extern static sbyte operator-(sbyte opA, sbyte OpB);
-    extern static sbyte operator*(sbyte opA, sbyte OpB);
-    extern static sbyte operator/(sbyte opA, sbyte OpB);
-    extern static sbyte operator|(sbyte opA, sbyte OpB);
-    extern static sbyte operator&(sbyte opA, sbyte OpB);
-    extern static sbyte operator^(sbyte opA, sbyte OpB);
-    extern static sbyte operator%(sbyte opA, sbyte OpB);
+    extern static sbyte operator+(sbyte opA, sbyte opB);
+    extern static sbyte operator-(sbyte opA, sbyte opB);
+    extern static sbyte operator*(sbyte opA, sbyte opB);
+    extern static sbyte operator/(sbyte opA, sbyte opB);
+    extern static sbyte operator|(sbyte opA, sbyte opB);
+    extern static sbyte operator&(sbyte opA, sbyte opB);
+    extern static sbyte operator^(sbyte opA, sbyte opB);
+    extern static sbyte operator%(sbyte opA, sbyte opB);
     extern static sbyte operator-(sbyte opA);
     extern static sbyte operator!(sbyte opA);
     extern static sbyte operator~(sbyte opA);
     extern static sbyte operator++(sbyte opA);
     extern static sbyte operator--(sbyte opA);
-    extern static bool operator==(sbyte opA, sbyte OpB);
-    extern static bool operator!=(sbyte opA, sbyte OpB);
-    extern static bool operator>(sbyte opA, sbyte OpB);
-    extern static bool operator<(sbyte opA, sbyte OpB);
-    extern static bool operator>=(sbyte opA, sbyte OpB);
-    extern static bool operator<=(sbyte opA, sbyte OpB);
+    extern static bool operator==(sbyte opA, sbyte opB);
+    extern static bool operator!=(sbyte opA, sbyte opB);
+    extern static bool operator>(sbyte opA, sbyte opB);
+    extern static bool operator<(sbyte opA, sbyte opB);
+    extern static bool operator>=(sbyte opA, sbyte opB);
+    extern static bool operator<=(sbyte opA, sbyte opB);
   }
   public struct Short {
   public:
@@ -223,25 +224,25 @@ namespace zoe::lang{
     extern static const long MaxValue;
     extern static const int Size;
 
-    extern static short operator+(short opA, short OpB);
-    extern static short operator-(short opA, short OpB);
-    extern static short operator*(short opA, short OpB);
-    extern static short operator/(short opA, short OpB);
-    extern static short operator|(short opA, short OpB);
-    extern static short operator&(short opA, short OpB);
-    extern static short operator^(short opA, short OpB);
-    extern static short operator%(short opA, short OpB);
+    extern static short operator+(short opA, short opB);
+    extern static short operator-(short opA, short opB);
+    extern static short operator*(short opA, short opB);
+    extern static short operator/(short opA, short opB);
+    extern static short operator|(short opA, short opB);
+    extern static short operator&(short opA, short opB);
+    extern static short operator^(short opA, short opB);
+    extern static short operator%(short opA, short opB);
     extern static short operator-(short opA);
     extern static short operator!(short opA);
     extern static short operator~(short opA);
     extern static short operator++(short opA);
     extern static short operator--(short opA);
-    extern static bool operator==(short opA, short OpB);
-    extern static bool operator!=(short opA, short OpB);
-    extern static bool operator>(short opA, short OpB);
-    extern static bool operator<(short opA, short OpB);
-    extern static bool operator>=(short opA, short OpB);
-    extern static bool operator<=(short opA, short OpB);
+    extern static bool operator==(short opA, short opB);
+    extern static bool operator!=(short opA, short opB);
+    extern static bool operator>(short opA, short opB);
+    extern static bool operator<(short opA, short opB);
+    extern static bool operator>=(short opA, short opB);
+    extern static bool operator<=(short opA, short opB);
   }
   public struct UShort {
   public:
@@ -250,25 +251,25 @@ namespace zoe::lang{
     extern static const long MaxValue;
     extern static const int Size;
 
-    extern static ushort operator+(ushort opA, ushort OpB);
-    extern static ushort operator-(ushort opA, ushort OpB);
-    extern static ushort operator*(ushort opA, ushort OpB);
-    extern static ushort operator/(ushort opA, ushort OpB);
-    extern static ushort operator|(ushort opA, ushort OpB);
-    extern static ushort operator&(ushort opA, ushort OpB);
-    extern static ushort operator^(ushort opA, ushort OpB);
-    extern static ushort operator%(ushort opA, ushort OpB);
+    extern static ushort operator+(ushort opA, ushort opB);
+    extern static ushort operator-(ushort opA, ushort opB);
+    extern static ushort operator*(ushort opA, ushort opB);
+    extern static ushort operator/(ushort opA, ushort opB);
+    extern static ushort operator|(ushort opA, ushort opB);
+    extern static ushort operator&(ushort opA, ushort opB);
+    extern static ushort operator^(ushort opA, ushort opB);
+    extern static ushort operator%(ushort opA, ushort opB);
     extern static ushort operator-(ushort opA);
     extern static ushort operator!(ushort opA);
     extern static ushort operator~(ushort opA);
     extern static ushort operator++(ushort opA);
     extern static ushort operator--(ushort opA);
-    extern static bool operator==(ushort opA, ushort OpB);
-    extern static bool operator!=(ushort opA, ushort OpB);
-    extern static bool operator>(ushort opA, ushort OpB);
-    extern static bool operator<(ushort opA, ushort OpB);
-    extern static bool operator>=(ushort opA, ushort OpB);
-    extern static bool operator<=(ushort opA, ushort OpB);
+    extern static bool operator==(ushort opA, ushort opB);
+    extern static bool operator!=(ushort opA, ushort opB);
+    extern static bool operator>(ushort opA, ushort opB);
+    extern static bool operator<(ushort opA, ushort opB);
+    extern static bool operator>=(ushort opA, ushort opB);
+    extern static bool operator<=(ushort opA, ushort opB);
   }
   public struct Integer {
   public:
@@ -277,25 +278,25 @@ namespace zoe::lang{
     extern static const long MaxValue;
     extern static const int Size;
 
-    extern static int operator+(int opA, int OpB);
-    extern static int operator-(int opA, int OpB);
-    extern static int operator*(int opA, int OpB);
-    extern static int operator/(int opA, int OpB);
-    extern static int operator|(int opA, int OpB);
-    extern static int operator&(int opA, int OpB);
-    extern static int operator^(int opA, int OpB);
-    extern static int operator%(int opA, int OpB);
+    extern static int operator+(int opA, int opB);
+    extern static int operator-(int opA, int opB);
+    extern static int operator*(int opA, int opB);
+    extern static int operator/(int opA, int opB);
+    extern static int operator|(int opA, int opB);
+    extern static int operator&(int opA, int opB);
+    extern static int operator^(int opA, int opB);
+    extern static int operator%(int opA, int opB);
     extern static int operator-(int opA);
     extern static int operator!(int opA);
     extern static int operator~(int opA);
     extern static int operator++(int opA);
     extern static int operator--(int opA);
-    extern static bool operator==(int opA, int OpB);
-    extern static bool operator!=(int opA, int OpB);
-    extern static bool operator>(int opA, int OpB);
-    extern static bool operator<(int opA, int OpB);
-    extern static bool operator>=(int opA, int OpB);
-    extern static bool operator<=(int opA, int OpB);
+    extern static bool operator==(int opA, int opB);
+    extern static bool operator!=(int opA, int opB);
+    extern static bool operator>(int opA, int opB);
+    extern static bool operator<(int opA, int opB);
+    extern static bool operator>=(int opA, int opB);
+    extern static bool operator<=(int opA, int opB);
   }
   public struct Unsigned {
   public:
@@ -304,25 +305,25 @@ namespace zoe::lang{
     extern static const long MaxValue;
     extern static const int Size;
 
-    extern static unsigned operator+(unsigned opA, unsigned OpB);
-    extern static unsigned operator-(unsigned opA, unsigned OpB);
-    extern static unsigned operator*(unsigned opA, unsigned OpB);
-    extern static unsigned operator/(unsigned opA, unsigned OpB);
-    extern static unsigned operator|(unsigned opA, unsigned OpB);
-    extern static unsigned operator&(unsigned opA, unsigned OpB);
-    extern static unsigned operator^(unsigned opA, unsigned OpB);
-    extern static unsigned operator%(unsigned opA, unsigned OpB);
+    extern static unsigned operator+(unsigned opA, unsigned opB);
+    extern static unsigned operator-(unsigned opA, unsigned opB);
+    extern static unsigned operator*(unsigned opA, unsigned opB);
+    extern static unsigned operator/(unsigned opA, unsigned opB);
+    extern static unsigned operator|(unsigned opA, unsigned opB);
+    extern static unsigned operator&(unsigned opA, unsigned opB);
+    extern static unsigned operator^(unsigned opA, unsigned opB);
+    extern static unsigned operator%(unsigned opA, unsigned opB);
     extern static unsigned operator-(unsigned opA);
     extern static unsigned operator!(unsigned opA);
     extern static unsigned operator~(unsigned opA);
     extern static unsigned operator++(unsigned opA);
     extern static unsigned operator--(unsigned opA);
-    extern static bool operator==(unsigned opA, unsigned OpB);
-    extern static bool operator!=(unsigned opA, unsigned OpB);
-    extern static bool operator>(unsigned opA, unsigned OpB);
-    extern static bool operator<(unsigned opA, unsigned OpB);
-    extern static bool operator>=(unsigned opA, unsigned OpB);
-    extern static bool operator<=(unsigned opA, unsigned OpB);
+    extern static bool operator==(unsigned opA, unsigned opB);
+    extern static bool operator!=(unsigned opA, unsigned opB);
+    extern static bool operator>(unsigned opA, unsigned opB);
+    extern static bool operator<(unsigned opA, unsigned opB);
+    extern static bool operator>=(unsigned opA, unsigned opB);
+    extern static bool operator<=(unsigned opA, unsigned opB);
   }
   public struct Long {
   public:
@@ -331,25 +332,25 @@ namespace zoe::lang{
     extern static const long MaxValue;
     extern static const int Size;
 
-    extern static long operator+(long opA, long OpB);
-    extern static long operator-(long opA, long OpB);
-    extern static long operator*(long opA, long OpB);
-    extern static long operator/(long opA, long OpB);
-    extern static long operator|(long opA, long OpB);
-    extern static long operator&(long opA, long OpB);
-    extern static long operator^(long opA, long OpB);
-    extern static long operator%(long opA, long OpB);
+    extern static long operator+(long opA, long opB);
+    extern static long operator-(long opA, long opB);
+    extern static long operator*(long opA, long opB);
+    extern static long operator/(long opA, long opB);
+    extern static long operator|(long opA, long opB);
+    extern static long operator&(long opA, long opB);
+    extern static long operator^(long opA, long opB);
+    extern static long operator%(long opA, long opB);
     extern static long operator-(long opA);
     extern static long operator!(long opA);
     extern static long operator~(long opA);
     extern static long operator++(long opA);
     extern static long operator--(long opA);
-    extern static bool operator==(long opA, long OpB);
-    extern static bool operator!=(long opA, long OpB);
-    extern static bool operator>(long opA, long OpB);
-    extern static bool operator<(long opA, long OpB);
-    extern static bool operator>=(long opA, long OpB);
-    extern static bool operator<=(long opA, long OpB);
+    extern static bool operator==(long opA, long opB);
+    extern static bool operator!=(long opA, long opB);
+    extern static bool operator>(long opA, long opB);
+    extern static bool operator<(long opA, long opB);
+    extern static bool operator>=(long opA, long opB);
+    extern static bool operator<=(long opA, long opB);
   }
   public struct ULong {
   public:
@@ -358,25 +359,25 @@ namespace zoe::lang{
     extern static const long MaxValue;
     extern static const int Size;
 
-    extern static ulong operator+(ulong opA, ulong OpB);
-    extern static ulong operator-(ulong opA, ulong OpB);
-    extern static ulong operator*(ulong opA, ulong OpB);
-    extern static ulong operator/(ulong opA, ulong OpB);
-    extern static ulong operator|(ulong opA, ulong OpB);
-    extern static ulong operator&(ulong opA, ulong OpB);
-    extern static ulong operator^(ulong opA, ulong OpB);
-    extern static ulong operator%(ulong opA, ulong OpB);
+    extern static ulong operator+(ulong opA, ulong opB);
+    extern static ulong operator-(ulong opA, ulong opB);
+    extern static ulong operator*(ulong opA, ulong opB);
+    extern static ulong operator/(ulong opA, ulong opB);
+    extern static ulong operator|(ulong opA, ulong opB);
+    extern static ulong operator&(ulong opA, ulong opB);
+    extern static ulong operator^(ulong opA, ulong opB);
+    extern static ulong operator%(ulong opA, ulong opB);
     extern static ulong operator-(ulong opA);
     extern static ulong operator!(ulong opA);
     extern static ulong operator~(ulong opA);
     extern static ulong operator++(ulong opA);
     extern static ulong operator--(ulong opA);
-    extern static bool operator==(ulong opA, ulong OpB);
-    extern static bool operator!=(ulong opA, ulong OpB);
-    extern static bool operator>(ulong opA, ulong OpB);
-    extern static bool operator<(ulong opA, ulong OpB);
-    extern static bool operator>=(ulong opA, ulong OpB);
-    extern static bool operator<=(ulong opA, ulong OpB);
+    extern static bool operator==(ulong opA, ulong opB);
+    extern static bool operator!=(ulong opA, ulong opB);
+    extern static bool operator>(ulong opA, ulong opB);
+    extern static bool operator<(ulong opA, ulong opB);
+    extern static bool operator>=(ulong opA, ulong opB);
+    extern static bool operator<=(ulong opA, ulong opB);
   }
   public struct Float {
   public:
@@ -385,25 +386,25 @@ namespace zoe::lang{
     extern static const float MaxValue;
     extern static const int Size;
 
-    extern static float operator+(float opA, float OpB);
-    extern static float operator-(float opA, float OpB);
-    extern static float operator*(float opA, float OpB);
-    extern static float operator/(float opA, float OpB);
-    extern static float operator|(float opA, float OpB);
-    extern static float operator&(float opA, float OpB);
-    extern static float operator^(float opA, float OpB);
-    extern static float operator%(float opA, float OpB);
+    extern static float operator+(float opA, float opB);
+    extern static float operator-(float opA, float opB);
+    extern static float operator*(float opA, float opB);
+    extern static float operator/(float opA, float opB);
+    extern static float operator|(float opA, float opB);
+    extern static float operator&(float opA, float opB);
+    extern static float operator^(float opA, float opB);
+    extern static float operator%(float opA, float opB);
     extern static float operator-(float opA);
     extern static float operator!(float opA);
     extern static float operator~(float opA);
     extern static float operator++(float opA);
     extern static float operator--(float opA);
-    extern static bool operator==(float opA, float OpB);
-    extern static bool operator!=(float opA, float OpB);
-    extern static bool operator>(float opA, float OpB);
-    extern static bool operator<(float opA, float OpB);
-    extern static bool operator>=(float opA, float OpB);
-    extern static bool operator<=(float opA, float OpB);
+    extern static bool operator==(float opA, float opB);
+    extern static bool operator!=(float opA, float opB);
+    extern static bool operator>(float opA, float opB);
+    extern static bool operator<(float opA, float opB);
+    extern static bool operator>=(float opA, float opB);
+    extern static bool operator<=(float opA, float opB);
   }
   public struct Double {
   public:
@@ -412,25 +413,25 @@ namespace zoe::lang{
     extern static const double MaxValue;
     extern static const int Size;
 
-    extern static double operator+(double opA, double OpB);
-    extern static double operator-(double opA, double OpB);
-    extern static double operator*(double opA, double OpB);
-    extern static double operator/(double opA, double OpB);
-    extern static double operator|(double opA, double OpB);
-    extern static double operator&(double opA, double OpB);
-    extern static double operator^(double opA, double OpB);
-    extern static double operator%(double opA, double OpB);
+    extern static double operator+(double opA, double opB);
+    extern static double operator-(double opA, double opB);
+    extern static double operator*(double opA, double opB);
+    extern static double operator/(double opA, double opB);
+    extern static double operator|(double opA, double opB);
+    extern static double operator&(double opA, double opB);
+    extern static double operator^(double opA, double opB);
+    extern static double operator%(double opA, double opB);
     extern static double operator-(double opA);
     extern static double operator!(double opA);
     extern static double operator~(double opA);
     extern static double operator++(double opA);
     extern static double operator--(double opA);
-    extern static bool operator==(double opA, double OpB);
-    extern static bool operator!=(double opA, double OpB);
-    extern static bool operator>(double opA, double OpB);
-    extern static bool operator<(double opA, double OpB);
-    extern static bool operator>=(double opA, double OpB);
-    extern static bool operator<=(double opA, double OpB);
+    extern static bool operator==(double opA, double opB);
+    extern static bool operator!=(double opA, double opB);
+    extern static bool operator>(double opA, double opB);
+    extern static bool operator<(double opA, double opB);
+    extern static bool operator>=(double opA, double opB);
+    extern static bool operator<=(double opA, double opB);
   }
   public struct Decimal {
   public:
@@ -441,25 +442,25 @@ namespace zoe::lang{
 
     extern static decimal operator++(decimal opA);
     extern static decimal operator--(decimal opA);
-    extern static decimal operator+(decimal opA, decimal OpB);
-    extern static decimal operator-(decimal opA, decimal OpB);
-    extern static decimal operator*(decimal opA, decimal OpB);
-    extern static decimal operator/(decimal opA, decimal OpB);
-    extern static decimal operator|(decimal opA, decimal OpB);
-    extern static decimal operator&(decimal opA, decimal OpB);
-    extern static decimal operator^(decimal opA, decimal OpB);
-    extern static decimal operator%(decimal opA, decimal OpB);
+    extern static decimal operator+(decimal opA, decimal opB);
+    extern static decimal operator-(decimal opA, decimal opB);
+    extern static decimal operator*(decimal opA, decimal opB);
+    extern static decimal operator/(decimal opA, decimal opB);
+    extern static decimal operator|(decimal opA, decimal opB);
+    extern static decimal operator&(decimal opA, decimal opB);
+    extern static decimal operator^(decimal opA, decimal opB);
+    extern static decimal operator%(decimal opA, decimal opB);
     extern static decimal operator-(decimal opA);
     extern static decimal operator!(decimal opA);
     extern static decimal operator~(decimal opA);
     extern static bool operator++(decimal opA);
     extern static bool operator--(decimal opA);
-    extern static bool operator==(decimal opA, decimal OpB);
-    extern static bool operator!=(decimal opA, decimal OpB);
-    extern static bool operator>(decimal opA, decimal OpB);
-    extern static bool operator<(decimal opA, decimal OpB);
-    extern static bool operator>=(decimal opA, decimal OpB);
-    extern static bool operator<=(decimal opA, decimal OpB);
+    extern static bool operator==(decimal opA, decimal opB);
+    extern static bool operator!=(decimal opA, decimal opB);
+    extern static bool operator>(decimal opA, decimal opB);
+    extern static bool operator<(decimal opA, decimal opB);
+    extern static bool operator>=(decimal opA, decimal opB);
+    extern static bool operator<=(decimal opA, decimal opB);
   }
   public struct DateTime {
   public:
@@ -505,14 +506,14 @@ namespace zoe::lang{
     extern void AddSeconds(int seconds);
     extern int CompareTo(DateTime opA);
 
-    extern static TimeSpan operator+(DateTime opA, DateTime OpB);
-    extern static TimeSpan operator-(DateTime opA, DateTime OpB);
-    extern static bool operator==(DateTime opA, DateTime OpB);
-    extern static bool operator!=(DateTime opA, DateTime OpB);
-    extern static bool operator>(DateTime opA, DateTime OpB);
-    extern static bool operator<(DateTime opA, DateTime OpB);
-    extern static bool operator>=(DateTime opA, DateTime OpB);
-    extern static bool operator<=(DateTime opA, DateTime OpB);
+    extern static TimeSpan operator+(DateTime opA, DateTime opB);
+    extern static TimeSpan operator-(DateTime opA, DateTime opB);
+    extern static bool operator==(DateTime opA, DateTime opB);
+    extern static bool operator!=(DateTime opA, DateTime opB);
+    extern static bool operator>(DateTime opA, DateTime opB);
+    extern static bool operator<(DateTime opA, DateTime opB);
+    extern static bool operator>=(DateTime opA, DateTime opB);
+    extern static bool operator<=(DateTime opA, DateTime opB);
   }
   public struct TimeSpan {
   public:
@@ -536,16 +537,16 @@ namespace zoe::lang{
     extern int property Seconds{
       get;
     }
-    extern static TimeSpan^ operator+(DateTime^ opA, TimeSpan^ OpB);
-    extern static TimeSpan^ operator-(DateTime^ opA, TimeSpan^ OpB);
-    extern static TimeSpan^ operator+(TimeSpan^ opA, DateTime^ OpB);
-    extern static TimeSpan^ operator-(TimeSpan^ opA, DateTime^ OpB);
-    extern static bool operator==(TimeSpan^ opA, TimeSpan^ OpB);
-    extern static bool operator!=(TimeSpan^ opA, TimeSpan^ OpB);
-    extern static bool operator>(TimeSpan^ opA, TimeSpan^ OpB);
-    extern static bool operator<(TimeSpan^ opA, TimeSpan^ OpB);
-    extern static bool operator>=(TimeSpan^ opA, TimeSpan^ OpB);
-    extern static bool operator<=(TimeSpan^ opA, TimeSpan^ OpB);
+    extern static TimeSpan^ operator+(DateTime^ opA, TimeSpan^ opB);
+    extern static TimeSpan^ operator-(DateTime^ opA, TimeSpan^ opB);
+    extern static TimeSpan^ operator+(TimeSpan^ opA, DateTime^ opB);
+    extern static TimeSpan^ operator-(TimeSpan^ opA, DateTime^ opB);
+    extern static bool operator==(TimeSpan^ opA, TimeSpan^ opB);
+    extern static bool operator!=(TimeSpan^ opA, TimeSpan^ opB);
+    extern static bool operator>(TimeSpan^ opA, TimeSpan^ opB);
+    extern static bool operator<(TimeSpan^ opA, TimeSpan^ opB);
+    extern static bool operator>=(TimeSpan^ opA, TimeSpan^ opB);
+    extern static bool operator<=(TimeSpan^ opA, TimeSpan^ opB);
   }
   public class Array {
   public:
@@ -559,4 +560,5 @@ namespace zoe::lang{
   public:
   }
 }
+
 }}}
