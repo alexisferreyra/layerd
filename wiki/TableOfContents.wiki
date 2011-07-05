@@ -17,6 +17,8 @@
     # [Classes_Interfaces_Namespaces Namespaces, Classes, Structs, Enums and Interfaces]
     # [Functions Class Members]
     # [Inheritance]
+    # Appendix
+      # [Zoe_native_types Zoe Native Types Reference]
   # Compile Time Classes
     # [Introduction_to_Compile_Time Introduction to "Compile Time Classes"]
     # [Using_writecode Using writecode expressions]
