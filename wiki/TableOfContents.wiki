@@ -16,7 +16,7 @@
     # [Literals Literal values]
     # [Classes_Interfaces_Namespaces Namespaces, Classes, Structs, Enums and Interfaces]
     # [Functions Class Members]
-    # [Function pointers]
+    # [Function_pointers Function pointers]
     # [Inheritance]
     # Appendix
       # [Zoe_native_types Zoe Native Types Reference]
