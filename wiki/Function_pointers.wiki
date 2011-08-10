@@ -31,7 +31,7 @@ Function pointers can store address of static or instance functions.
 When used with instance functions it also holds a pointer to an  instance and that instance is used to call the function.
 
 Two function pointers types can be explicitly converted if the signature 
-of both pointed functions is the same.
+of both pointed functions is the same (not supported on all output platforms, it can be an error for certain Zoe output modules used).
 
 For example:
 
