@@ -1,0 +1,23 @@
+namespace js
+{
+	extern public class objects
+	{
+	public:
+		jobject^ property window
+		{
+			get;
+		}
+		static void alert(string*ref msg);
+	}
+
+	extern public class jobject inherits Zoe::Lang::Object
+	{
+	public:
+		jobject^ indexer(string^ name)
+		{
+			get;
+			set;
+		}
+	}
+
+}
