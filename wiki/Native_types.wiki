@@ -1,5 +1,5 @@
 #summary Native types
-== Integers with sign ==
+== Signed Integers ==
   * sbyte
   * int
   * short
@@ -9,7 +9,7 @@ The types of "signed integer" sorted by range of supported values are: "sbyte", 
 The "sbyte" type represents an 8-bit signed integer and it is the only type of signed integer of equal length regardless of the deployment platform.
 The integer types "short", "integer", and "long" have a maximum length that depends on the used implementation of Zoe output module. The "integer" type represents a typical integer in the destination platform, eg: 32bit for a 32bits platform and 64bit for a 64bit platform. The type "short" is an integer smaller than "integer" and "long" represents an integer of greater range than an "integer"
 
-== Integers without sign ==
+== Unsigned Integers ==
   * byte
   * unsigned short (or ushort)
   * unsigned (or unsigned int)
@@ -19,7 +19,7 @@ The unsigned integer types sorted by range of supported values are: "byte", "uns
 The unsigned integer types are not required to be supported by all target platforms, but is recommended.
 The type "byte" represents an unsigned integer of 8-bit length and supports decimal range from 0 to 255.
 
-== Reals with floating point ==
+== Real Numbers ==
   * float
   * double
   * long double
@@ -30,7 +30,7 @@ The type  "float" must correspond to a specific deployment platform with single-
 The type "double" must correspond to a specific deployment platform with double-precision format (64bits). If the platform provides greater precision for type "float" , the precision of the type "double" must always be greater than the precision of the implemented type "float" . 
 The type "long double" is optional to be implemented in a specific deployment platform by an output module. If it is implemented is required to have a higher degree of accuracy than the type "double", if it is not implemented it must use the same precision as the type "double" and emit "warnings" for pointing out the decrease of precision. 
 The type "decimal" is a real number that is recommended to duplicate the precision of the floating-point type "double", but is left to each output module the implementation decision on using floating or fixed point. 
-In case of not implementing a special type, the output module must provide for the  type "decimal" the same implementation as the type "double" and emit a "warning" to the user.
+In case of not implementing a special type, the output module must provide for the  type "decimal" the same implementation than "double" and emit a "warning" to the user.
 
 == Chars ==
   * char
