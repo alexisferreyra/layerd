@@ -20,6 +20,8 @@
     # [Inheritance]
     # Appendix
       # [Zoe_native_types Zoe Native Types Reference]
+      # [metadpp_keywords Meta D++ Keywords]
+
   # Compile Time Classes
     # [Introduction_to_Compile_Time Introduction to "Compile Time Classes"]
     # [Using_writecode Using writecode expressions]
