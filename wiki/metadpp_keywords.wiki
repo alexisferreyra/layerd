@@ -112,7 +112,7 @@ while
 writecode
 }}}
 
-You can't use those keyword as identifier. If you want to use one keyword as identifier you must use "@" symbol before the word, for example:
+You can't use those keywords as identifier. If you want to use one keyword as identifier you must use "@" symbol before the word, for example:
 
 {{{
 // keywords used as identifiers
@@ -123,3 +123,5 @@ int n = 3;
 @class = @int + @class + n;
 
 }}}
+
+*Note:* list of keywords for future revisions of Meta D++ compiler is expected to be reduced.
