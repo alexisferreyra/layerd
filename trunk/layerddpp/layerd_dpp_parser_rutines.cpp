@@ -42,7 +42,7 @@
 
 #line 1 "layerd_dpp_parser_rutines.cpp"
 
-#include <io.h>
+#include <stdio.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>, 
@@ -219,12 +219,12 @@ void printErrors(){
 }
 void AddError(const char*error){
 	char buf[10];
-	itoa(yylineno,buf,10);
+	sprintf(buf, "%i", yylineno);
 	pErrors.push_back((std::string)command.filename+(std::string)"("+(std::string)buf+(std::string)") : error : "+(std::string)error);
 }
 void AddWarning(const char*error){
 	char buf[10];
-	itoa(yylineno,buf,10);
+	sprintf(buf, "%i", yylineno);
 	pWarnings.push_back((std::string)command.filename+(std::string)"("+(std::string)buf+(std::string)") : warning : "+(std::string)error);
 }
 
@@ -261,7 +261,7 @@ int main(int argc, char*argv[])
 			ExitWithHelp();
 		}
 		std::wfstream outFile;
-		int outFile2=0;
+		//int outFile2=0;
 		//Tengo que usar la libreria estandar de C para el archivo de entrada por flex!
 		FILE* inFile;
 		inFile=fopen(command.filename,"r");
@@ -305,10 +305,8 @@ int main(int argc, char*argv[])
 			mbstowcs(fileNameBuffer,command.filename,strlen(command.filename)+1);
 			body->set_ldsrc( (CodeDOM::string)DT("1,1,")+(CodeDOM::string)fileNameBuffer );
 			
-			outFile2=_open( command.outputFilename, _O_WRONLY | _O_CREAT | _O_U8TEXT | _O_TRUNC, _S_IWRITE ); 
-			//outFile.open(command.outputFilename,ios_base::trunc | ios_base::out );
-			//if(outFile.fail() || !outFile.is_open()){
-			if(outFile2==-1){
+			outFile.open(command.outputFilename,ios_base::trunc | ios_base::out );
+			if(outFile.fail() || !outFile.is_open()){
 				CD_COUT<<CT("ERROR: Output file: \"")<<command.outputFilename<<CT("\" couldn't be opened.")<<endl;
 				OutFooter();
 				return FALSE;
@@ -323,8 +321,7 @@ int main(int argc, char*argv[])
 				doc->Write(writer);
 				CD_COUT<<endl<<endl;
 			}
-       		writer=new CodeDOM::XplWriter(outFile2);
-       		//writer=new CodeDOM::XplWriter((std::wiostream*)&outFile);
+       		writer=new CodeDOM::XplWriter((std::wiostream*)&outFile);
 			doc->Write(writer);
 			//Elimino el documento de la memoria
 			delete doc;
@@ -339,8 +336,7 @@ int main(int argc, char*argv[])
 		}
 		//Cierro los archivos
 		fclose(inFile);
-		//outFile.close();
-		_close(outFile2);
+		outFile.close();
 		delete writer;
 		if(!command.silent)CD_COUT<<endl<<CT("Finalized.")<<endl;
 	} // argc>1
@@ -591,7 +587,6 @@ CodeDOM::XplFunction* CreateFunction(unsigned int p_storage /*Storage*/,
 	f->set_BaseInitializers(p_base_initializers);
 	return f;
 }
-
 void SetDeclaratorMod(CodeDOM::XplClass* c,unsigned int num){
 	unsigned int flags=0;
 	if(c==NULL)return;
@@ -1060,7 +1055,6 @@ CodeDOM::XplForStatement* CreateFor(CodeDOM::XplNode* p_forinit,CodeDOM::XplNode
 	if(p_update!=NULL)fs->set_repeat((CodeDOM::XplExpressionlist*)p_update);
 	return fs;
 }
-
 wchar_t* get_nativeType(unsigned num){
 	switch(num){
 		case PC_VOID:

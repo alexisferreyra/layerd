@@ -61,6 +61,7 @@
 #define LAYERD_COMPILER_VERSION				"Beta 0.98"
 #define LAYERD_COMPILER_VERSION_DOM_CHAR	L"Beta 0.98"
 #define NEW_ERROR_RESUME_ZOENODELIST		NewErrorResumeXplNodeList()
+#define UNSIGNED_CAST unsigned long
 
 void AddError(const char*error);
 void AddWarning(const char*error);
@@ -70,7 +71,7 @@ void AddWarning(const char*error);
 #ifdef WIN32
 #include "..\\CodeDOM\\CDOM_IncludeAll.h"
 #else
-#include <layerd/CDOM_IncludeAll.h>
+#include "../CodeDOM/CDOM_IncludeAll.h"
 #endif
 
 #include "layerd_dpp_parser_beta_tab.h"
@@ -1679,7 +1680,7 @@ Parameter_Declarator
 						delete (CodeDOM::string*)$2.nodos[0];
 					}
 					if($2.nodos[2]!=NULL)p->set_i((CodeDOM::XplInitializerList*)$2.nodos[2]);
-					SetParameterModifiers(p,(unsigned)$1.nodos[1]);
+					SetParameterModifiers(p,(UNSIGNED_CAST)$1.nodos[1]);
 					$$.node=p;
 					SET_SOURCE_DATA_S(t,-1);
 				}
@@ -1734,22 +1735,22 @@ Block_Or_PC
 Function_Decl
 	:	Type_Declarator Declarator_F OPEN_PARENTESIS Parameters_Declarator_List CLOSE_PARENTESIS Block_Or_PC [YYVALID;]
 	            {
-					$$.node=CreateFunction((unsigned int)$1.nodos[1]/*Storage*/,(CodeDOM::XplType*)$1.nodos[0]/*Type_Decl*/,(CodeDOM::XplFunction*)$2.node/*Decl_F*/,(CodeDOM::XplParameters*)$4.node/*Parameters*/,(CodeDOM::XplBaseInitializers*)NULL/*Base_Init*/,(CodeDOM::XplFunctionBody*)$6.node/*Block*/);
+					$$.node=CreateFunction((UNSIGNED_CAST)$1.nodos[1]/*Storage*/,(CodeDOM::XplType*)$1.nodos[0]/*Type_Decl*/,(CodeDOM::XplFunction*)$2.node/*Decl_F*/,(CodeDOM::XplParameters*)$4.node/*Parameters*/,(CodeDOM::XplBaseInitializers*)NULL/*Base_Init*/,(CodeDOM::XplFunctionBody*)$6.node/*Block*/);
 					SET_SOURCE_DATA(((CodeDOM::XplFunction*)$$.node),-5,-1);
 				}
 	|	Type_Declarator Declarator_F OPEN_PARENTESIS CLOSE_PARENTESIS Block_Or_PC [YYVALID;]
 	            {
-					$$.node=CreateFunction((unsigned int)$1.nodos[1]/*Storage*/,(CodeDOM::XplType*)$1.nodos[0]/*Type_Decl*/,(CodeDOM::XplFunction*)$2.node/*Decl_F*/,(CodeDOM::XplParameters*)NULL/*Parameters*/,(CodeDOM::XplBaseInitializers*)NULL/*Base_Init*/,(CodeDOM::XplFunctionBody*)$5.node/*Block*/);
+					$$.node=CreateFunction((UNSIGNED_CAST)$1.nodos[1]/*Storage*/,(CodeDOM::XplType*)$1.nodos[0]/*Type_Decl*/,(CodeDOM::XplFunction*)$2.node/*Decl_F*/,(CodeDOM::XplParameters*)NULL/*Parameters*/,(CodeDOM::XplBaseInitializers*)NULL/*Base_Init*/,(CodeDOM::XplFunctionBody*)$5.node/*Block*/);
 					SET_SOURCE_DATA(((CodeDOM::XplFunction*)$$.node),-4,-1);
 				}
 	|	Type_Declarator Declarator_F OPEN_PARENTESIS Parameters_Declarator_List CLOSE_PARENTESIS Base_Initializers Block_Or_PC [YYVALID;]
 	            {
-					$$.node=CreateFunction((unsigned int)$1.nodos[1]/*Storage*/,(CodeDOM::XplType*)$1.nodos[0]/*Type_Decl*/,(CodeDOM::XplFunction*)$2.node/*Decl_F*/,(CodeDOM::XplParameters*)$4.node/*Parameters*/,(CodeDOM::XplBaseInitializers*)$6.node/*Base_Init*/,(CodeDOM::XplFunctionBody*)$7.node/*Block*/);
+					$$.node=CreateFunction((UNSIGNED_CAST)$1.nodos[1]/*Storage*/,(CodeDOM::XplType*)$1.nodos[0]/*Type_Decl*/,(CodeDOM::XplFunction*)$2.node/*Decl_F*/,(CodeDOM::XplParameters*)$4.node/*Parameters*/,(CodeDOM::XplBaseInitializers*)$6.node/*Base_Init*/,(CodeDOM::XplFunctionBody*)$7.node/*Block*/);
 					SET_SOURCE_DATA(((CodeDOM::XplFunction*)$$.node),-5,-2);
 				}
 	|	Type_Declarator Declarator_F OPEN_PARENTESIS CLOSE_PARENTESIS Base_Initializers Block_Or_PC [YYVALID;]
 	            {
-					$$.node=CreateFunction((unsigned int)$1.nodos[1]/*Storage*/,(CodeDOM::XplType*)$1.nodos[0]/*Type_Decl*/,(CodeDOM::XplFunction*)$2.node/*Decl_F*/,(CodeDOM::XplParameters*)NULL/*Parameters*/,(CodeDOM::XplBaseInitializers*)$5.node/*Base_Init*/,(CodeDOM::XplFunctionBody*)$6.node/*Block*/);
+					$$.node=CreateFunction((UNSIGNED_CAST)$1.nodos[1]/*Storage*/,(CodeDOM::XplType*)$1.nodos[0]/*Type_Decl*/,(CodeDOM::XplFunction*)$2.node/*Decl_F*/,(CodeDOM::XplParameters*)NULL/*Parameters*/,(CodeDOM::XplBaseInitializers*)$5.node/*Base_Init*/,(CodeDOM::XplFunctionBody*)$6.node/*Block*/);
 					SET_SOURCE_DATA(((CodeDOM::XplFunction*)$$.node),-5,-2);
 				}
 
@@ -1815,7 +1816,7 @@ Field_Decl
 						d->set_type(NULL);
 						f->set_i(d->get_i());
 						d->set_i(NULL);
-						SetFieldStorage(f,(unsigned)$1.nodos[1]);
+						SetFieldStorage(f,(UNSIGNED_CAST)$1.nodos[1]);
 						cm->InsertAtEnd(f);
 					}
 					delete dl;
@@ -1872,7 +1873,7 @@ Property_Decl
 					p->set_name($3.str);
 					p->set_storage(CodeDOM::ZOEVARSTORAGE_ENUM_AUTO);
 					if($4.node!=NULL)p->set_body((CodeDOM::XplFunctionBody*)$4.node);
-					SetPropertyStorage(p,(unsigned)$1.nodos[1]);
+					SetPropertyStorage(p,(UNSIGNED_CAST)$1.nodos[1]);
 
 					$$.node=p;
 					SET_SOURCE_DATA_S(p,-2);
@@ -2112,7 +2113,7 @@ Local_Variable_Declaration
 						t=(CodeDOM::XplType*)t->Clone();
 						t->set_ElementName(DT("type"));
 						d->set_type(t);
-						SetLocalVarsModifiers(d,(unsigned)$1.nodos[1]);
+						SetLocalVarsModifiers(d,(UNSIGNED_CAST)$1.nodos[1]);
 					}
 					///Borro el tipo temporal en el nodo 1
 					delete $1.nodos[0];
@@ -3306,7 +3307,7 @@ Allocation_Exp
 					t->set_ElementName(DT("type"));
 					CodeDOM::XplNewExpression* ne=CodeDOM::XplExpression::new_new();
 					ne->set_type(t);
-					SetNewTypeModifiers(ne,(unsigned)$3.nodos[1]);
+					SetNewTypeModifiers(ne,(UNSIGNED_CAST)$3.nodos[1]);
 					ne->set_GCParams((CodeDOM::XplExpressionlist*)$2.node);
 					ne->set_init((CodeDOM::XplInitializerList*)$4.node);
 					$$.node=ne;
@@ -3317,7 +3318,7 @@ Allocation_Exp
 					t->set_ElementName(DT("type"));
 					CodeDOM::XplNewExpression* ne=CodeDOM::XplExpression::new_new();
 					ne->set_type(t);
-					SetNewTypeModifiers(ne,(unsigned)$2.nodos[1]);
+					SetNewTypeModifiers(ne,(UNSIGNED_CAST)$2.nodos[1]);
 					ne->set_init((CodeDOM::XplInitializerList*)$3.node);
 					$$.node=ne;
 				}
@@ -3327,7 +3328,7 @@ Allocation_Exp
 					t->set_ElementName(DT("type"));
 					CodeDOM::XplNewExpression* ne=CodeDOM::XplExpression::new_new();
 					ne->set_type(t);
-					SetNewTypeModifiers(ne,(unsigned)$3.nodos[1]);
+					SetNewTypeModifiers(ne,(UNSIGNED_CAST)$3.nodos[1]);
 					ne->set_GCParams((CodeDOM::XplExpressionlist*)$2.node);
 					$$.node=ne;
 				}
@@ -3337,7 +3338,7 @@ Allocation_Exp
 					t->set_ElementName(DT("type"));
 					CodeDOM::XplNewExpression* ne=CodeDOM::XplExpression::new_new();
 					ne->set_type(t);
-					SetNewTypeModifiers(ne,(unsigned)$2.nodos[1]);
+					SetNewTypeModifiers(ne,(UNSIGNED_CAST)$2.nodos[1]);
 					$$.node=ne;
 				}
 	/*REPETIDOS PARA SOPORTAR new T() sin tener un inicializador T()*/
@@ -3347,7 +3348,7 @@ Allocation_Exp
 					t->set_ElementName(DT("type"));
 					CodeDOM::XplNewExpression* ne=CodeDOM::XplExpression::new_new();
 					ne->set_type(t);
-					SetNewTypeModifiers(ne,(unsigned)$3.nodos[1]);
+					SetNewTypeModifiers(ne,(UNSIGNED_CAST)$3.nodos[1]);
 					ne->set_GCParams((CodeDOM::XplExpressionlist*)$2.node);
 					$$.node=ne;
 				}
@@ -3357,7 +3358,7 @@ Allocation_Exp
 					t->set_ElementName(DT("type"));
 					CodeDOM::XplNewExpression* ne=CodeDOM::XplExpression::new_new();
 					ne->set_type(t);
-					SetNewTypeModifiers(ne,(unsigned)$2.nodos[1]);
+					SetNewTypeModifiers(ne,(UNSIGNED_CAST)$2.nodos[1]);
 					$$.node=ne;
 				}
 	;
