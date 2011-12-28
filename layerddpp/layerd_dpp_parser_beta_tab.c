@@ -13,215 +13,423 @@ typedef int Yshort;
 
 #line 1 "layerd_dpp_parser_beta.y"
 
+
 /*-
+
 * Copyright (c) 2008 Alexis Ferreyra
+
 * All rights reserved.
+
 *
+
 * Redistribution and use in source and binary forms, with or without
+
 * modification, are permitted provided that the following conditions
+
 * are met:
+
 * 1. Redistributions of source code must retain the above copyright
+
 *    notice, this list of conditions and the following disclaimer.
+
 * 2. Redistributions in binary form must reproduce the above copyright
+
 *    notice, this list of conditions and the following disclaimer in the
+
 *    documentation and/or other materials provided with the distribution.
+
 * 3. Neither the name of copyright holders nor the names of its
+
 *    contributors may be used to endorse or promote products derived
+
 *    from this software without specific prior written permission.
+
 *
+
 * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+
 * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+
 * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+
 * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL COPYRIGHT HOLDERS OR CONTRIBUTORS
+
 * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+
 * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+
 * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+
 * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+
 * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+
 * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+
 * POSSIBILITY OF SUCH DAMAGE.
+
 */
 
+
+
 /****************************************************************************
+
  layerd_dpp_parser_beta.y
 
+
  Parser for Meta D++ Compiler
+
  
+
  This file must be processed with BtYacc parser 
+
  generator. Yacc will not function because it 
+
  doesn't support ambiguous LR(1) grammars.
 
+
  Original Author: Alexis Ferreyra
+
  Contact: alexis.ferreyra@layerd.net
+
  
+
  Please visit http://layerd.net to get the last version
+
  of the software and information about LayerD technology.
+
 
 ***************************************************************************/
 
+
+
 #define DPP
 
+
+
 #ifdef __LAYERDDPP_DEBUG_CODEDOM_LIB
+
 #define __LAYERD_CODEDOM_DEBUG_DESTRUCTORS
+
 #define __LAYERD_CODEDOM_DEBUG_OUTPUT(n) std::cout<<n<<endl
+
 #define __LAYERD_CODEDOM_DEBUG_OUTPUT_W(n) std::wcout<<n<<endl
+
 #endif
-/*CT(n) : Macro para constantes de texto en la interfaz del compilador, diferente de DT(n) que es la macro para constantes del CodeDOM.*/
+
+/*CT(n) : Macro para constantes de texto en la interfaz del compilador, diferente de DT(n) que es la macro para constantes del CodeDOM.
+*/
 #define CT(n) DT(n)
+
 #define SINTAX_ERROR(N)	AddError(N)
+
 #define WARNING_MESSAGE(N) AddWarning(N)
+
 #define ASSING_COMMENT(node) if(lastCommentValid){lastCommentValid=false;node->set_doc(CodeDOM::string((const DOM_CHAR*)lastCommentBuffer) );}
+
 #define LAYERD_COMPILER_VERSION				"Beta 0.98"
+
 #define LAYERD_COMPILER_VERSION_DOM_CHAR	L"Beta 0.98"
+
 #define NEW_ERROR_RESUME_ZOENODELIST		NewErrorResumeXplNodeList()
 
+
+
 void AddError(const char*error);
+
 void AddWarning(const char*error);
 
+
+
 #include <iostream>
+
 #include <wchar.h>
+
 #ifdef WIN32
+
 #include "..\\CodeDOM\\CDOM_IncludeAll.h"
+
 #else
-#include <layerd/CDOM_IncludeAll.h>
+
+#include "../CodeDOM/CDOM_IncludeAll.h"
+
 #endif
+
+
 
 #include "layerd_dpp_parser_beta_tab.h"
 
+
+
 using namespace std;
 
-/*#define	SM_AUTO				0x00000001 /* Obsoleto * /*/
+
+
+/*#define	SM_AUTO				0x00000001 /* Obsoleto * /
+*/
 #define SM_STATIC			0x00000002
+
 #define SM_CONST			0x00000004
+
 #define SM_VOLATILE			0x00000008
+
 #define SM_EXTERN			0x00000010
+
 #define SM_EXTENSION		0x00000020
+
 #define SM_FORCE    		0x00000040
+
 #define SM_FACTORY			0x00000080
+
 #define SM_INTERACTIVE		0x00000100
+
 #define SM_KEYWORD			0x00000200
+
 #define SM_PARAMS   		0x00000400
+
 #define SM_FINAL			0x00000800
+
 #define SM_NEW				0x00001000
+
 #define SM_OVERRIDE			0x00002000
+
 #define SM_VIRTUAL			0x00004000
+
 #define SM_EXEC				0x00008000
+
 #define SM_ABSTRACT			0x00010000
+
 #define SM_FPOINTER			0x00020000
+
 #define SM_IN				0x00040000
+
 #define SM_OUT	 			0x00080000
+
 #define SM_INOUT 			0x00100000
+
 #define SM_REF	 			0x00200000
+
 #define SM_NONVIRTUAL		0x00400000
 
+
+
 #define SM_PUBLIC			0x00800000
+
 #define SM_PROTECTED		0x01000000
+
 #define SM_PRIVATE			0x02000000
+
 #define SM_IPUBLIC			0x04000000
+
 #define SM_IPROTECTED		0x08000000
+
 #define SM_IPRIVATE			0x10000000
 
+
+
 #define SM_INAME			0x20000000
+
 #define	SM_EXPRESSION		0x40000000
 
+
+
 CodeDOM::XplNode *rootNode=NULL, *tempNode=NULL;
+
 CodeDOM::XplWriter *writer=NULL;
-/*CodeDOM::XplNodeList *tempList=NULL;*/
+
+/*CodeDOM::XplNodeList *tempList=NULL;
+*/
+
 
 struct DppOptions{
+
 	char filename[2048];
+
 	char outputFilename[2048];
+
 	char configFilename[2048];
+
 	char layerdCompiler[2048];
+
 	char platform[2048];
+
 	bool printWarnings;
+
 	bool printErrors;
+
 	bool interactive;
+
 	bool debug;
+
 	bool showDebug;
+
 	bool includeComments;
+
 	bool includeSourceData;
+
 	bool silent;
+
 	bool fullCompile;
+
 	bool addExtension;
+
 	bool library;
+
 	DppOptions(){
+
 		filename[0]='\0';
+
 		outputFilename[0]='\0';
+
 		configFilename[0]='\0';
+
 		layerdCompiler[0]='\0';
+
 		platform[0]='\0';
+
 		printWarnings=true;
+
 		printErrors=true;
+
 		interactive=false;
+
 		debug=false;
+
 		includeComments=true;
+
 		includeSourceData=true;
+
 		silent=false;
+
 		fullCompile=false;
+
 		addExtension=false;
+
 		library=false;
+
 	}
+
 };
+
+
 
 DppOptions command;
 
+
+
 /* Para el almacenamiento de errores y warnings */
+
 vector<std::string> pErrors;
+
 vector<std::string> pWarnings;
 
+
+
 void SetClassMembers(CodeDOM::XplNodeList *c, CodeDOM::XplNodeList *list);
+
 void SetDeclaratorMod(CodeDOM::XplClass* c,unsigned int num);
+
 void SetParameterModifiers(CodeDOM::XplParameter*p, unsigned int num);
+
 void SetLocalVarsModifiers(CodeDOM::XplDeclarator*p, unsigned int num);
+
 void SetNewTypeModifiers(CodeDOM::XplNewExpression*t, unsigned int num);
+
 void SetFuncStorageMod(CodeDOM::XplFunction*f,unsigned int num);
+
 void SetFieldStorage(CodeDOM::XplField*f,unsigned int num);
+
 void SetPropertyStorage(CodeDOM::XplProperty*f,unsigned int num);
+
 void SetDeclaratorStorage(CodeDOM::XplDeclarator*f,unsigned int num);
+
 void SetEnumConstantTypes(CodeDOM::XplClass*clase,unsigned int tipo);
+
 CodeDOM::string get_OperatorFunctionName(unsigned int num);
+
 wchar_t* get_nativeType(unsigned int num);
+
 CodeDOM::XplClass* CreateClass(CodeDOM::string nombre, CodeDOM::XplNodeList* classMembers, CodeDOM::XplNode* inherits, CodeDOM::XplNode* implements, unsigned int tipo, unsigned int modifiers);
+
 CodeDOM::XplForStatement* CreateFor(CodeDOM::XplNode* p_forinit,CodeDOM::XplNode* p_condition,CodeDOM::XplNode* p_update,CodeDOM::XplNode* p_statement);
+
 CodeDOM::XplFunction* CreateFunction(unsigned int p_storage /*Storage*/,
+
                         CodeDOM::XplType* p_type_declarator /*Type_Decl*/,                        
+
                         CodeDOM::XplFunction* p_declarator_f /*Decl_F*/,
+
                         CodeDOM::XplParameters* p_parameters /*Parameters*/,                        
+
                         CodeDOM::XplBaseInitializers * p_base_initializers /*Base_Init*/,
+
                         CodeDOM::XplFunctionBody* p_block /*Block*/);
 
+
+
 /* Defines necesarios para BtYacc */
+
 #define YYDELETEPOSN(v1,v2)
+
 #define YYDELETEVAL(v1,v2)
 
+
+
 /* Definiciones para el trace de los numeros de linea */
+
 #define YYPOSN int
+
 #define GET_PARSER_POS   (yyps->psp)
+
 #define SET_SOURCE_DATA(node,token_min,token_max) if(command.includeSourceData)node->set_ldsrc( CodeDOM::CODEDOM_Att_ToString(GET_PARSER_POS[token_min]) + DT(",") + CodeDOM::CODEDOM_Att_ToString(GET_PARSER_POS[token_max]) )
+
 #define SET_SOURCE_DATA_S(node,token_min) if(command.includeSourceData)node->set_ldsrc( CodeDOM::CODEDOM_Att_ToString(GET_PARSER_POS[token_min]) )
+
 #define RET_POS yyps->pos
 
+
+
 /* Funcion de reporte de errores para yacc */
+
 void yyerror(char* str){
-  /*No hago nada porque se supone que capturo los errores en las reglas de produccion.*/
-  /*cout<<str<<endl;*/
+
+  /*No hago nada porque se supone que capturo los errores en las reglas de produccion.
+*/
+  /*cout<<str<<endl;
+*/
 }
 
+
+
 /* Funciones externas definidas por lex */
+
 int yylex();
+
 extern int yylineno;
 
+
+
 /* Controlador de archivo de flex */
+
 extern FILE* yyin;
 
+
+
 #define COMMENT_BUFFER 4096
+
 extern wchar_t lastCommentBuffer[COMMENT_BUFFER];
+
 extern bool lastCommentValid;
 
+
+
 #ifndef TRUE
+
 #define TRUE -1
+
 #endif
+
+
 
 #line 219 "layerd_dpp_parser_beta.y"
 #line 228 "layerd_dpp_parser_beta_tab.c"
@@ -4549,8 +4757,13 @@ void YYFreeState(yyparsestate *p);
 #line 3572 "layerd_dpp_parser_beta.y"
 
 
+
+
 /////////////////////////////////////////////////////////////////////////////
+
 // programs section
+
+
 
 #include "layerd_dpp_parser_rutines.cpp"
 #line 4735 "layerd_dpp_parser_beta_tab.c"
@@ -4938,34 +5151,50 @@ yyreduce:
 case 1:
   if (!yytrial)
 #line 460 "layerd_dpp_parser_beta.y"
-{/*	Namespaces_And_Imports*/
+{/*	Namespaces_And_Imports
+*/
 					rootNode=yyvsp[0].node;
+
 					yyval.node=yyvsp[0].node;
+
 				}
 #line 5124 "layerd_dpp_parser_beta_tab.c"
 break;
 case 2:
   if (!yytrial)
 #line 468 "layerd_dpp_parser_beta.y"
-{/*	Imports Namespaces*/
+{/*	Imports Namespaces
+*/
 					CodeDOM::XplDocumentBody*db=new CodeDOM::XplDocumentBody();
+
 					db->Childs()->InsertAtEnd(yyvsp[0].node);
+
 					/*
+
 				CodeDOM::XplNodeList*list=(CodeDOM::XplNodeList*)$2.node;
+
 				for(CodeDOM::XplNode* m=list->FirstNode();m!=list->GetLastNode();m=list->NextNode()){
+
 					db->Childs()->InsertAtEnd(m);
+
 				}*/
+
 					yyval.node=db;
+
 				}
 #line 5139 "layerd_dpp_parser_beta_tab.c"
 break;
 case 3:
   if (!yytrial)
 #line 479 "layerd_dpp_parser_beta.y"
-{/*	Imports Namespaces*/
+{/*	Imports Namespaces
+*/
 					CodeDOM::XplDocumentBody*db= (CodeDOM::XplDocumentBody*)yyvsp[-1].node;
+
 					db->Childs()->InsertAtEnd(yyvsp[0].node);
+
 					yyval.node=db;
+
 				}
 #line 5149 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -5002,161 +5231,238 @@ break;
 case 9:
   if (!yytrial)
 #line 497 "layerd_dpp_parser_beta.y"
-{/*	PC_IMPORT Import_Parameters PUNTO_COMA*/
+{/*	PC_IMPORT Import_Parameters PUNTO_COMA
+*/
 					yyval.node=yyvsp[-1].node;
+
 				}
 #line 5187 "layerd_dpp_parser_beta_tab.c"
 break;
 case 10:
   if (!yytrial)
 #line 501 "layerd_dpp_parser_beta.y"
-{/*	PC_IMPORT error PUNTO_COMA*/
-					/*yyerrok();*/
+{/*	PC_IMPORT error PUNTO_COMA
+*/
+					/*yyerrok();
+*/
 					SINTAX_ERROR("'import' directive invalid.");
+
 					yyval.node=CodeDOM::XplDocumentBody::new_Import();
+
 				}
 #line 5197 "layerd_dpp_parser_beta_tab.c"
 break;
 case 11:
   if (!yytrial)
 #line 510 "layerd_dpp_parser_beta.y"
-{/*	STRING_LITERAL*/
+{/*	STRING_LITERAL
+*/
 					CodeDOM::XplName*imp=CodeDOM::XplDocumentBody::new_Import();
+
 					CodeDOM::XplNode*nd=CodeDOM::XplName::new_ns();
+
 					nd->set_Value(yyvsp[0].literal->get_str());
+
 					imp->Childs()->InsertAtEnd(nd);
+
 					yyval.node=imp;
+
 					SET_SOURCE_DATA_S(imp,0);
+
 				}
 #line 5210 "layerd_dpp_parser_beta_tab.c"
 break;
 case 12:
   if (!yytrial)
 #line 519 "layerd_dpp_parser_beta.y"
-{/*	Import_Parameters COMA STRING_LITERAL*/
+{/*	Import_Parameters COMA STRING_LITERAL
+*/
 					CodeDOM::XplName*imp=(CodeDOM::XplName*)yyvsp[-2].node;
+
 					CodeDOM::XplNode*nd=CodeDOM::XplName::new_ns();
+
 					nd->set_Value(yyvsp[0].literal->get_str());
+
 					imp->Childs()->InsertAtEnd(nd);
+
 					yyval.node=imp;
+
 				}
 #line 5222 "layerd_dpp_parser_beta_tab.c"
 break;
 case 13:
   if (!yytrial)
 #line 531 "layerd_dpp_parser_beta.y"
-{/*	PC_USING PC_IDENTIFIERS Complete_Class_Name PUNTO_COMA*/
+{/*	PC_USING PC_IDENTIFIERS Complete_Class_Name PUNTO_COMA
+*/
 					CodeDOM::XplName*us=CodeDOM::XplDocumentBody::new_UsingIdentifiers();
+
 					CodeDOM::XplNode*n=CodeDOM::XplName::new_ns();
+
 					us->Childs()->InsertAtEnd(n);
+
 					n->set_Value(yyvsp[-1].str);
+
 					yyval.node=us;
+
 					SET_SOURCE_DATA_S(us,0);
+
 				}
 #line 5235 "layerd_dpp_parser_beta_tab.c"
 break;
 case 14:
   if (!yytrial)
 #line 540 "layerd_dpp_parser_beta.y"
-{/*	PC_USING Complete_Class_Name PUNTO_COMA*/
+{/*	PC_USING Complete_Class_Name PUNTO_COMA
+*/
 					CodeDOM::XplName*us=CodeDOM::XplDocumentBody::new_Using();
+
 					CodeDOM::XplNode*n=CodeDOM::XplName::new_ns();
+
 					us->Childs()->InsertAtEnd(n);
+
 					n->set_Value(yyvsp[-1].str);
+
 					yyval.node=us;
+
 					SET_SOURCE_DATA_S(us,0);
+
 				}
 #line 5248 "layerd_dpp_parser_beta_tab.c"
 break;
 case 15:
   if (!yytrial)
 #line 549 "layerd_dpp_parser_beta.y"
-{/*	PC_USING error	PUNTO_COMA*/
-					/*yyerrok();*/
+{/*	PC_USING error	PUNTO_COMA
+*/
+					/*yyerrok();
+*/
 					SINTAX_ERROR("'using' directive invalid.");
+
 					CodeDOM::XplName*us=CodeDOM::XplDocumentBody::new_Using();
+
 					yyval.node=us;
+
 					SET_SOURCE_DATA_S(us,0);
+
 				}
 #line 5260 "layerd_dpp_parser_beta_tab.c"
 break;
 case 16:
   if (!yytrial)
 #line 576 "layerd_dpp_parser_beta.y"
-{/*	PC_NAMESPACE IDENTIFICADOR OPEN_LLAVE NamespaceBlock CLOSE_LLAVE*/
+{/*	PC_NAMESPACE IDENTIFICADOR OPEN_LLAVE NamespaceBlock CLOSE_LLAVE
+*/
 					CodeDOM::XplNamespace *ns=new CodeDOM::XplNamespace(yyvsp[-3].str,false,false,(CodeDOM::XplNodeList*)yyvsp[-1].node);
+
                     SET_SOURCE_DATA(ns,-4,0);
+
 					ns->set_ElementName(L"Namespace");
+
 					yyval.node=ns;
+
 				}
 #line 5271 "layerd_dpp_parser_beta_tab.c"
 break;
 case 17:
   if (!yytrial)
 #line 583 "layerd_dpp_parser_beta.y"
-{/*	PC_NAMESPACE IDENTIFICADOR OPEN_LLAVE CLOSE_LLAVE*/
+{/*	PC_NAMESPACE IDENTIFICADOR OPEN_LLAVE CLOSE_LLAVE
+*/
 					CodeDOM::XplNamespace *ns=new CodeDOM::XplNamespace(yyvsp[-2].str,false,false);
+
                     SET_SOURCE_DATA(ns,-3,0);
+
 					ns->set_ElementName(L"Namespace");
+
 					yyval.node=ns;
+
 				}
 #line 5282 "layerd_dpp_parser_beta_tab.c"
 break;
 case 18:
   if (!yytrial)
 #line 590 "layerd_dpp_parser_beta.y"
-{/*	PC_NAMESPACE error	OPEN_LLAVE*/
-					/*yyerrok();*/
+{/*	PC_NAMESPACE error	OPEN_LLAVE
+*/
+					/*yyerrok();
+*/
 					SINTAX_ERROR("'namespace' declaration invalid.");
+
 					yyval.node=new CodeDOM::XplNamespace();
+
 				}
 #line 5292 "layerd_dpp_parser_beta_tab.c"
 break;
 case 19:
   if (!yytrial)
 #line 613 "layerd_dpp_parser_beta.y"
-{/*	PC_EXTENSION OPEN_LLAVE Namespace_Members CLOSE_LLAVE*/
+{/*	PC_EXTENSION OPEN_LLAVE Namespace_Members CLOSE_LLAVE
+*/
 					CodeDOM::XplNamespace *ns=new CodeDOM::XplNamespace(L"extension",false,false,(CodeDOM::XplNodeList*)yyvsp[-1].node);
-					/*ASSING_COMMENT(ns);*/
+
+					/*ASSING_COMMENT(ns);
+*/
 					SET_SOURCE_DATA(ns,-3,0);
+
 					ns->set_ElementName(L"Section");
+
 					yyval.node=ns;
+
 				}
 #line 5304 "layerd_dpp_parser_beta_tab.c"
 break;
 case 20:
   if (!yytrial)
 #line 621 "layerd_dpp_parser_beta.y"
-{/*	PC_ORDINARY OPEN_LLAVE Namespace_Members CLOSE_LLAVE*/
+{/*	PC_ORDINARY OPEN_LLAVE Namespace_Members CLOSE_LLAVE
+*/
 					CodeDOM::XplNamespace *ns=new CodeDOM::XplNamespace(L"ordinary",false,false,(CodeDOM::XplNodeList*)yyvsp[-1].node);
-					/*ASSING_COMMENT(ns);*/
+
+					/*ASSING_COMMENT(ns);
+*/
                     SET_SOURCE_DATA(ns,-3,0);
+
 					ns->set_ElementName(L"Section");
+
 					yyval.node=ns;
+
 				}
 #line 5316 "layerd_dpp_parser_beta_tab.c"
 break;
 case 21:
   if (!yytrial)
 #line 634 "layerd_dpp_parser_beta.y"
-{/*	Namespace_Member*/
+{/*	Namespace_Member
+*/
 					CodeDOM::XplNodeList*l=new CodeDOM::XplNodeList();
+
 					l->InsertAtEnd(yyvsp[0].node);
-					/*ASSING_COMMENT($1.node);*/
+
+					/*ASSING_COMMENT($1.node);
+*/
 					yyval.list=l;
+
 				}
 #line 5327 "layerd_dpp_parser_beta_tab.c"
 break;
 case 22:
   if (!yytrial)
 #line 641 "layerd_dpp_parser_beta.y"
-{/*	NamespaceBlock Namespace_Member*/
+{/*	NamespaceBlock Namespace_Member
+*/
 					CodeDOM::XplNodeList*l=yyvsp[-1].list;
-					/*if(l==NULL)l=NEW_ERROR_RESUME_ZOENODELIST;*/
-					/*ASSING_COMMENT($2.node);*/
+
+					/*if(l==NULL)l=NEW_ERROR_RESUME_ZOENODELIST;
+*/
+					/*ASSING_COMMENT($2.node);
+*/
 					if(l==NULL)l=new CodeDOM::XplNodeList();
+
 					l->InsertAtEnd(yyvsp[0].node);
+
 					yyval.list=l;
+
 				}
 #line 5340 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -5164,8 +5470,11 @@ case 23:
   if (!yytrial)
 #line 652 "layerd_dpp_parser_beta.y"
 {
-										/*ASSING_COMMENT($1.node);*/
+
+										/*ASSING_COMMENT($1.node);
+*/
 										yyval=yyvsp[0];
+
 									}
 #line 5349 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -5191,8 +5500,11 @@ case 27:
   if (!yytrial)
 #line 663 "layerd_dpp_parser_beta.y"
 {
+
 					SINTAX_ERROR("statements not valid inside a namespace body.");
+
 					yyval.node=new CodeDOM::XplClass();
+
 				}
 #line 5376 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -5205,20 +5517,28 @@ break;
 case 29:
   if (!yytrial)
 #line 682 "layerd_dpp_parser_beta.y"
-{/*	Complete_Class_Name OP_DOSPUNTOSDOBLE IDENTIFICADOR*/
+{/*	Complete_Class_Name OP_DOSPUNTOSDOBLE IDENTIFICADOR
+*/
 				wcscat(yyvsp[-2].str,DT("::"));
+
 				wcscat(yyvsp[-2].str,yyvsp[0].str);
+
 				yyval=yyvsp[-2];
+
                 RET_POS=GET_PARSER_POS[0];
+
 			}
 #line 5393 "layerd_dpp_parser_beta_tab.c"
 break;
 case 30:
   if (!yytrial)
 #line 707 "layerd_dpp_parser_beta.y"
-{/*	Class_Decl*/
-					/*ASSING_COMMENT($1.node);*/
+{/*	Class_Decl
+*/
+					/*ASSING_COMMENT($1.node);
+*/
 					yyval.node=yyvsp[0].node;
+
 				}
 #line 5402 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -5226,79 +5546,117 @@ case 31:
   if (!yytrial)
 #line 712 "layerd_dpp_parser_beta.y"
 {
-					/*ASSING_COMMENT($1.node);*/
+
+					/*ASSING_COMMENT($1.node);
+*/
 	                yyval.node=yyvsp[0].node;
+
 	            }
 #line 5411 "layerd_dpp_parser_beta_tab.c"
 break;
 case 32:
   if (!yytrial)
 #line 720 "layerd_dpp_parser_beta.y"
-{/*	Decl_Mod PC_ENUM IDENTIFICADOR OPEN_LLAVE Enum_Members CLOSE_LLAVE*/
+{/*	Decl_Mod PC_ENUM IDENTIFICADOR OPEN_LLAVE Enum_Members CLOSE_LLAVE
+*/
 					CodeDOM::XplClass*clase=
+
 					CreateClass(yyvsp[-3].str,(CodeDOM::XplNodeList*)yyvsp[-1].list,NULL,NULL,PC_ENUM,yyvsp[-5].num);
+
 					SetEnumConstantTypes(clase,PC_INT);
+
 					yyval.node=clase;
+
                     SET_SOURCE_DATA(clase,-4,0);
+
 				}
 #line 5423 "layerd_dpp_parser_beta_tab.c"
 break;
 case 33:
   if (!yytrial)
 #line 728 "layerd_dpp_parser_beta.y"
-{/*	Decl_Mod PC_ENUM IDENTIFICADOR OPEN_LLAVE Enum_Members CLOSE_LLAVE*/
+{/*	Decl_Mod PC_ENUM IDENTIFICADOR OPEN_LLAVE Enum_Members CLOSE_LLAVE
+*/
 					CodeDOM::XplClass*clase=
+
 					CreateClass(yyvsp[-5].str,(CodeDOM::XplNodeList*)yyvsp[-1].list,NULL,NULL,PC_ENUM,yyvsp[-7].num);
+
 					SetEnumConstantTypes(clase,yyvsp[-3].num);
+
 					yyval.node=clase;
+
                     SET_SOURCE_DATA(clase,-6,0);
+
 				}
 #line 5435 "layerd_dpp_parser_beta_tab.c"
 break;
 case 34:
   if (!yytrial)
 #line 736 "layerd_dpp_parser_beta.y"
-{/*	Decl_Mod PC_ENUM IDENTIFICADOR OPEN_LLAVE Enum_Members CLOSE_LLAVE*/
+{/*	Decl_Mod PC_ENUM IDENTIFICADOR OPEN_LLAVE Enum_Members CLOSE_LLAVE
+*/
 					CodeDOM::XplClass*clase=
+
 					CreateClass(yyvsp[-3].str,(CodeDOM::XplNodeList*)yyvsp[-1].list,NULL,NULL,PC_ENUM,0);
+
 					SetEnumConstantTypes(clase,PC_INT);
+
 					yyval.node=clase;
+
                     SET_SOURCE_DATA(clase,-4,0);
+
 				}
 #line 5447 "layerd_dpp_parser_beta_tab.c"
 break;
 case 35:
   if (!yytrial)
 #line 744 "layerd_dpp_parser_beta.y"
-{/*	Decl_Mod PC_ENUM IDENTIFICADOR OPEN_LLAVE Enum_Members CLOSE_LLAVE*/
+{/*	Decl_Mod PC_ENUM IDENTIFICADOR OPEN_LLAVE Enum_Members CLOSE_LLAVE
+*/
 					CodeDOM::XplClass*clase=
+
 					CreateClass(yyvsp[-5].str,(CodeDOM::XplNodeList*)yyvsp[-1].list,NULL,NULL,PC_ENUM,0);
+
 					SetEnumConstantTypes(clase,yyvsp[-3].num);
+
 					yyval.node=clase;
+
                     SET_SOURCE_DATA(clase,-6,0);
+
 				}
 #line 5459 "layerd_dpp_parser_beta_tab.c"
 break;
 case 36:
   if (!yytrial)
 #line 755 "layerd_dpp_parser_beta.y"
-{/*	Enum_Constant*/
+{/*	Enum_Constant
+*/
 					CodeDOM::XplNodeList*list=new CodeDOM::XplNodeList();
-					/*ASSING_COMMENT($1.node);*/
+
+					/*ASSING_COMMENT($1.node);
+*/
 					list->InsertAtEnd(yyvsp[0].node);
+
 					yyval.list=list;
+
 				}
 #line 5470 "layerd_dpp_parser_beta_tab.c"
 break;
 case 37:
   if (!yytrial)
 #line 762 "layerd_dpp_parser_beta.y"
-{/*	Enum_Constants COMA Enum_Constant*/
+{/*	Enum_Constants COMA Enum_Constant
+*/
 					CodeDOM::XplNodeList*list=(CodeDOM::XplNodeList*)yyvsp[-2].list;
+
 					if(list==NULL)list=new CodeDOM::XplNodeList();
-					/*ASSING_COMMENT($3.node);*/
+
+					/*ASSING_COMMENT($3.node);
+*/
 					list->InsertAtEnd(yyvsp[0].node);
+
 					yyval.list=list;
+
 				}
 #line 5482 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -5311,40 +5669,62 @@ break;
 case 39:
   if (!yytrial)
 #line 774 "layerd_dpp_parser_beta.y"
-{/*	IDENTIFICADOR Enum_Initializer*/
+{/*	IDENTIFICADOR Enum_Initializer
+*/
 					CodeDOM::XplField*field=CodeDOM::XplClass::new_Field();
+
 					field->set_name(yyvsp[-1].str);
+
 					field->set_storage(CodeDOM::ZOEVARSTORAGE_ENUM_STATIC);
+
 					field->set_access(CodeDOM::ZOEACCESSTYPE_ENUM_PUBLIC);
+
 					field->set_i((CodeDOM::XplInitializerList*)yyvsp[0].node);
+
 					yyval.node=field;
+
 					SET_SOURCE_DATA_S(field,-1);
+
 				}
 #line 5502 "layerd_dpp_parser_beta_tab.c"
 break;
 case 40:
   if (!yytrial)
 #line 784 "layerd_dpp_parser_beta.y"
-{/*	IDENTIFICADOR*/
+{/*	IDENTIFICADOR
+*/
 					CodeDOM::XplField*field=CodeDOM::XplClass::new_Field();
+
 					field->set_name(yyvsp[0].str);
+
 					field->set_storage(CodeDOM::ZOEVARSTORAGE_ENUM_STATIC);
+
 					field->set_access(CodeDOM::ZOEACCESSTYPE_ENUM_PUBLIC);
+
 					yyval.node=field;
+
 					SET_SOURCE_DATA_S(field,0);
+
 				}
 #line 5515 "layerd_dpp_parser_beta_tab.c"
 break;
 case 41:
   if (!yytrial)
 #line 810 "layerd_dpp_parser_beta.y"
-{/*	OP_IGUAL Constant_Expression*/
+{/*	OP_IGUAL Constant_Expression
+*/
                 	CodeDOM::XplExpression*exp=CodeDOM::XplInitializerList::new_e();
+
                 	exp->set_texpression(yyvsp[0].node);
+
 					exp->set_ElementName(DT("e"));
+
                    	CodeDOM::XplInitializerList*list=CodeDOM::XplDeclarator::new_i();
+
                     list->Childs()->InsertAtEnd(exp);
+
                     yyval.node=list;
+
 				}
 #line 5528 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -5375,388 +5755,602 @@ break;
 case 46:
   if (!yytrial)
 #line 832 "layerd_dpp_parser_beta.y"
-{/*	Decl_Mod PC_CLASS IDENTIFICADOR PC_INHERITS Base_List PC_IMPLEMENTS Implement_List OPEN_LLAVE Class_Decl_Block CLOSE_LLAVE*/
+{/*	Decl_Mod PC_CLASS IDENTIFICADOR PC_INHERITS Base_List PC_IMPLEMENTS Implement_List OPEN_LLAVE Class_Decl_Block CLOSE_LLAVE
+*/
 					yyval.node=CreateClass(yyvsp[-7].str /*Nombre*/, yyvsp[-1].list /*ClassMembers*/, yyvsp[-5].node /*Inherits_List*/
+
 					                   , yyvsp[-3].node /*Implement_List*/, yyvsp[-8].num /*Tipo*/,yyvsp[-9].num /*Modifiers*/);
+
                     SET_SOURCE_DATA(((CodeDOM::XplClass*)yyval.node),-8,0);
+
 				}
 #line 5562 "layerd_dpp_parser_beta_tab.c"
 break;
 case 47:
   if (!yytrial)
 #line 838 "layerd_dpp_parser_beta.y"
-{/*	Decl_Mod PC_CLASS IDENTIFICADOR PC_INHERITS Base_List OPEN_LLAVE Class_Decl_Block CLOSE_LLAVE*/
+{/*	Decl_Mod PC_CLASS IDENTIFICADOR PC_INHERITS Base_List OPEN_LLAVE Class_Decl_Block CLOSE_LLAVE
+*/
 					yyval.node=CreateClass(yyvsp[-5].str /*Nombre*/, yyvsp[-1].list /*ClassMembers*/, yyvsp[-3].node /*Inherits_List*/
+
 					                   , NULL /*Implement_List*/, yyvsp[-6].num /*Tipo*/,yyvsp[-7].num /*Modifiers*/);
+
                     SET_SOURCE_DATA(((CodeDOM::XplClass*)yyval.node),-6,0);
+
 				}
 #line 5572 "layerd_dpp_parser_beta_tab.c"
 break;
 case 48:
   if (!yytrial)
 #line 844 "layerd_dpp_parser_beta.y"
-{/*	Decl_Mod PC_CLASS IDENTIFICADOR PC_IMPLEMENTS Implement_List OPEN_LLAVE Class_Decl_Block CLOSE_LLAVE*/
+{/*	Decl_Mod PC_CLASS IDENTIFICADOR PC_IMPLEMENTS Implement_List OPEN_LLAVE Class_Decl_Block CLOSE_LLAVE
+*/
 					yyval.node=CreateClass(yyvsp[-5].str /*Nombre*/, yyvsp[-1].list /*ClassMembers*/, NULL /*Inherits_List*/
+
 					                   , yyvsp[-3].node /*Implement_List*/, yyvsp[-6].num /*Tipo*/,yyvsp[-7].num /*Modifiers*/);
+
                     SET_SOURCE_DATA(((CodeDOM::XplClass*)yyval.node),-6,0);
+
 				}
 #line 5582 "layerd_dpp_parser_beta_tab.c"
 break;
 case 49:
   if (!yytrial)
 #line 850 "layerd_dpp_parser_beta.y"
-{/*	Decl_Mod PC_CLASS IDENTIFICADOR OPEN_LLAVE Class_Decl_Block CLOSE_LLAVE*/
+{/*	Decl_Mod PC_CLASS IDENTIFICADOR OPEN_LLAVE Class_Decl_Block CLOSE_LLAVE
+*/
 					yyval.node=CreateClass(yyvsp[-3].str /*Nombre*/, yyvsp[-1].list /*ClassMembers*/, NULL /*Inherits_List*/
+
 					                   , NULL /*Implement_List*/, yyvsp[-4].num /*Tipo*/,yyvsp[-5].num /*Modifiers*/);
+
                     SET_SOURCE_DATA(((CodeDOM::XplClass*)yyval.node),-4,0);
+
 				}
 #line 5592 "layerd_dpp_parser_beta_tab.c"
 break;
 case 50:
   if (!yytrial)
 #line 856 "layerd_dpp_parser_beta.y"
-{/*	PC_CLASS IDENTIFICADOR PC_INHERITS Base_List PC_IMPLEMENTS Implement_List OPEN_LLAVE Class_Decl_Block CLOSE_LLAVE*/
+{/*	PC_CLASS IDENTIFICADOR PC_INHERITS Base_List PC_IMPLEMENTS Implement_List OPEN_LLAVE Class_Decl_Block CLOSE_LLAVE
+*/
 					yyval.node=CreateClass(yyvsp[-7].str /*Nombre*/, yyvsp[-1].list /*ClassMembers*/, yyvsp[-5].node /*Inherits_List*/
+
 					                   , yyvsp[-3].node /*Implement_List*/, yyvsp[-8].num /*Tipo*/,0/*Modifiers*/);
+
                     SET_SOURCE_DATA(((CodeDOM::XplClass*)yyval.node),-8,0);
+
 				}
 #line 5602 "layerd_dpp_parser_beta_tab.c"
 break;
 case 51:
   if (!yytrial)
 #line 862 "layerd_dpp_parser_beta.y"
-{/*	PC_CLASS IDENTIFICADOR PC_INHERITS Base_List OPEN_LLAVE Class_Decl_Block CLOSE_LLAVE*/
+{/*	PC_CLASS IDENTIFICADOR PC_INHERITS Base_List OPEN_LLAVE Class_Decl_Block CLOSE_LLAVE
+*/
 					yyval.node=CreateClass(yyvsp[-5].str /*Nombre*/, yyvsp[-1].list /*ClassMembers*/, yyvsp[-3].node /*Inherits_List*/
+
 					                   , NULL /*Implement_List*/, yyvsp[-6].num /*Tipo*/, 0/*Modifiers*/);
+
                     SET_SOURCE_DATA(((CodeDOM::XplClass*)yyval.node),-6,0);
+
 				}
 #line 5612 "layerd_dpp_parser_beta_tab.c"
 break;
 case 52:
   if (!yytrial)
 #line 868 "layerd_dpp_parser_beta.y"
-{/*	PC_CLASS IDENTIFICADOR PC_IMPLEMENTS Implement_List OPEN_LLAVE Class_Decl_Block CLOSE_LLAVE*/
+{/*	PC_CLASS IDENTIFICADOR PC_IMPLEMENTS Implement_List OPEN_LLAVE Class_Decl_Block CLOSE_LLAVE
+*/
 					yyval.node=CreateClass(yyvsp[-5].str /*Nombre*/, yyvsp[-1].list /*ClassMembers*/, NULL /*Inherits_List*/
+
 					                   , yyvsp[-3].node /*Implement_List*/, yyvsp[-6].num /*Tipo*/, 0/*Modifiers*/);
+
                     SET_SOURCE_DATA(((CodeDOM::XplClass*)yyval.node),-6,0);
+
 				}
 #line 5622 "layerd_dpp_parser_beta_tab.c"
 break;
 case 53:
   if (!yytrial)
 #line 874 "layerd_dpp_parser_beta.y"
-{/*	PC_CLASS IDENTIFICADOR OPEN_LLAVE Class_Decl_Block CLOSE_LLAVE*/
+{/*	PC_CLASS IDENTIFICADOR OPEN_LLAVE Class_Decl_Block CLOSE_LLAVE
+*/
 					yyval.node=CreateClass(yyvsp[-3].str /*Nombre*/, yyvsp[-1].list /*ClassMembers*/, NULL /*Inherits_List*/
+
 					                   , NULL /*Implement_List*/, yyvsp[-4].num /*Tipo*/,0 /*Modifiers*/);
+
                     SET_SOURCE_DATA(((CodeDOM::XplClass*)yyval.node),-4,0);
+
 				}
 #line 5632 "layerd_dpp_parser_beta_tab.c"
 break;
 case 54:
   if (!yytrial)
 #line 882 "layerd_dpp_parser_beta.y"
-{/*	PC_CLASS IDENTIFICADOR OPEN_LLAVE Class_Decl_Block CLOSE_LLAVE*/
+{/*	PC_CLASS IDENTIFICADOR OPEN_LLAVE Class_Decl_Block CLOSE_LLAVE
+*/
 					yyval.node=CreateClass(yyvsp[-2].str /*Nombre*/, NULL /*ClassMembers*/, NULL /*Inherits_List*/
+
 					                   , NULL /*Implement_List*/, yyvsp[-3].num /*Tipo*/,0 /*Modifiers*/);
+
                     SET_SOURCE_DATA(((CodeDOM::XplClass*)yyval.node),-4,0);
+
 				}
 #line 5642 "layerd_dpp_parser_beta_tab.c"
 break;
 case 55:
   if (!yytrial)
 #line 888 "layerd_dpp_parser_beta.y"
-{/*	PC_CLASS IDENTIFICADOR PC_INHERITS Base_List OPEN_LLAVE Class_Decl_Block CLOSE_LLAVE*/
+{/*	PC_CLASS IDENTIFICADOR PC_INHERITS Base_List OPEN_LLAVE Class_Decl_Block CLOSE_LLAVE
+*/
 					yyval.node=CreateClass(yyvsp[-4].str /*Nombre*/, NULL /*ClassMembers*/, yyvsp[-2].node /*Inherits_List*/
+
 					                   , NULL /*Implement_List*/, yyvsp[-5].num /*Tipo*/, 0/*Modifiers*/);
+
                     SET_SOURCE_DATA(((CodeDOM::XplClass*)yyval.node),-6,0);
+
 				}
 #line 5652 "layerd_dpp_parser_beta_tab.c"
 break;
 case 56:
   if (!yytrial)
 #line 894 "layerd_dpp_parser_beta.y"
-{/*	PC_CLASS IDENTIFICADOR PC_IMPLEMENTS Implement_List OPEN_LLAVE Class_Decl_Block CLOSE_LLAVE*/
+{/*	PC_CLASS IDENTIFICADOR PC_IMPLEMENTS Implement_List OPEN_LLAVE Class_Decl_Block CLOSE_LLAVE
+*/
 					yyval.node=CreateClass(yyvsp[-4].str /*Nombre*/, NULL /*ClassMembers*/, NULL /*Inherits_List*/
+
 					                   , yyvsp[-2].node /*Implement_List*/, yyvsp[-5].num /*Tipo*/, 0/*Modifiers*/);
+
                     SET_SOURCE_DATA(((CodeDOM::XplClass*)yyval.node),-6,0);
+
 				}
 #line 5662 "layerd_dpp_parser_beta_tab.c"
 break;
 case 57:
   if (!yytrial)
 #line 900 "layerd_dpp_parser_beta.y"
-{/*	PC_CLASS IDENTIFICADOR PC_INHERITS Base_List PC_IMPLEMENTS Implement_List OPEN_LLAVE Class_Decl_Block CLOSE_LLAVE*/
+{/*	PC_CLASS IDENTIFICADOR PC_INHERITS Base_List PC_IMPLEMENTS Implement_List OPEN_LLAVE Class_Decl_Block CLOSE_LLAVE
+*/
 					yyval.node=CreateClass(yyvsp[-6].str /*Nombre*/, NULL /*ClassMembers*/, yyvsp[-4].node /*Inherits_List*/
+
 					                   , yyvsp[-2].node /*Implement_List*/, yyvsp[-7].num /*Tipo*/,0/*Modifiers*/);
+
                     SET_SOURCE_DATA(((CodeDOM::XplClass*)yyval.node),-8,0);
+
 				}
 #line 5672 "layerd_dpp_parser_beta_tab.c"
 break;
 case 58:
   if (!yytrial)
 #line 906 "layerd_dpp_parser_beta.y"
-{/*	Decl_Mod PC_CLASS IDENTIFICADOR PC_INHERITS Base_List PC_IMPLEMENTS Implement_List OPEN_LLAVE Class_Decl_Block CLOSE_LLAVE*/
+{/*	Decl_Mod PC_CLASS IDENTIFICADOR PC_INHERITS Base_List PC_IMPLEMENTS Implement_List OPEN_LLAVE Class_Decl_Block CLOSE_LLAVE
+*/
 					yyval.node=CreateClass(yyvsp[-6].str /*Nombre*/, NULL /*ClassMembers*/, yyvsp[-4].node /*Inherits_List*/
+
 					                   , yyvsp[-2].node /*Implement_List*/, yyvsp[-7].num /*Tipo*/,yyvsp[-8].num /*Modifiers*/);
+
                     SET_SOURCE_DATA(((CodeDOM::XplClass*)yyval.node),-8,0);
+
 				}
 #line 5682 "layerd_dpp_parser_beta_tab.c"
 break;
 case 59:
   if (!yytrial)
 #line 912 "layerd_dpp_parser_beta.y"
-{/*	Decl_Mod PC_CLASS IDENTIFICADOR PC_INHERITS Base_List OPEN_LLAVE Class_Decl_Block CLOSE_LLAVE*/
+{/*	Decl_Mod PC_CLASS IDENTIFICADOR PC_INHERITS Base_List OPEN_LLAVE Class_Decl_Block CLOSE_LLAVE
+*/
 					yyval.node=CreateClass(yyvsp[-4].str /*Nombre*/, NULL /*ClassMembers*/, yyvsp[-2].node /*Inherits_List*/
+
 					                   , NULL /*Implement_List*/, yyvsp[-5].num /*Tipo*/,yyvsp[-6].num /*Modifiers*/);
+
                     SET_SOURCE_DATA(((CodeDOM::XplClass*)yyval.node),-6,0);
+
 				}
 #line 5692 "layerd_dpp_parser_beta_tab.c"
 break;
 case 60:
   if (!yytrial)
 #line 918 "layerd_dpp_parser_beta.y"
-{/*	Decl_Mod PC_CLASS IDENTIFICADOR PC_IMPLEMENTS Implement_List OPEN_LLAVE Class_Decl_Block CLOSE_LLAVE*/
+{/*	Decl_Mod PC_CLASS IDENTIFICADOR PC_IMPLEMENTS Implement_List OPEN_LLAVE Class_Decl_Block CLOSE_LLAVE
+*/
 					yyval.node=CreateClass(yyvsp[-4].str /*Nombre*/, NULL /*ClassMembers*/, NULL /*Inherits_List*/
+
 					                   , yyvsp[-2].node /*Implement_List*/, yyvsp[-5].num /*Tipo*/,yyvsp[-6].num /*Modifiers*/);
+
                     SET_SOURCE_DATA(((CodeDOM::XplClass*)yyval.node),-6,0);
+
 				}
 #line 5702 "layerd_dpp_parser_beta_tab.c"
 break;
 case 61:
   if (!yytrial)
 #line 924 "layerd_dpp_parser_beta.y"
-{/*	Decl_Mod PC_CLASS IDENTIFICADOR OPEN_LLAVE Class_Decl_Block CLOSE_LLAVE*/
+{/*	Decl_Mod PC_CLASS IDENTIFICADOR OPEN_LLAVE Class_Decl_Block CLOSE_LLAVE
+*/
 					yyval.node=CreateClass(yyvsp[-2].str /*Nombre*/, NULL /*ClassMembers*/, NULL /*Inherits_List*/
+
 					                   , NULL /*Implement_List*/, yyvsp[-3].num /*Tipo*/,yyvsp[-4].num /*Modifiers*/);
+
                     SET_SOURCE_DATA(((CodeDOM::XplClass*)yyval.node),-4,0);
+
 				}
 #line 5712 "layerd_dpp_parser_beta_tab.c"
 break;
 case 62:
   if (!yytrial)
 #line 936 "layerd_dpp_parser_beta.y"
-{/*	Base_Specifier*/
+{/*	Base_Specifier
+*/
 					CodeDOM::XplInherits*inh=CodeDOM::XplClass::new_Inherits();
+
 					inh->Childs()->InsertAtEnd(yyvsp[0].node);
+
 					yyval.node=inh;
+
 				}
 #line 5722 "layerd_dpp_parser_beta_tab.c"
 break;
 case 63:
   if (!yytrial)
 #line 942 "layerd_dpp_parser_beta.y"
-{/*	Base_List COMA Base_Specifier*/
+{/*	Base_List COMA Base_Specifier
+*/
 					CodeDOM::XplInherits*inh=(CodeDOM::XplInherits*)yyvsp[-2].node;
+
 					inh->Childs()->InsertAtEnd(yyvsp[0].node);
+
 					yyval.node=inh;
+
 				}
 #line 5732 "layerd_dpp_parser_beta_tab.c"
 break;
 case 64:
   if (!yytrial)
 #line 952 "layerd_dpp_parser_beta.y"
-{/*	PC_VIRTUAL Access_Modifier Complete_Class_Name*/
+{/*	PC_VIRTUAL Access_Modifier Complete_Class_Name
+*/
 					CodeDOM::XplInherit*c=CodeDOM::XplInherits::new_c();
+
 					CodeDOM::XplType* classType = CodeDOM::XplInherit::new_type();
+
 					classType->set_typename(yyvsp[0].str);
+
 					c->set_type(classType);
+
 					if(yyvsp[-1].num==SM_PRIVATE)
+
 						c->set_access(CodeDOM::ZOEACCESSTYPE_ENUM_PRIVATE);
+
 					else if(yyvsp[-1].num==SM_PUBLIC)
+
 						c->set_access(CodeDOM::ZOEACCESSTYPE_ENUM_PUBLIC);
+
 					else if(yyvsp[-1].num==SM_PROTECTED)
+
 						c->set_access(CodeDOM::ZOEACCESSTYPE_ENUM_PROTECTED);
+
 					else if(yyvsp[-1].num==SM_IPRIVATE)
+
 						c->set_access(CodeDOM::ZOEACCESSTYPE_ENUM_PRIVATE);
+
 					else if(yyvsp[-1].num==SM_IPUBLIC)
+
 						c->set_access(CodeDOM::ZOEACCESSTYPE_ENUM_PUBLIC);
+
 					else if(yyvsp[-1].num==SM_IPROTECTED)
+
 						c->set_access(CodeDOM::ZOEACCESSTYPE_ENUM_PROTECTED);
+
 					c->set_virtual(false);
+
 					SET_SOURCE_DATA(c,-2,0);
+
 					yyval.node=c;
+
 				}
 #line 5758 "layerd_dpp_parser_beta_tab.c"
 break;
 case 65:
   if (!yytrial)
 #line 974 "layerd_dpp_parser_beta.y"
-{/*	Access_Modifier PC_VIRTUAL Complete_Class_Name*/
+{/*	Access_Modifier PC_VIRTUAL Complete_Class_Name
+*/
 					CodeDOM::XplInherit*c=CodeDOM::XplInherits::new_c();
+
 					CodeDOM::XplType* classType = CodeDOM::XplInherit::new_type();
+
 					classType->set_typename(yyvsp[0].str);
+
 					c->set_type(classType);
+
 					if(yyvsp[-2].num==SM_PRIVATE)
+
 						c->set_access(CodeDOM::ZOEACCESSTYPE_ENUM_PRIVATE);
+
 					else if(yyvsp[-2].num==SM_PUBLIC)
+
 						c->set_access(CodeDOM::ZOEACCESSTYPE_ENUM_PUBLIC);
+
 					else if(yyvsp[-2].num==SM_PROTECTED)
+
 						c->set_access(CodeDOM::ZOEACCESSTYPE_ENUM_PROTECTED);
+
 					else if(yyvsp[-2].num==SM_IPRIVATE)
+
 						c->set_access(CodeDOM::ZOEACCESSTYPE_ENUM_PRIVATE);
+
 					else if(yyvsp[-2].num==SM_IPUBLIC)
+
 						c->set_access(CodeDOM::ZOEACCESSTYPE_ENUM_PUBLIC);
+
 					else if(yyvsp[-2].num==SM_IPROTECTED)
+
 						c->set_access(CodeDOM::ZOEACCESSTYPE_ENUM_PROTECTED);
+
 					c->set_virtual(false);
+
 					SET_SOURCE_DATA(c,-1,0);
+
 					yyval.node=c;
+
 				}
 #line 5784 "layerd_dpp_parser_beta_tab.c"
 break;
 case 66:
   if (!yytrial)
 #line 996 "layerd_dpp_parser_beta.y"
-{/*	PC_VIRTUAL Complete_Class_Name*/
+{/*	PC_VIRTUAL Complete_Class_Name
+*/
 					CodeDOM::XplInherit*c=CodeDOM::XplInherits::new_c();
+
 					CodeDOM::XplType* classType = CodeDOM::XplInherit::new_type();
+
 					classType->set_typename(yyvsp[0].str);
+
 					c->set_type(classType);
+
 					c->set_access(CodeDOM::ZOEACCESSTYPE_ENUM_PUBLIC);
+
 					c->set_virtual(false);
+
 					yyval.node=c;
+
 					SET_SOURCE_DATA(c,-1,0);
+
 				}
 #line 5799 "layerd_dpp_parser_beta_tab.c"
 break;
 case 67:
   if (!yytrial)
 #line 1007 "layerd_dpp_parser_beta.y"
-{/*	Access_Modifier Complete_Class_Name*/
+{/*	Access_Modifier Complete_Class_Name
+*/
 					CodeDOM::XplInherit*c=CodeDOM::XplInherits::new_c();
+
 					CodeDOM::XplType* classType = CodeDOM::XplInherit::new_type();
+
 					classType->set_typename(yyvsp[0].str);
+
 					c->set_type(classType);
+
 					if(yyvsp[-1].num==SM_PRIVATE)
+
 						c->set_access(CodeDOM::ZOEACCESSTYPE_ENUM_PRIVATE);
+
 					else if(yyvsp[-1].num==SM_PUBLIC)
+
 						c->set_access(CodeDOM::ZOEACCESSTYPE_ENUM_PUBLIC);
+
 					else if(yyvsp[-1].num==SM_PROTECTED)
+
 						c->set_access(CodeDOM::ZOEACCESSTYPE_ENUM_PROTECTED);
+
 					else if(yyvsp[-1].num==SM_IPRIVATE)
+
 						c->set_access(CodeDOM::ZOEACCESSTYPE_ENUM_PRIVATE);
+
 					else if(yyvsp[-1].num==SM_IPUBLIC)
+
 						c->set_access(CodeDOM::ZOEACCESSTYPE_ENUM_PUBLIC);
+
 					else if(yyvsp[-1].num==SM_IPROTECTED)
+
 						c->set_access(CodeDOM::ZOEACCESSTYPE_ENUM_PROTECTED);
+
 					c->set_virtual(true);
+
 					yyval.node=c;
+
 					SET_SOURCE_DATA_S(c,0);
+
 				}
 #line 5825 "layerd_dpp_parser_beta_tab.c"
 break;
 case 68:
   if (!yytrial)
 #line 1029 "layerd_dpp_parser_beta.y"
-{/*	Complete_Class_Name*/
+{/*	Complete_Class_Name
+*/
 					CodeDOM::XplInherit*c=CodeDOM::XplInherits::new_c();
+
 					CodeDOM::XplType* classType = CodeDOM::XplInherit::new_type();
+
 					classType->set_typename(yyvsp[0].str);
+
 					c->set_type(classType);
+
 					c->set_access(CodeDOM::ZOEACCESSTYPE_ENUM_PUBLIC);
+
 					c->set_virtual(true);
+
 					yyval.node=c;
+
 					SET_SOURCE_DATA_S(c,0);
+
 				}
 #line 5840 "layerd_dpp_parser_beta_tab.c"
 break;
 case 69:
   if (!yytrial)
 #line 1044 "layerd_dpp_parser_beta.y"
-{/*	Implement_Specifier*/
+{/*	Implement_Specifier
+*/
 					CodeDOM::XplInherits*imp=CodeDOM::XplClass::new_Implements();
+
 					imp->Childs()->InsertAtEnd(yyvsp[0].node);
+
 					yyval.node=imp;
+
 				}
 #line 5850 "layerd_dpp_parser_beta_tab.c"
 break;
 case 70:
   if (!yytrial)
 #line 1050 "layerd_dpp_parser_beta.y"
-{/*	Implement_List COMA Implement_Specifier*/
+{/*	Implement_List COMA Implement_Specifier
+*/
 					CodeDOM::XplInherits*imp=(CodeDOM::XplInherits*)yyvsp[-2].node;
+
 					imp->Childs()->InsertAtEnd(yyvsp[0].node);
+
 					yyval.node=imp;
+
 				}
 #line 5860 "layerd_dpp_parser_beta_tab.c"
 break;
 case 71:
   if (!yytrial)
 #line 1060 "layerd_dpp_parser_beta.y"
-{/*	Access_Modifier Complete_Class_Name*/
+{/*	Access_Modifier Complete_Class_Name
+*/
 					CodeDOM::XplInherit*i=CodeDOM::XplInherits::new_c();
+
 					CodeDOM::XplType* classType = CodeDOM::XplInherit::new_type();
+
 					classType->set_typename(yyvsp[0].str);
+
 					i->set_type(classType);
+
 					if(yyvsp[-1].num==SM_PRIVATE)
+
 						i->set_access(CodeDOM::ZOEACCESSTYPE_ENUM_PRIVATE);
+
 					else if(yyvsp[-1].num==SM_PUBLIC)
+
 						i->set_access(CodeDOM::ZOEACCESSTYPE_ENUM_PUBLIC);
+
 					else if(yyvsp[-1].num==SM_PROTECTED)
+
 						i->set_access(CodeDOM::ZOEACCESSTYPE_ENUM_PROTECTED);
+
 					else if(yyvsp[-1].num==SM_IPRIVATE)
+
 						i->set_access(CodeDOM::ZOEACCESSTYPE_ENUM_PRIVATE);
+
 					else if(yyvsp[-1].num==SM_IPUBLIC)
+
 						i->set_access(CodeDOM::ZOEACCESSTYPE_ENUM_PUBLIC);
+
 					else if(yyvsp[-1].num==SM_IPROTECTED)
+
 						i->set_access(CodeDOM::ZOEACCESSTYPE_ENUM_PROTECTED);
+
 					yyval.node=i;
+
 					SET_SOURCE_DATA_S(i,0);
+
 				}
 #line 5885 "layerd_dpp_parser_beta_tab.c"
 break;
 case 72:
   if (!yytrial)
 #line 1081 "layerd_dpp_parser_beta.y"
-{/*	Complete_Class_Name*/
+{/*	Complete_Class_Name
+*/
 					CodeDOM::XplInherit*i=CodeDOM::XplInherits::new_c();
+
 					CodeDOM::XplType* classType = CodeDOM::XplInherit::new_type();
+
 					classType->set_typename(yyvsp[0].str);
+
 					i->set_type(classType);
+
 					i->set_access(CodeDOM::ZOEACCESSTYPE_ENUM_PUBLIC);
+
 					yyval.node=i;
+
 					SET_SOURCE_DATA_S(i,0);
+
 				}
 #line 5899 "layerd_dpp_parser_beta_tab.c"
 break;
 case 73:
   if (!yytrial)
 #line 1095 "layerd_dpp_parser_beta.y"
-{/*	Class_Member_Decl*/
+{/*	Class_Member_Decl
+*/
 					CodeDOM::XplNodeList*l=new CodeDOM::XplNodeList();
+
 					if(yyvsp[0].nodos[1]==0)
+
 						l->InsertAtEnd(yyvsp[0].node);
-					else{ /*/Fields*/
+
+					else{ /*/Fields
+*/
 						CodeDOM::XplNodeList* fields=(CodeDOM::XplNodeList*)yyvsp[0].nodos[0];
+
 						for(CodeDOM::XplNode* m2=fields->FirstNode();m2!=NULL;m2=fields->NextNode()){
-							/*ASSING_COMMENT(m2);*/
+
+							/*ASSING_COMMENT(m2);
+*/
 							l->InsertAtEnd(m2);
+
 						}
+
 						fields->Clear();
+
 						delete fields;
+
 					}
+
 					yyval.list=l;
+
 				}
 #line 5919 "layerd_dpp_parser_beta_tab.c"
 break;
 case 74:
   if (!yytrial)
 #line 1111 "layerd_dpp_parser_beta.y"
-{/*	Class_Decl_Block Class_Member_Decl*/
+{/*	Class_Decl_Block Class_Member_Decl
+*/
 					CodeDOM::XplNodeList*l=yyvsp[-1].list;
+
 					if(l==NULL)l=new CodeDOM::XplNodeList();
+
 					if(yyvsp[0].nodos[1]==0)
+
 						l->InsertAtEnd(yyvsp[0].node);
-					else{	/*/Fields*/
+
+					else{	/*/Fields
+*/
 						CodeDOM::XplNodeList* fields=(CodeDOM::XplNodeList*)yyvsp[0].nodos[0];
+
 						for(CodeDOM::XplNode* m2=fields->FirstNode();m2!=NULL;m2=fields->NextNode()){
-							/*ASSING_COMMENT(m2);*/
+
+							/*ASSING_COMMENT(m2);
+*/
 							l->InsertAtEnd(m2);
+
 						}
+
 						fields->Clear();
+
 						delete fields;
+
 					}
+
 					yyval.list=l;
+
 				}
 #line 5940 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -5764,10 +6358,15 @@ case 75:
   if (!yytrial)
 #line 1131 "layerd_dpp_parser_beta.y"
 {
+
 					yyval.nodos[0]=yyvsp[0].node;
-					/*Utilizo nodos[1]=1 como bandera para indicar fields en cuyo caso*/
-					/*nodos[0] es una lista de campos*/
+
+					/*Utilizo nodos[1]=1 como bandera para indicar fields en cuyo caso
+*/
+					/*nodos[0] es una lista de campos
+*/
 					yyval.nodos[1]=(CodeDOM::XplNode*)1; 
+
 				}
 #line 5951 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -5799,27 +6398,37 @@ case 80:
   if (!yytrial)
 #line 1142 "layerd_dpp_parser_beta.y"
 {
+
 					SINTAX_ERROR("statements not valid inside a class body.");
+
 					yyval.node=new CodeDOM::XplClass();yyval.nodos[1]=0;
+
 				}
 #line 5984 "layerd_dpp_parser_beta_tab.c"
 break;
 case 81:
   if (!yytrial)
 #line 1148 "layerd_dpp_parser_beta.y"
-{/*	ClassFactory_Call*/
-					/*ASSING_COMMENT($1.node);*/
+{/*	ClassFactory_Call
+*/
+					/*ASSING_COMMENT($1.node);
+*/
 					yyvsp[0].node->set_ElementName(DT("e"));
+
 					yyval.node=yyvsp[0].node;yyval.nodos[1]=0;
+
 				}
 #line 5994 "layerd_dpp_parser_beta_tab.c"
 break;
 case 82:
   if (!yytrial)
 #line 1154 "layerd_dpp_parser_beta.y"
-{/*	Access_Modifier OP_DOSPUNTOS*/
+{/*	Access_Modifier OP_DOSPUNTOS
+*/
 					CodeDOM::XplNode*node=new CodeDOM::XplNode(DT("AM"),yyvsp[-1].num);
+
 					yyval.node=node;yyval.nodos[1]=0;
+
 				}
 #line 6003 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -5838,108 +6447,156 @@ break;
 case 85:
   if (!yytrial)
 #line 1166 "layerd_dpp_parser_beta.y"
-{/*	PC_SETPLATAFORMS OP_DOSPUNTOS SetPlataform_Or PUNTO_COMA*/
+{/*	PC_SETPLATAFORMS OP_DOSPUNTOS SetPlataform_Or PUNTO_COMA
+*/
 					yyvsp[-1].node->set_ElementName(L"SetPlatforms");
+
 					yyval.node=yyvsp[-1].node;
-					/*SET_SOURCE_DATA(((CodeDOM::XplSetPlatforms*)$3.node),-3,0);*/
+
+					/*SET_SOURCE_DATA(((CodeDOM::XplSetPlatforms*)$3.node),-3,0);
+*/
 				}
 #line 6025 "layerd_dpp_parser_beta_tab.c"
 break;
 case 88:
   if (!yytrial)
 #line 1180 "layerd_dpp_parser_beta.y"
-{/*	STRING_LITERAL*/
+{/*	STRING_LITERAL
+*/
 					CodeDOM::XplPlatform*p=CodeDOM::XplSetPlatforms::new_P();
+
 					p->set_match(CodeDOM::ZOEPLATFORMMATCH_ENUM_EXACTNAME);
+
 					p->set_name(yyvsp[0].literal->get_str());
+
 					yyval.node=p;
+
 				}
 #line 6036 "layerd_dpp_parser_beta_tab.c"
 break;
 case 89:
   if (!yytrial)
 #line 1187 "layerd_dpp_parser_beta.y"
-{/*	PC_LIKE STRING_LITERAL*/
+{/*	PC_LIKE STRING_LITERAL
+*/
 					CodeDOM::XplPlatform*p=CodeDOM::XplSetPlatforms::new_P();
+
 					p->set_match(CodeDOM::ZOEPLATFORMMATCH_ENUM_LIKE);
+
 					p->set_name(yyvsp[0].literal->get_str());
+
 					yyval.node=p;
+
 				}
 #line 6047 "layerd_dpp_parser_beta_tab.c"
 break;
 case 90:
   if (!yytrial)
 #line 1197 "layerd_dpp_parser_beta.y"
-{/*	PC_AUTOINSTANCE OP_DOSPUNTOS Autoinstance_Type PUNTO_COMA*/
+{/*	PC_AUTOINSTANCE OP_DOSPUNTOS Autoinstance_Type PUNTO_COMA
+*/
 					yyval.node=yyvsp[-1].node;
-					/*SET_SOURCE_DATA(((CodeDOM::XplAutoInstance*)$3.node),-3,0);*/
+
+					/*SET_SOURCE_DATA(((CodeDOM::XplAutoInstance*)$3.node),-3,0);
+*/
 				}
 #line 6056 "layerd_dpp_parser_beta_tab.c"
 break;
 case 91:
   if (!yytrial)
 #line 1205 "layerd_dpp_parser_beta.y"
-{/*	PC_BYCALL*/
+{/*	PC_BYCALL
+*/
 					CodeDOM::XplAutoInstance*au=CodeDOM::XplClass::new_AutoInstance();
+
 					au->set_by(CodeDOM::ZOEAUTOINSTACETYPES_ENUM_CALL);
+
 					yyval.node=au;
+
 				}
 #line 6066 "layerd_dpp_parser_beta_tab.c"
 break;
 case 92:
   if (!yytrial)
 #line 1211 "layerd_dpp_parser_beta.y"
-{/*	PC_BYCLASS*/
+{/*	PC_BYCLASS
+*/
 					CodeDOM::XplAutoInstance*au=CodeDOM::XplClass::new_AutoInstance();
+
 					au->set_by(CodeDOM::ZOEAUTOINSTACETYPES_ENUM_CLASS);
+
 					yyval.node=au;
+
 				}
 #line 6076 "layerd_dpp_parser_beta_tab.c"
 break;
 case 93:
   if (!yytrial)
 #line 1217 "layerd_dpp_parser_beta.y"
-{/*	PC_BYNAMESPACE*/
+{/*	PC_BYNAMESPACE
+*/
 					CodeDOM::XplAutoInstance*au=CodeDOM::XplClass::new_AutoInstance();
+
 					au->set_by(CodeDOM::ZOEAUTOINSTACETYPES_ENUM_NAMESPACE);
+
 					yyval.node=au;
+
 				}
 #line 6086 "layerd_dpp_parser_beta_tab.c"
 break;
 case 94:
   if (!yytrial)
 #line 1223 "layerd_dpp_parser_beta.y"
-{/*	PC_BYCALLTO Identifier_List*/
+{/*	PC_BYCALLTO Identifier_List
+*/
 					CodeDOM::XplAutoInstance*au=new CodeDOM::XplAutoInstance((CodeDOM::XplNodeList*)yyvsp[0].node);
+
 					au->set_ElementName(L"AutoInstance");
+
 					au->set_by(CodeDOM::ZOEAUTOINSTACETYPES_ENUM_CALLTOFUNCTION);
+
 					yyval.node=au;
+
 				}
 #line 6097 "layerd_dpp_parser_beta_tab.c"
 break;
 case 95:
   if (!yytrial)
 #line 1233 "layerd_dpp_parser_beta.y"
-{/*	IDENTIFICADOR*/
+{/*	IDENTIFICADOR
+*/
 					CodeDOM::XplNodeList*l=new CodeDOM::XplNodeList();
+
 					CodeDOM::XplNode*n=CodeDOM::XplAutoInstance::new_fn();
+
 					n->set_Value(yyvsp[0].str);
+
 					l->InsertAtEnd(n);
+
 					yyval.list=l;
+
 				}
 #line 6109 "layerd_dpp_parser_beta_tab.c"
 break;
 case 96:
   if (!yytrial)
 #line 1241 "layerd_dpp_parser_beta.y"
-{/*	Identifier_List COMA IDENTIFICADOR*/
+{/*	Identifier_List COMA IDENTIFICADOR
+*/
 					CodeDOM::XplNodeList*l=yyvsp[-2].list;
-					/*if(l==NULL)l=NEW_ERROR_RESUME_ZOENODELIST;*/
+
+					/*if(l==NULL)l=NEW_ERROR_RESUME_ZOENODELIST;
+*/
 					if(l==NULL)l=new CodeDOM::XplNodeList();
+
 					CodeDOM::XplNode*n=CodeDOM::XplAutoInstance::new_fn();
+
 					n->set_Value(yyvsp[0].str);
+
 					l->InsertAtEnd(n);
+
 					yyval.list=l;
+
 				}
 #line 6123 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -5983,9 +6640,13 @@ case 103:
   if (!yytrial)
 #line 1267 "layerd_dpp_parser_beta.y"
 {
-					yyval.nodos[0]=yyvsp[0].node;	/*XplType*/
-					yyval.nodos[1]=NULL;		/*Modificadores (unsigned)*/
+
+					yyval.nodos[0]=yyvsp[0].node;	/*XplType
+*/
+					yyval.nodos[1]=NULL;		/*Modificadores (unsigned)
+*/
 					RET_POS=GET_PARSER_POS[0];
+
 				}
 #line 6169 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -5993,9 +6654,13 @@ case 104:
   if (!yytrial)
 #line 1273 "layerd_dpp_parser_beta.y"
 {
+
 					yyval.nodos[0]=yyvsp[0].node;
+
 					yyval.nodos[1]=yyvsp[-1].node;
+
 					RET_POS=GET_PARSER_POS[0];
+
 				}
 #line 6179 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -6003,10 +6668,15 @@ case 105:
   if (!yytrial)
 #line 1282 "layerd_dpp_parser_beta.y"
 {
+
 					CodeDOM::XplType* t=new CodeDOM::XplType();					
+
 					t->set_typename(yyvsp[0].str);
+
 					yyval.node=t;		
+
 					RET_POS=GET_PARSER_POS[0];
+
 				}
 #line 6190 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -6014,10 +6684,15 @@ case 106:
   if (!yytrial)
 #line 1289 "layerd_dpp_parser_beta.y"
 {
+
 					CodeDOM::XplType* t=(CodeDOM::XplType*)yyvsp[0].node;
+
 					SetInnerTypeName(t, yyvsp[-1].str);
+
 					yyval.node=t;
+
 					RET_POS=GET_PARSER_POS[-1];
+
 				}
 #line 6201 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -6025,28 +6700,39 @@ case 107:
   if (!yytrial)
 #line 1297 "layerd_dpp_parser_beta.y"
 {
+
 					CodeDOM::XplType* t=(CodeDOM::XplType*)yyvsp[0].node;
-					t->set_lddata(DT(".")); /*/Muy choto esto*/
+
+					t->set_lddata(DT(".")); /*/Muy choto esto
+*/
 					yyval.node=yyvsp[0].node;
+
 					RET_POS=GET_PARSER_POS[0];
+
 				}
 #line 6212 "layerd_dpp_parser_beta_tab.c"
 break;
 case 108:
   if (!yytrial)
 #line 1308 "layerd_dpp_parser_beta.y"
-{/*	Simple_Type_Name*/
+{/*	Simple_Type_Name
+*/
 					wcscpy(yyval.str,get_nativeType(yyvsp[0].num));
+
 					RET_POS=GET_PARSER_POS[0];
+
 				}
 #line 6221 "layerd_dpp_parser_beta_tab.c"
 break;
 case 109:
   if (!yytrial)
 #line 1313 "layerd_dpp_parser_beta.y"
-{/*	User_Type_Name*/
+{/*	User_Type_Name
+*/
 					wcscpy(yyval.str,yyvsp[0].str);
+
 					RET_POS=GET_PARSER_POS[0];
+
 				}
 #line 6230 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -6066,8 +6752,11 @@ case 112:
   if (!yytrial)
 #line 1323 "layerd_dpp_parser_beta.y"
 {
+
 					SetInnerType((CodeDOM::XplType*)yyvsp[0].node, (CodeDOM::XplType*)yyvsp[-1].node);
+
 					yyval.node=yyvsp[0].node;
+
 				}
 #line 6251 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -6075,10 +6764,15 @@ case 113:
   if (!yytrial)
 #line 1331 "layerd_dpp_parser_beta.y"
 {
+
 					CodeDOM::XplType* t=new CodeDOM::XplType();
+
 					t->set_pi((CodeDOM::XplPointerinfo*)yyvsp[0].node);
+
 					t->set_ispointer(true);
+
 					yyval.node=t;
+
 				}
 #line 6262 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -6086,13 +6780,21 @@ case 114:
   if (!yytrial)
 #line 1338 "layerd_dpp_parser_beta.y"
 {
+
 					CodeDOM::XplType* t=new CodeDOM::XplType();
+
 					t->set_pi((CodeDOM::XplPointerinfo*)yyvsp[0].node);
+
 					t->set_ispointer(true);
 
+
+
 					CodeDOM::XplType* t2=(CodeDOM::XplType*)yyvsp[-1].node;
+
 					t->set_dt(t2);
+
 					yyval.node=t;
+
 				}
 #line 6276 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -6100,16 +6802,27 @@ case 115:
   if (!yytrial)
 #line 1351 "layerd_dpp_parser_beta.y"
 {
+
 					CodeDOM::XplType* t=CodeDOM::XplType::new_dt();
+
 					t->set_isarray(true);
+
 					if(yyvsp[0].node!=NULL)t->set_ae(yyvsp[0].exp);
+
 					CodeDOM::XplType* tp=new CodeDOM::XplType();
+
 					CodeDOM::XplPointerinfo* pi=CodeDOM::XplType::new_pi();
+
 					pi->set_ref(true);
+
 					tp->set_pi(pi);
+
 					tp->set_ispointer(true);
+
 					tp->set_dt(t);
+
 					yyval.node=tp;
+
 				}
 #line 6293 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -6117,19 +6830,33 @@ case 116:
   if (!yytrial)
 #line 1364 "layerd_dpp_parser_beta.y"
 {
+
 					CodeDOM::XplType* t=CodeDOM::XplType::new_dt();
+
 					t->set_isarray(true);
+
 					if(yyvsp[0].node!=NULL)t->set_ae(yyvsp[0].exp);
+
 					CodeDOM::XplType* tp=new CodeDOM::XplType();
+
 					CodeDOM::XplPointerinfo* pi=CodeDOM::XplType::new_pi();
+
 					pi->set_ref(true);
+
 					tp->set_pi(pi);
+
 					tp->set_ispointer(true);
+
 					tp->set_dt(t);
 
+
+
 					CodeDOM::XplType* t2=(CodeDOM::XplType*)yyvsp[-1].node;
+
 					SetInnerType(t2,tp);
+
 					yyval.node=t2;
+
 				}
 #line 6313 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -6137,10 +6864,15 @@ case 117:
   if (!yytrial)
 #line 1384 "layerd_dpp_parser_beta.y"
 {
+
 					CodeDOM::XplType* t=new CodeDOM::XplType();
+
 					t->set_typename(yyvsp[0].str);
+
 					yyval.node=t;
+
 					RET_POS=GET_PARSER_POS[0];
+
 				}
 #line 6324 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -6148,10 +6880,15 @@ case 118:
   if (!yytrial)
 #line 1391 "layerd_dpp_parser_beta.y"
 {
+
 					CodeDOM::XplType* t=(CodeDOM::XplType*)yyvsp[-1].node;
+
 					SetInnerTypeName(t, yyvsp[0].str);
+
 					yyval.node=t;
+
 					RET_POS=GET_PARSER_POS[0];
+
 				}
 #line 6335 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -6159,10 +6896,15 @@ case 119:
   if (!yytrial)
 #line 1401 "layerd_dpp_parser_beta.y"
 {
+
 					CodeDOM::XplType* t=CodeDOM::XplType::new_dt();
+
 					t->set_isarray(true);
+
 					if(yyvsp[0].node!=NULL)t->set_ae(yyvsp[0].exp);
+
 					yyval.node=t;
+
 				}
 #line 6346 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -6170,10 +6912,15 @@ case 120:
   if (!yytrial)
 #line 1408 "layerd_dpp_parser_beta.y"
 {
+
 					CodeDOM::XplType* t=new CodeDOM::XplType();
+
 					t->set_pi((CodeDOM::XplPointerinfo*)yyvsp[0].node);
+
 					t->set_ispointer(true);
+
 					yyval.node=t;
+
 				}
 #line 6357 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -6181,13 +6928,21 @@ case 121:
   if (!yytrial)
 #line 1415 "layerd_dpp_parser_beta.y"
 {
+
 					CodeDOM::XplType* t=new CodeDOM::XplType();
+
 					t->set_isarray(true);
+
 					if(yyvsp[0].node!=NULL)t->set_ae(yyvsp[0].exp);
+
 										
+
 					CodeDOM::XplType* t2=(CodeDOM::XplType*)yyvsp[-1].node;
+
 					SetInnerType(t2,t);
+
 					yyval.node=t2;
+
 				}
 #line 6371 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -6195,165 +6950,253 @@ case 122:
   if (!yytrial)
 #line 1425 "layerd_dpp_parser_beta.y"
 {
+
 					CodeDOM::XplType* t=new CodeDOM::XplType();
+
 					t->set_pi((CodeDOM::XplPointerinfo*)yyvsp[0].node);
+
 					t->set_ispointer(true);
 
+
+
 					CodeDOM::XplType* t2=(CodeDOM::XplType*)yyvsp[-1].node;
+
 					SetInnerType(t2,t);
+
 					yyval.node=t2;
+
 				}
 #line 6385 "layerd_dpp_parser_beta_tab.c"
 break;
 case 123:
   if (!yytrial)
 #line 1439 "layerd_dpp_parser_beta.y"
-{/*	Complete_Class_Name*/
+{/*	Complete_Class_Name
+*/
 					CodeDOM::XplFunction*f=CodeDOM::XplClass::new_Function();
+
 					f->set_name(yyvsp[0].str);
+
 					CodeDOM::XplType*t=CodeDOM::XplFunction::new_ReturnType();
+
 					f->set_ReturnType(t);
-					yyval.node=f;			/*Funcion*/
+
+					yyval.node=f;			/*Funcion
+*/
 					RET_POS=GET_PARSER_POS[0];
+
 				}
 #line 6398 "layerd_dpp_parser_beta_tab.c"
 break;
 case 124:
   if (!yytrial)
 #line 1448 "layerd_dpp_parser_beta.y"
-{/*	PC_OPERATOR Operator_Sym*/
+{/*	PC_OPERATOR Operator_Sym
+*/
 					CodeDOM::XplFunction*f=CodeDOM::XplClass::new_Operator();
+
 					CodeDOM::string fname=L"none";
+
 					fname=get_OperatorFunctionName(yyvsp[0].num);
+
 					f->set_name(fname);
+
 					CodeDOM::XplType*t=CodeDOM::XplFunction::new_ReturnType();
+
 					f->set_ReturnType(t);
-					yyval.node=f;			/*Funcion*/
+
+					yyval.node=f;			/*Funcion
+*/
 					RET_POS=GET_PARSER_POS[-1];
+
 				}
 #line 6413 "layerd_dpp_parser_beta_tab.c"
 break;
 case 125:
   if (!yytrial)
 #line 1459 "layerd_dpp_parser_beta.y"
-{/*   PC_INDEXER*/
+{/*   PC_INDEXER
+*/
 					CodeDOM::XplFunction*f=CodeDOM::XplClass::new_Indexer();
+
 					f->set_name(DT("%indexer%"));
+
 					CodeDOM::XplType*t=CodeDOM::XplFunction::new_ReturnType();
+
 					f->set_ReturnType(t);
-					yyval.node=f;			/*Funcion*/
+
+					yyval.node=f;			/*Funcion
+*/
 					RET_POS=GET_PARSER_POS[0];
+
 				}
 #line 6426 "layerd_dpp_parser_beta_tab.c"
 break;
 case 126:
   if (!yytrial)
 #line 1468 "layerd_dpp_parser_beta.y"
-{/*   Complete_Class_Name OP_DOSPUNTOSDOBLE PC_INDEXER*/
+{/*   Complete_Class_Name OP_DOSPUNTOSDOBLE PC_INDEXER
+*/
 					CodeDOM::XplFunction*f=CodeDOM::XplClass::new_Indexer();
+
 					f->set_name(yyvsp[-2].str);
+
 					f->set_name(f->get_name()+DT("::%indexer%"));
+
 					CodeDOM::XplType*t=CodeDOM::XplFunction::new_ReturnType();
+
 					f->set_ReturnType(t);
-					yyval.node=f;			/*Funcion*/
+
+					yyval.node=f;			/*Funcion
+*/
 					RET_POS=GET_PARSER_POS[0];
+
 				}
 #line 6440 "layerd_dpp_parser_beta_tab.c"
 break;
 case 127:
   if (!yytrial)
 #line 1478 "layerd_dpp_parser_beta.y"
-{/*   OP_CELDILLA Complete_Class_Name*/
+{/*   OP_CELDILLA Complete_Class_Name
+*/
 					CodeDOM::XplFunction*f=CodeDOM::XplClass::new_Function();
+
 					f->set_name(yyvsp[0].str);
+
 					f->set_name(DT("~")+f->get_name());
+
 					CodeDOM::XplType*t=CodeDOM::XplFunction::new_ReturnType();
+
 					f->set_ReturnType(t);
-					yyval.node=f;			/*Funcion*/
+
+					yyval.node=f;			/*Funcion
+*/
 					RET_POS=GET_PARSER_POS[0];
+
 				}
 #line 6454 "layerd_dpp_parser_beta_tab.c"
 break;
 case 128:
   if (!yytrial)
 #line 1491 "layerd_dpp_parser_beta.y"
-{/*	OP_IGUAL Variable_Initializer*/
+{/*	OP_IGUAL Variable_Initializer
+*/
 	                if(yyvsp[0].node->get_ElementName()==DT("e")){
-	                    /*Es una expresion*/
+
+	                    /*Es una expresion
+*/
                        	CodeDOM::XplInitializerList*list=CodeDOM::XplDeclarator::new_i();
+
 	                    list->Childs()->InsertAtEnd(yyvsp[0].node);
+
 	                    yyval.node=list;
+
 						SET_SOURCE_DATA_S(list,-1);
+
                     }
+
 	                else{
-	                    /*Es un lista*/
+
+	                    /*Es un lista
+*/
 	                    yyvsp[0].node->set_ElementName(DT("i"));
+
     	                yyval.node=yyvsp[0].node;
+
 	                }
+
 	            }
 #line 6473 "layerd_dpp_parser_beta_tab.c"
 break;
 case 129:
   if (!yytrial)
 #line 1507 "layerd_dpp_parser_beta.y"
-{/*	OPEN_PARENTESIS Expression_List CLOSE_PARENTESIS*/
+{/*	OPEN_PARENTESIS Expression_List CLOSE_PARENTESIS
+*/
                 	CodeDOM::XplInitializerList*init=CodeDOM::XplDeclarator::new_i();
+
 					CodeDOM::XplInitializerList*list=CodeDOM::XplInitializerList::new_list();
+
                 	CodeDOM::XplNodeList*nlist=((CodeDOM::XplExpressionlist*)yyvsp[-1].node)->Childs();
+
                 	for(CodeDOM::XplNode*node=nlist->FirstNode();node!=NULL;node=nlist->NextNode()){
+
                 		list->Childs()->InsertAtEnd(node);
+
                 	}
+
 					init->Childs()->InsertAtEnd(list);
+
                 	yyval.node=init;
+
 					SET_SOURCE_DATA_S(init,0);
+
 	            }
 #line 6489 "layerd_dpp_parser_beta_tab.c"
 break;
 case 130:
   if (!yytrial)
 #line 1530 "layerd_dpp_parser_beta.y"
-{/*	OPEN_PARENTESIS Expression_List CLOSE_PARENTESIS*/
+{/*	OPEN_PARENTESIS Expression_List CLOSE_PARENTESIS
+*/
                 	CodeDOM::XplExpression*exp=CodeDOM::XplInitializerList::new_e();
+
                 	exp->set_texpression(yyvsp[0].node);
+
                 	yyval.node=exp;
+
 	            }
 #line 6499 "layerd_dpp_parser_beta_tab.c"
 break;
 case 131:
   if (!yytrial)
 #line 1536 "layerd_dpp_parser_beta.y"
-{/*	Complex_Initializer*/
+{/*	Complex_Initializer
+*/
 	                yyval.node=yyvsp[0].node;
+
 	            }
 #line 6507 "layerd_dpp_parser_beta_tab.c"
 break;
 case 132:
   if (!yytrial)
 #line 1543 "layerd_dpp_parser_beta.y"
-{/*	OPEN_LLAVE Initializer_List CLOSE_LLAVE*/
+{/*	OPEN_LLAVE Initializer_List CLOSE_LLAVE
+*/
                 	CodeDOM::XplInitializerList*list=(CodeDOM::XplInitializerList*)yyvsp[-1].node;
+
                 	list->set_array(true);
+
 	                yyval.node=list;
+
 	            }
 #line 6517 "layerd_dpp_parser_beta_tab.c"
 break;
 case 133:
   if (!yytrial)
 #line 1549 "layerd_dpp_parser_beta.y"
-{/*	OPEN_LLAVE Initializer_List COMA CLOSE_LLAVE*/
+{/*	OPEN_LLAVE Initializer_List COMA CLOSE_LLAVE
+*/
                 	CodeDOM::XplInitializerList*list=(CodeDOM::XplInitializerList*)yyvsp[-2].node;
+
                 	list->set_array(true);
+
 	                yyval.node=list;
+
 	            }
 #line 6527 "layerd_dpp_parser_beta_tab.c"
 break;
 case 134:
   if (!yytrial)
 #line 1555 "layerd_dpp_parser_beta.y"
-{/*	OPEN_LLAVE CLOSE_LLAVE*/
+{/*	OPEN_LLAVE CLOSE_LLAVE
+*/
                 	CodeDOM::XplInitializerList*list=CodeDOM::XplInitializerList::new_list();
+
                 	list->set_array(true);
+
 	                yyval.node=list;
+
 	            }
 #line 6537 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -6361,9 +7204,13 @@ case 136:
   if (!yytrial)
 #line 1564 "layerd_dpp_parser_beta.y"
 {
+
                 	CodeDOM::XplInitializerList*list=CodeDOM::XplInitializerList::new_list();
+
                 	list->Childs()->InsertAtEnd(yyvsp[0].node);
+
                 	yyval.node=list;
+
 	            }
 #line 6547 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -6371,82 +7218,117 @@ case 137:
   if (!yytrial)
 #line 1570 "layerd_dpp_parser_beta.y"
 {
+
                 	CodeDOM::XplInitializerList*list=(CodeDOM::XplInitializerList*)yyvsp[-2].node;
+
                 	list->Childs()->InsertAtEnd(yyvsp[0].node);
+
                 	yyval.node=list;
+
 	            }
 #line 6557 "layerd_dpp_parser_beta_tab.c"
 break;
 case 138:
   if (!yytrial)
 #line 1579 "layerd_dpp_parser_beta.y"
-{/*	OP_ASTERISCO*/
+{/*	OP_ASTERISCO
+*/
 					CodeDOM::XplPointerinfo*l=CodeDOM::XplType::new_pi();
+
 					yyval.node=l;
+
 				}
 #line 6566 "layerd_dpp_parser_beta_tab.c"
 break;
 case 139:
   if (!yytrial)
 #line 1584 "layerd_dpp_parser_beta.y"
-{/*	OP_ASTERISCO*/
+{/*	OP_ASTERISCO
+*/
 					CodeDOM::XplPointerinfo*l=CodeDOM::XplType::new_pi();
+
 					l->set_ref(true);
+
 					yyval.node=l;
+
 				}
 #line 6576 "layerd_dpp_parser_beta_tab.c"
 break;
 case 140:
   if (!yytrial)
 #line 1590 "layerd_dpp_parser_beta.y"
-{/*	OP_ASTERISCO Pointer_Modifier_List*/
+{/*	OP_ASTERISCO Pointer_Modifier_List
+*/
 					CodeDOM::XplPointerinfo*l=CodeDOM::XplType::new_pi();
+
 					if( (yyvsp[0].num & SM_CONST)==SM_CONST)l->set_const(true);
+
 					if( (yyvsp[0].num & SM_VOLATILE)==SM_VOLATILE)l->set_volatile(true);
+
 					if( (yyvsp[0].num & SM_REF)==SM_REF)l->set_ref(true);
+
 					yyval.node=l;
+
 				}
 #line 6588 "layerd_dpp_parser_beta_tab.c"
 break;
 case 141:
   if (!yytrial)
 #line 1599 "layerd_dpp_parser_beta.y"
-{/*	Complete_Class_Name OP_DOSPUNTOSDOBLE OP_ASTERISCO*/
+{/*	Complete_Class_Name OP_DOSPUNTOSDOBLE OP_ASTERISCO
+*/
 					CodeDOM::XplPointerinfo*l=CodeDOM::XplType::new_pi();
+
 					l->set_memberof(yyvsp[-2].str);
+
 					yyval.node=l;
+
 				}
 #line 6598 "layerd_dpp_parser_beta_tab.c"
 break;
 case 142:
   if (!yytrial)
 #line 1605 "layerd_dpp_parser_beta.y"
-{/*	Complete_Class_Name OP_DOSPUNTOSDOBLE OP_ASTERISCO Pointer_Modifier_List*/
+{/*	Complete_Class_Name OP_DOSPUNTOSDOBLE OP_ASTERISCO Pointer_Modifier_List
+*/
 					CodeDOM::XplPointerinfo*l=CodeDOM::XplType::new_pi();
+
 					l->set_memberof(yyvsp[-3].str);
+
 					if( (yyvsp[0].num & SM_CONST)==SM_CONST)l->set_const(true);
+
 					if( (yyvsp[0].num & SM_VOLATILE)==SM_VOLATILE)l->set_volatile(true);
+
 					if( (yyvsp[0].num & SM_REF)==SM_REF)l->set_ref(true);
+
 					yyval.node=l;
+
 				}
 #line 6611 "layerd_dpp_parser_beta_tab.c"
 break;
 case 143:
   if (!yytrial)
 #line 1618 "layerd_dpp_parser_beta.y"
-{/*	Pointer_Modifier*/
+{/*	Pointer_Modifier
+*/
 					yyval.num=yyvsp[0].num;
+
 				}
 #line 6619 "layerd_dpp_parser_beta_tab.c"
 break;
 case 144:
   if (!yytrial)
 #line 1622 "layerd_dpp_parser_beta.y"
-{/*	Pointer_Modifier Pointer_Modifier_List*/
+{/*	Pointer_Modifier Pointer_Modifier_List
+*/
 					if( (yyvsp[-1].num & yyvsp[0].num)==yyvsp[0].num){
+
 						SINTAX_ERROR("Pointer modifier duplicated.");
+
 					}
+
 					yyval.num=yyvsp[-1].num|yyvsp[0].num;
+
 				}
 #line 6630 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -6471,44 +7353,64 @@ break;
 case 148:
   if (!yytrial)
 #line 1638 "layerd_dpp_parser_beta.y"
-{/*	OPEN_CORCHETE CLOSE_CORCHETE*/
+{/*	OPEN_CORCHETE CLOSE_CORCHETE
+*/
 					yyval.exp=NULL;
+
 				}
 #line 6656 "layerd_dpp_parser_beta_tab.c"
 break;
 case 149:
   if (!yytrial)
 #line 1642 "layerd_dpp_parser_beta.y"
-{/*	OPEN_CORCHETE Expression CLOSE_CORCHETE*/
+{/*	OPEN_CORCHETE Expression CLOSE_CORCHETE
+*/
 					CodeDOM::XplExpression *e=CodeDOM::XplType::new_ae();
+
 					e->set_texpression(yyvsp[-1].node);
+
 					yyval.exp=e;
+
 				}
 #line 6666 "layerd_dpp_parser_beta_tab.c"
 break;
 case 150:
   if (!yytrial)
 #line 1651 "layerd_dpp_parser_beta.y"
-{/*	Parameter_Declarator*/
+{/*	Parameter_Declarator
+*/
 					CodeDOM::XplParameter* p=(CodeDOM::XplParameter*)yyvsp[0].node;
+
 					CodeDOM::XplParameters* ps=new CodeDOM::XplParameters();
+
 					p->set_number(ps->Childs()->getLenght()+1);
+
 					ps->Childs()->InsertAtEnd(p);
+
 					yyval.node=ps;
-					/*SET_SOURCE_DATA_S(p,0);*/
+
+					/*SET_SOURCE_DATA_S(p,0);
+*/
 				}
 #line 6679 "layerd_dpp_parser_beta_tab.c"
 break;
 case 151:
   if (!yytrial)
 #line 1660 "layerd_dpp_parser_beta.y"
-{/*	Argument_Declarator_List COMA Argument_Declarator*/
+{/*	Argument_Declarator_List COMA Argument_Declarator
+*/
 					CodeDOM::XplParameter* p=(CodeDOM::XplParameter*)yyvsp[0].node;
+
 					CodeDOM::XplParameters* ps=(CodeDOM::XplParameters*)yyvsp[-2].node;
+
 					p->set_number(ps->Childs()->getLenght()+1);
+
 					ps->Childs()->InsertAtEnd(p);
+
 					yyval.node=ps;
-					/*SET_SOURCE_DATA_S(p,0);*/
+
+					/*SET_SOURCE_DATA_S(p,0);
+*/
 				}
 #line 6692 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -6518,38 +7420,58 @@ case 152:
 #line 6697 "layerd_dpp_parser_beta_tab.c"
   if (!yytrial)
 #line 1672 "layerd_dpp_parser_beta.y"
-{/*	Type_Declarator Declarator*/
+{/*	Type_Declarator Declarator
+*/
 					CodeDOM::XplType* t=(CodeDOM::XplType*)yyvsp[-1].nodos[0];
+
 					CodeDOM::XplParameter* p=CodeDOM::XplParameters::new_P();
+
 					p->set_direction(CodeDOM::ZOEPARAMETERDIRECTION_ENUM_IN);
+
 					p->set_type(t);
+
 					if(yyvsp[0].nodos[0]!=NULL){
+
 						p->set_name(*(CodeDOM::string*)yyvsp[0].nodos[0]);
+
 						delete (CodeDOM::string*)yyvsp[0].nodos[0];
+
 					}
+
 					if(yyvsp[0].nodos[2]!=NULL)p->set_i((CodeDOM::XplInitializerList*)yyvsp[0].nodos[2]);
-					SetParameterModifiers(p,(unsigned)yyvsp[-1].nodos[1]);
+
+					SetParameterModifiers(p, (unsigned long)yyvsp[-1].nodos[1] );
+
 					yyval.node=p;
+
 					SET_SOURCE_DATA_S(t,-1);
+
 				}
 #line 6714 "layerd_dpp_parser_beta_tab.c"
 break;
 case 153:
   if (!yytrial)
 #line 1690 "layerd_dpp_parser_beta.y"
-{/*	Storage_Mod*/
+{/*	Storage_Mod
+*/
 					yyval.num=yyvsp[0].num;
+
 				}
 #line 6722 "layerd_dpp_parser_beta_tab.c"
 break;
 case 154:
   if (!yytrial)
 #line 1694 "layerd_dpp_parser_beta.y"
-{/*	Storage_Mod_List Storage_Mod*/
+{/*	Storage_Mod_List Storage_Mod
+*/
 					if( (yyvsp[-1].num & yyvsp[0].num)==yyvsp[0].num){
+
 						WARNING_MESSAGE("Storage modifier duplicated.");
+
 					}
+
 					yyval.num=yyvsp[-1].num|yyvsp[0].num;
+
 				}
 #line 6733 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -6716,8 +7638,11 @@ case 181:
   if (!yytrial)
 #line 1736 "layerd_dpp_parser_beta.y"
 {
-					yyval.node=CreateFunction((unsigned int)yyvsp[-5].nodos[1]/*Storage*/,(CodeDOM::XplType*)yyvsp[-5].nodos[0]/*Type_Decl*/,(CodeDOM::XplFunction*)yyvsp[-4].node/*Decl_F*/,(CodeDOM::XplParameters*)yyvsp[-2].node/*Parameters*/,(CodeDOM::XplBaseInitializers*)NULL/*Base_Init*/,(CodeDOM::XplFunctionBody*)yyvsp[0].node/*Block*/);
+
+					yyval.node=CreateFunction((unsigned long)yyvsp[-5].nodos[1]/*Storage*/,(CodeDOM::XplType*)yyvsp[-5].nodos[0]/*Type_Decl*/,(CodeDOM::XplFunction*)yyvsp[-4].node/*Decl_F*/,(CodeDOM::XplParameters*)yyvsp[-2].node/*Parameters*/,(CodeDOM::XplBaseInitializers*)NULL/*Base_Init*/,(CodeDOM::XplFunctionBody*)yyvsp[0].node/*Block*/);
+
 					SET_SOURCE_DATA(((CodeDOM::XplFunction*)yyval.node),-5,-1);
+
 				}
 #line 6901 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -6728,8 +7653,11 @@ case 182:
   if (!yytrial)
 #line 1741 "layerd_dpp_parser_beta.y"
 {
-					yyval.node=CreateFunction((unsigned int)yyvsp[-4].nodos[1]/*Storage*/,(CodeDOM::XplType*)yyvsp[-4].nodos[0]/*Type_Decl*/,(CodeDOM::XplFunction*)yyvsp[-3].node/*Decl_F*/,(CodeDOM::XplParameters*)NULL/*Parameters*/,(CodeDOM::XplBaseInitializers*)NULL/*Base_Init*/,(CodeDOM::XplFunctionBody*)yyvsp[0].node/*Block*/);
+
+					yyval.node=CreateFunction((unsigned long)yyvsp[-4].nodos[1]/*Storage*/,(CodeDOM::XplType*)yyvsp[-4].nodos[0]/*Type_Decl*/,(CodeDOM::XplFunction*)yyvsp[-3].node/*Decl_F*/,(CodeDOM::XplParameters*)NULL/*Parameters*/,(CodeDOM::XplBaseInitializers*)NULL/*Base_Init*/,(CodeDOM::XplFunctionBody*)yyvsp[0].node/*Block*/);
+
 					SET_SOURCE_DATA(((CodeDOM::XplFunction*)yyval.node),-4,-1);
+
 				}
 #line 6913 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -6740,8 +7668,11 @@ case 183:
   if (!yytrial)
 #line 1746 "layerd_dpp_parser_beta.y"
 {
-					yyval.node=CreateFunction((unsigned int)yyvsp[-6].nodos[1]/*Storage*/,(CodeDOM::XplType*)yyvsp[-6].nodos[0]/*Type_Decl*/,(CodeDOM::XplFunction*)yyvsp[-5].node/*Decl_F*/,(CodeDOM::XplParameters*)yyvsp[-3].node/*Parameters*/,(CodeDOM::XplBaseInitializers*)yyvsp[-1].node/*Base_Init*/,(CodeDOM::XplFunctionBody*)yyvsp[0].node/*Block*/);
+
+					yyval.node=CreateFunction((unsigned long)yyvsp[-6].nodos[1]/*Storage*/,(CodeDOM::XplType*)yyvsp[-6].nodos[0]/*Type_Decl*/,(CodeDOM::XplFunction*)yyvsp[-5].node/*Decl_F*/,(CodeDOM::XplParameters*)yyvsp[-3].node/*Parameters*/,(CodeDOM::XplBaseInitializers*)yyvsp[-1].node/*Base_Init*/,(CodeDOM::XplFunctionBody*)yyvsp[0].node/*Block*/);
+
 					SET_SOURCE_DATA(((CodeDOM::XplFunction*)yyval.node),-5,-2);
+
 				}
 #line 6925 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -6752,8 +7683,11 @@ case 184:
   if (!yytrial)
 #line 1751 "layerd_dpp_parser_beta.y"
 {
-					yyval.node=CreateFunction((unsigned int)yyvsp[-5].nodos[1]/*Storage*/,(CodeDOM::XplType*)yyvsp[-5].nodos[0]/*Type_Decl*/,(CodeDOM::XplFunction*)yyvsp[-4].node/*Decl_F*/,(CodeDOM::XplParameters*)NULL/*Parameters*/,(CodeDOM::XplBaseInitializers*)yyvsp[-1].node/*Base_Init*/,(CodeDOM::XplFunctionBody*)yyvsp[0].node/*Block*/);
+
+					yyval.node=CreateFunction((unsigned long)yyvsp[-5].nodos[1]/*Storage*/,(CodeDOM::XplType*)yyvsp[-5].nodos[0]/*Type_Decl*/,(CodeDOM::XplFunction*)yyvsp[-4].node/*Decl_F*/,(CodeDOM::XplParameters*)NULL/*Parameters*/,(CodeDOM::XplBaseInitializers*)yyvsp[-1].node/*Base_Init*/,(CodeDOM::XplFunctionBody*)yyvsp[0].node/*Block*/);
+
 					SET_SOURCE_DATA(((CodeDOM::XplFunction*)yyval.node),-5,-2);
+
 				}
 #line 6937 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -6764,8 +7698,11 @@ case 185:
   if (!yytrial)
 #line 1758 "layerd_dpp_parser_beta.y"
 {
+
 					yyval.node=CreateFunction(yyvsp[-5].num/*Storage*/,(CodeDOM::XplType*)NULL/*Type_Decl*/,(CodeDOM::XplFunction*)yyvsp[-4].node/*Decl_F*/,(CodeDOM::XplParameters*)NULL/*Parameters*/,(CodeDOM::XplBaseInitializers*)yyvsp[-1].node/*Base_Init*/,(CodeDOM::XplFunctionBody*)yyvsp[0].node/*Block*/);
+
 					SET_SOURCE_DATA(((CodeDOM::XplFunction*)yyval.node),-5,-3);
+
 				}
 #line 6949 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -6776,8 +7713,11 @@ case 186:
   if (!yytrial)
 #line 1763 "layerd_dpp_parser_beta.y"
 {
+
 					yyval.node=CreateFunction(yyvsp[-6].num/*Storage*/,(CodeDOM::XplType*)NULL/*Type_Decl*/,(CodeDOM::XplFunction*)yyvsp[-5].node/*Decl_F*/,(CodeDOM::XplParameters*)yyvsp[-3].node/*Parameters*/,(CodeDOM::XplBaseInitializers*)yyvsp[-1].node/*Base_Init*/,(CodeDOM::XplFunctionBody*)yyvsp[0].node/*Block*/);
+
 					SET_SOURCE_DATA(((CodeDOM::XplFunction*)yyval.node),-5,-2);
+
 				}
 #line 6961 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -6788,8 +7728,11 @@ case 187:
   if (!yytrial)
 #line 1768 "layerd_dpp_parser_beta.y"
 {
+
 					yyval.node=CreateFunction(0/*Storage*/,(CodeDOM::XplType*)NULL/*Type_Decl*/,(CodeDOM::XplFunction*)yyvsp[-4].node/*Decl_F*/,(CodeDOM::XplParameters*)NULL/*Parameters*/,(CodeDOM::XplBaseInitializers*)yyvsp[-1].node/*Base_Init*/,(CodeDOM::XplFunctionBody*)yyvsp[0].node/*Block*/);
+
 					SET_SOURCE_DATA(((CodeDOM::XplFunction*)yyval.node),-4,-2);
+
 				}
 #line 6973 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -6800,8 +7743,11 @@ case 188:
   if (!yytrial)
 #line 1773 "layerd_dpp_parser_beta.y"
 {
+
 					yyval.node=CreateFunction(0/*Storage*/,(CodeDOM::XplType*)NULL/*Type_Decl*/,(CodeDOM::XplFunction*)yyvsp[-5].node/*Decl_F*/,(CodeDOM::XplParameters*)yyvsp[-3].node/*Parameters*/,(CodeDOM::XplBaseInitializers*)yyvsp[-1].node/*Base_Init*/,(CodeDOM::XplFunctionBody*)yyvsp[0].node/*Block*/);
+
 					SET_SOURCE_DATA(((CodeDOM::XplFunction*)yyval.node),-5,-2);
+
 				}
 #line 6985 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -6812,8 +7758,11 @@ case 189:
   if (!yytrial)
 #line 1779 "layerd_dpp_parser_beta.y"
 {
+
 					yyval.node=CreateFunction(yyvsp[-4].num/*Storage*/,(CodeDOM::XplType*)NULL/*Type_Decl*/,(CodeDOM::XplFunction*)yyvsp[-3].node/*Decl_F*/,(CodeDOM::XplParameters*)NULL/*Parameters*/,(CodeDOM::XplBaseInitializers*)NULL/*Base_Init*/,(CodeDOM::XplFunctionBody*)yyvsp[0].node/*Block*/);
+
 					SET_SOURCE_DATA(((CodeDOM::XplFunction*)yyval.node),-3,-1);
+
 				}
 #line 6997 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -6824,8 +7773,11 @@ case 190:
   if (!yytrial)
 #line 1784 "layerd_dpp_parser_beta.y"
 {
+
 					yyval.node=CreateFunction(yyvsp[-5].num/*Storage*/,(CodeDOM::XplType*)NULL/*Type_Decl*/,(CodeDOM::XplFunction*)yyvsp[-4].node/*Decl_F*/,(CodeDOM::XplParameters*)yyvsp[-2].node/*Parameters*/,(CodeDOM::XplBaseInitializers*)NULL/*Base_Init*/,(CodeDOM::XplFunctionBody*)yyvsp[0].node/*Block*/);
+
 					SET_SOURCE_DATA(((CodeDOM::XplFunction*)yyval.node),-4,-1);
+
 				}
 #line 7009 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -6836,8 +7788,11 @@ case 191:
   if (!yytrial)
 #line 1789 "layerd_dpp_parser_beta.y"
 {
+
 					yyval.node=CreateFunction(0/*Storage*/,(CodeDOM::XplType*)NULL/*Type_Decl*/,(CodeDOM::XplFunction*)yyvsp[-3].node/*Decl_F*/,(CodeDOM::XplParameters*)NULL/*Parameters*/,(CodeDOM::XplBaseInitializers*)NULL/*Base_Init*/,(CodeDOM::XplFunctionBody*)yyvsp[0].node/*Block*/);
+
 					SET_SOURCE_DATA(((CodeDOM::XplFunction*)yyval.node),-3,-1);
+
 				}
 #line 7021 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -6848,8 +7803,11 @@ case 192:
   if (!yytrial)
 #line 1794 "layerd_dpp_parser_beta.y"
 {
+
 					yyval.node=CreateFunction(0/*Storage*/,(CodeDOM::XplType*)NULL/*Type_Decl*/,(CodeDOM::XplFunction*)yyvsp[-4].node/*Decl_F*/,(CodeDOM::XplParameters*)yyvsp[-2].node/*Parameters*/,(CodeDOM::XplBaseInitializers*)NULL/*Base_Init*/,(CodeDOM::XplFunctionBody*)yyvsp[0].node/*Block*/);
+
 					SET_SOURCE_DATA(((CodeDOM::XplFunction*)yyval.node),-4,-1);
+
 				}
 #line 7033 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -6859,28 +7817,50 @@ case 193:
 #line 7038 "layerd_dpp_parser_beta_tab.c"
   if (!yytrial)
 #line 1802 "layerd_dpp_parser_beta.y"
-{/*	Type_Declarator Declarator_List PUNTO_COMA*/
+{/*	Type_Declarator Declarator_List PUNTO_COMA
+*/
 					CodeDOM::XplDeclaratorlist* dl=(CodeDOM::XplDeclaratorlist*)yyvsp[-1].node;
+
 					CodeDOM::XplDeclarator*d =NULL;
+
 					CodeDOM::XplField* f=NULL;
+
 					CodeDOM::XplType* t=NULL;
+
 					CodeDOM::XplNodeList*cm=new CodeDOM::XplNodeList();
+
 					for(d=(CodeDOM::XplDeclarator*)dl->Childs()->FirstNode();d!=NULL;d=(CodeDOM::XplDeclarator*)dl->Childs()->NextNode()){
+
 						t=(CodeDOM::XplType*)yyvsp[-2].nodos[0]->Clone();
+
 						t->set_ElementName(DT("type"));
-						/*Ahora creo el field y copio los datos del declarator*/
+
+						/*Ahora creo el field y copio los datos del declarator
+*/
 						f=CodeDOM::XplClass::new_Field();
+
 						f->set_name(d->get_name());
+
 						f->set_type(t);
+
 						d->set_type(NULL);
+
 						f->set_i(d->get_i());
+
 						d->set_i(NULL);
-						SetFieldStorage(f,(unsigned)yyvsp[-2].nodos[1]);
+
+						SetFieldStorage(f,(unsigned long)yyvsp[-2].nodos[1]);
+
 						cm->InsertAtEnd(f);
+
 					}
+
 					delete dl;
+
 					yyval.list=cm;
+
 					SET_SOURCE_DATA(f,-2,0);
+
 				}
 #line 7064 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -6893,44 +7873,64 @@ break;
 case 195:
   if (!yytrial)
 #line 1834 "layerd_dpp_parser_beta.y"
-{/*	Base_Initializer*/
+{/*	Base_Initializer
+*/
 					CodeDOM::XplBaseInitializers *bi=CodeDOM::XplFunction::new_BaseInitializers();
+
 					bi->Childs()->InsertAtEnd(yyvsp[0].node);
+
 					yyval.node=bi;
+
 				}
 #line 7080 "layerd_dpp_parser_beta_tab.c"
 break;
 case 196:
   if (!yytrial)
 #line 1840 "layerd_dpp_parser_beta.y"
-{/*	Base_Initializers COMA Base_Initializer*/
+{/*	Base_Initializers COMA Base_Initializer
+*/
 					CodeDOM::XplBaseInitializers *bi=(CodeDOM::XplBaseInitializers*)yyvsp[-2].node;
+
 					bi->Childs()->InsertAtEnd(yyvsp[0].node);
+
 					yyval.node=bi;
+
 				}
 #line 7090 "layerd_dpp_parser_beta_tab.c"
 break;
 case 197:
   if (!yytrial)
 #line 1849 "layerd_dpp_parser_beta.y"
-{/*	Complete_Class_Name OPEN_PARENTESIS Expression_List CLOSE_PARENTESIS*/
+{/*	Complete_Class_Name OPEN_PARENTESIS Expression_List CLOSE_PARENTESIS
+*/
 					CodeDOM::XplBaseInitializer *i=CodeDOM::XplBaseInitializers::new_i();
+
 					i->set_className(yyvsp[-3].str);
+
 					i->set_params((CodeDOM::XplExpressionlist*)yyvsp[-1].node);
+
 					yyval.node=i;
+
 					SET_SOURCE_DATA(i,-3,0);
+
 				}
 #line 7102 "layerd_dpp_parser_beta_tab.c"
 break;
 case 198:
   if (!yytrial)
 #line 1857 "layerd_dpp_parser_beta.y"
-{/*	Complete_Class_Name OPEN_PARENTESIS CLOSE_PARENTESIS*/
+{/*	Complete_Class_Name OPEN_PARENTESIS CLOSE_PARENTESIS
+*/
 					CodeDOM::XplBaseInitializer *i=CodeDOM::XplBaseInitializers::new_i();
+
 					i->set_className(yyvsp[-2].str);
+
 					i->set_params(CodeDOM::XplBaseInitializer::new_params());
+
 					yyval.node=i;
+
 					SET_SOURCE_DATA(i,-2,0);
+
 				}
 #line 7114 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -6940,165 +7940,252 @@ case 199:
 #line 7119 "layerd_dpp_parser_beta_tab.c"
   if (!yytrial)
 #line 1868 "layerd_dpp_parser_beta.y"
-{/*	R_Type_Decl PC_PROPERTY Complete_Class_Name OPEN_LLAVE Block CLOSE_LLAVE*/
+{/*	R_Type_Decl PC_PROPERTY Complete_Class_Name OPEN_LLAVE Block CLOSE_LLAVE
+*/
 					CodeDOM::XplProperty*p=CodeDOM::XplClass::new_Property();
 
+
+
 					p->set_type((CodeDOM::XplType*)yyvsp[-3].node);
+
 					p->set_name(yyvsp[-1].str);
+
 					p->set_storage(CodeDOM::ZOEVARSTORAGE_ENUM_AUTO);
+
 					if(yyvsp[0].node!=NULL)p->set_body((CodeDOM::XplFunctionBody*)yyvsp[0].node);
-					SetPropertyStorage(p,(unsigned)yyvsp[-3].nodos[1]);
+
+					SetPropertyStorage(p,(unsigned long)yyvsp[-3].nodos[1]);
+
+
 
 					yyval.node=p;
+
 					SET_SOURCE_DATA_S(p,-2);
+
 				}
 #line 7134 "layerd_dpp_parser_beta_tab.c"
 break;
 case 200:
   if (!yytrial)
 #line 1885 "layerd_dpp_parser_beta.y"
-{/*	DeclaratorA*/
-					yyval.nodos[0]=(CodeDOM::XplNode*)new CodeDOM::string(yyvsp[0].str);		/*Identificador*/
-					yyval.nodos[1]=NULL;			/*Inicializador*/
+{/*	DeclaratorA
+*/
+					yyval.nodos[0]=(CodeDOM::XplNode*)new CodeDOM::string(yyvsp[0].str);		/*Identificador
+*/
+					yyval.nodos[1]=NULL;			/*Inicializador
+*/
 					yyval.nodos[2]=NULL;
+
 					RET_POS=GET_PARSER_POS[0];
+
 				}
 #line 7145 "layerd_dpp_parser_beta_tab.c"
 break;
 case 201:
   if (!yytrial)
 #line 1892 "layerd_dpp_parser_beta.y"
-{/*	DeclaratorA Initializer*/
-					yyval.nodos[0]=(CodeDOM::XplNode*)new CodeDOM::string(yyvsp[-1].str);		/*Identificador*/
-					yyval.nodos[1]=yyvsp[0].node;		/*Inicializador*/
+{/*	DeclaratorA Initializer
+*/
+					yyval.nodos[0]=(CodeDOM::XplNode*)new CodeDOM::string(yyvsp[-1].str);		/*Identificador
+*/
+					yyval.nodos[1]=yyvsp[0].node;		/*Inicializador
+*/
 					yyval.nodos[2]=NULL;
+
 					RET_POS=GET_PARSER_POS[-1];
+
 				}
 #line 7156 "layerd_dpp_parser_beta_tab.c"
 break;
 case 202:
   if (!yytrial)
 #line 1902 "layerd_dpp_parser_beta.y"
-{/*	Declarator*/
+{/*	Declarator
+*/
 					CodeDOM::XplDeclaratorlist*l=new CodeDOM::XplDeclaratorlist();
+
 					CodeDOM::XplDeclarator* d=CodeDOM::XplDeclaratorlist::new_d();
+
 					if(yyvsp[0].nodos[0]!=NULL){
+
 						d->set_name(*(CodeDOM::string*)yyvsp[0].nodos[0]);
+
 						delete (CodeDOM::string*)yyvsp[0].nodos[0];
+
 					}
+
 					if(yyvsp[0].nodos[1]!=NULL)d->set_i((CodeDOM::XplInitializerList*)yyvsp[0].nodos[1]);
+
 					l->Childs()->InsertAtEnd(d);
+
 					yyval.node=l;
+
 					SET_SOURCE_DATA_S(d,0);
+
 				}
 #line 7173 "layerd_dpp_parser_beta_tab.c"
 break;
 case 203:
   if (!yytrial)
 #line 1915 "layerd_dpp_parser_beta.y"
-{/*	Declarator_List COMA Declarator*/
+{/*	Declarator_List COMA Declarator
+*/
 					CodeDOM::XplDeclaratorlist*l=(CodeDOM::XplDeclaratorlist*)yyvsp[-2].node;
+
 					CodeDOM::XplDeclarator* d=CodeDOM::XplDeclaratorlist::new_d();
+
 					if(yyvsp[0].nodos[0]!=NULL){
+
 						d->set_name(*(CodeDOM::string*)yyvsp[0].nodos[0]);
+
 						delete (CodeDOM::string*)yyvsp[0].nodos[0];
+
 					}
+
 					if(yyvsp[0].nodos[1]!=NULL)d->set_i((CodeDOM::XplInitializerList*)yyvsp[0].nodos[1]);
+
 					l->Childs()->InsertAtEnd(d);
+
 					yyval.node=l;
+
 					SET_SOURCE_DATA_S(d,0);
+
 				}
 #line 7190 "layerd_dpp_parser_beta_tab.c"
 break;
 case 204:
   if (!yytrial)
 #line 1935 "layerd_dpp_parser_beta.y"
-{/*	OPEN_LLAVE Block_Statements CLOSE_LLAVE*/
+{/*	OPEN_LLAVE Block_Statements CLOSE_LLAVE
+*/
 					yyval.node=yyvsp[-1].node;
+
 					SET_SOURCE_DATA(((CodeDOM::XplFunctionBody*)yyvsp[-1].node),-2,0);
+
 				}
 #line 7199 "layerd_dpp_parser_beta_tab.c"
 break;
 case 205:
   if (!yytrial)
 #line 1940 "layerd_dpp_parser_beta.y"
-{/*	OPEN_LLAVE CLOSE_LLAVE*/
+{/*	OPEN_LLAVE CLOSE_LLAVE
+*/
 					CodeDOM::XplFunctionBody *fb=new CodeDOM::XplFunctionBody();
+
 					yyval.node=fb;
+
 					SET_SOURCE_DATA(fb,-1,0);
+
 				}
 #line 7209 "layerd_dpp_parser_beta_tab.c"
 break;
 case 206:
   if (!yytrial)
 #line 1956 "layerd_dpp_parser_beta.y"
-{/*	PC_GET Block*/
+{/*	PC_GET Block
+*/
 					yyvsp[0].node->set_ElementName(L"Get");
+
 					yyval.node=yyvsp[0].node;
+
 				}
 #line 7218 "layerd_dpp_parser_beta_tab.c"
 break;
 case 207:
   if (!yytrial)
 #line 1961 "layerd_dpp_parser_beta.y"
-{/*	PC_GET PUNTO_COMA*/
+{/*	PC_GET PUNTO_COMA
+*/
 					CodeDOM::XplFunctionBody* bk=new CodeDOM::XplFunctionBody();
+
 					bk->set_ElementName(L"Get");
+
 					bk->set_lddata(L"%abstract%");
+
 					yyval.node=bk;
+
 					SET_SOURCE_DATA(bk,-1,0);
+
 				}
 #line 7230 "layerd_dpp_parser_beta_tab.c"
 break;
 case 208:
   if (!yytrial)
 #line 1972 "layerd_dpp_parser_beta.y"
-{/*	PC_PUT Block*/
+{/*	PC_PUT Block
+*/
 					yyvsp[0].node->set_ElementName(L"Set");
+
 					yyval.node=yyvsp[0].node;
+
 				}
 #line 7239 "layerd_dpp_parser_beta_tab.c"
 break;
 case 209:
   if (!yytrial)
 #line 1977 "layerd_dpp_parser_beta.y"
-{/*	PC_PUT PUNTO_COMA*/
+{/*	PC_PUT PUNTO_COMA
+*/
 					CodeDOM::XplFunctionBody* bk=new CodeDOM::XplFunctionBody();
+
 					bk->set_ElementName(L"Set");
+
 					bk->set_lddata(L"%abstract%");
+
 					yyval.node=bk;
+
 					SET_SOURCE_DATA(bk,-1,0);
+
 				}
 #line 7251 "layerd_dpp_parser_beta_tab.c"
 break;
 case 210:
   if (!yytrial)
 #line 1988 "layerd_dpp_parser_beta.y"
-{/*	Block_Statement*/
-					/*ASSING_COMMENT($1.node);*/
+{/*	Block_Statement
+*/
+					/*ASSING_COMMENT($1.node);
+*/
 					CodeDOM::XplFunctionBody *fb=new CodeDOM::XplFunctionBody();
+
 					fb->Childs()->InsertAtEnd(yyvsp[0].node);
+
 					if(yyvsp[0].node->get_ElementName()==L"label"){
+
 						fb->Childs()->InsertAtEnd(yyvsp[0].nodos[1]);
+
 						yyvsp[0].nodos[1]=NULL;
+
 					}
+
 					yyval.node=fb;
+
 				}
 #line 7266 "layerd_dpp_parser_beta_tab.c"
 break;
 case 211:
   if (!yytrial)
 #line 1999 "layerd_dpp_parser_beta.y"
-{/*	Block_Statements Block_Statement*/
+{/*	Block_Statements Block_Statement
+*/
 					CodeDOM::XplFunctionBody *fb=(CodeDOM::XplFunctionBody*)yyvsp[-1].node;
+
 					if(fb==NULL)fb=new CodeDOM::XplFunctionBody();
-					/*ASSING_COMMENT($2.node);*/
+
+					/*ASSING_COMMENT($2.node);
+*/
 					fb->Childs()->InsertAtEnd(yyvsp[0].node);
+
 					if(yyvsp[0].node->get_ElementName()==L"label"){
+
 						fb->Childs()->InsertAtEnd(yyvsp[0].nodos[1]);
+
 						yyvsp[0].nodos[1]=NULL;
+
 					}
+
 					yyval.node=fb;
+
 				}
 #line 7282 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -7106,7 +8193,9 @@ case 212:
   if (!yytrial)
 #line 2014 "layerd_dpp_parser_beta.y"
 {
+
 					yyval=yyvsp[0];
+
 				}
 #line 7290 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -7114,8 +8203,11 @@ case 213:
   if (!yytrial)
 #line 2018 "layerd_dpp_parser_beta.y"
 {
+
 					((CodeDOM::XplDocumentation*)yyvsp[-1].node)->set_short( ((CodeDOM::XplDocumentation*)yyvsp[-1].node)->get_short() + ((CodeDOM::XplDocumentation*)yyvsp[0].node)->get_short() );
+
 					yyval=yyvsp[-1];
+
 				}
 #line 7299 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -7140,78 +8232,108 @@ break;
 case 216:
   if (!yytrial)
 #line 2031 "layerd_dpp_parser_beta.y"
-{/*	OPEN_LLAVE WC_Block_Statements CLOSE_LLAVE*/
+{/*	OPEN_LLAVE WC_Block_Statements CLOSE_LLAVE
+*/
 					yyval.node=yyvsp[-1].node;
+
 				}
 #line 7325 "layerd_dpp_parser_beta_tab.c"
 break;
 case 217:
   if (!yytrial)
 #line 2039 "layerd_dpp_parser_beta.y"
-{/*	OPEN_LLAVE CLOSE_LLAVE*/
+{/*	OPEN_LLAVE CLOSE_LLAVE
+*/
 					CodeDOM::XplFunctionBody *fb=new CodeDOM::XplFunctionBody();
+
 					yyval.node=fb;
+
 					SET_SOURCE_DATA(fb,-1,0);
+
 				}
 #line 7335 "layerd_dpp_parser_beta_tab.c"
 break;
 case 218:
   if (!yytrial)
 #line 2048 "layerd_dpp_parser_beta.y"
-{/*	OPEN_LLAVE WC_Block_Statements CLOSE_LLAVE*/
+{/*	OPEN_LLAVE WC_Block_Statements CLOSE_LLAVE
+*/
 					yyval.node=yyvsp[-2].node;
+
 				}
 #line 7343 "layerd_dpp_parser_beta_tab.c"
 break;
 case 219:
   if (!yytrial)
 #line 2056 "layerd_dpp_parser_beta.y"
-{/*	WC_ClassInterfaceUnion_Decl*/
+{/*	WC_ClassInterfaceUnion_Decl
+*/
 					yyvsp[0].node->set_doc( ((CodeDOM::XplDocumentation*)yyvsp[-1].node)->get_short() );
+
 					yyvsp[0].node->set_ElementName(L"class");
+
 					yyval.node=yyvsp[0].node;
+
 				}
 #line 7353 "layerd_dpp_parser_beta_tab.c"
 break;
 case 220:
   if (!yytrial)
 #line 2062 "layerd_dpp_parser_beta.y"
-{/*	WC_Block_Statements*/
+{/*	WC_Block_Statements
+*/
 					yyvsp[0].node->set_ElementName(L"bk");
+
 					yyval.node=yyvsp[0].node;
+
 				}
 #line 7362 "layerd_dpp_parser_beta_tab.c"
 break;
 case 221:
   if (!yytrial)
 #line 2067 "layerd_dpp_parser_beta.y"
-{/*	WC_ClassInterfaceUnion_Decl*/
+{/*	WC_ClassInterfaceUnion_Decl
+*/
 					yyvsp[0].node->set_ElementName(L"class");
+
 					yyval.node=yyvsp[0].node;
+
 				}
 #line 7371 "layerd_dpp_parser_beta_tab.c"
 break;
 case 222:
   if (!yytrial)
 #line 2072 "layerd_dpp_parser_beta.y"
-{/*	Compilation_Unit*/
+{/*	Compilation_Unit
+*/
 					yyvsp[0].node->set_ElementName(L"progunit");
+
 					yyval.node=yyvsp[0].node;
+
 				}
 #line 7380 "layerd_dpp_parser_beta_tab.c"
 break;
 case 223:
   if (!yytrial)
 #line 2080 "layerd_dpp_parser_beta.y"
-{/*	Class_Decl_Block*/
+{/*	Class_Decl_Block
+*/
 					CodeDOM::XplClassMembersList* list = CodeDOM::XplWriteCodeBody::new_classmembers();
 
+
+
 					CodeDOM::XplNodeList* members=(CodeDOM::XplNodeList*)yyvsp[0].nodos[0];
+
 					SetClassMembers(list->Childs(), members, false);
-					/*for(CodeDOM::XplNode* m2=members->FirstNode();m2!=NULL;m2=members->NextNode()){*/
-					/*	list->Childs()->InsertAtEnd(m2);*/
-					/*}*/
+
+					/*for(CodeDOM::XplNode* m2=members->FirstNode();m2!=NULL;m2=members->NextNode()){
+*/
+					/*	list->Childs()->InsertAtEnd(m2);
+*/
+					/*}
+*/
 					yyval.node=list;
+
 				}
 #line 7395 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -7221,43 +8343,68 @@ case 224:
 #line 7400 "layerd_dpp_parser_beta_tab.c"
   if (!yytrial)
 #line 2094 "layerd_dpp_parser_beta.y"
-{/*	Local_Variable_Declaration PUNTO_COMA*/
+{/*	Local_Variable_Declaration PUNTO_COMA
+*/
 					yyvsp[-1].node->set_ElementName(L"Decls");
+
 					yyval.node=yyvsp[-1].node;
+
 				}
 #line 7407 "layerd_dpp_parser_beta_tab.c"
 break;
 case 225:
   if (!yytrial)
 #line 2102 "layerd_dpp_parser_beta.y"
-{/*	Type_Declarator Declarator_List*/
+{/*	Type_Declarator Declarator_List
+*/
 					CodeDOM::XplDeclaratorlist* dl=(CodeDOM::XplDeclaratorlist*)yyvsp[0].node;
+
 					CodeDOM::XplDeclarator*d =NULL;
+
 					CodeDOM::XplType* t=NULL;
+
 					for(d=(CodeDOM::XplDeclarator*)dl->Childs()->FirstNode();d!=NULL;d=(CodeDOM::XplDeclarator*)dl->Childs()->NextNode()){
+
 						t=(CodeDOM::XplType*)yyvsp[-1].nodos[0];
+
 						if(t==NULL){
+
 							SINTAX_ERROR("invalid declaration.");
+
 							t = new CodeDOM::XplType();
+
 						}
+
 						t=(CodeDOM::XplType*)t->Clone();
+
 						t->set_ElementName(DT("type"));
+
 						d->set_type(t);
-						SetLocalVarsModifiers(d,(unsigned)yyvsp[-1].nodos[1]);
+
+						SetLocalVarsModifiers(d,(unsigned long)yyvsp[-1].nodos[1]);
+
 					}
-					/*/Borro el tipo temporal en el nodo 1*/
+
+					/*/Borro el tipo temporal en el nodo 1
+*/
 					delete yyvsp[-1].nodos[0];
+
 					yyval.node=dl;
+
 				}
 #line 7431 "layerd_dpp_parser_beta_tab.c"
 break;
 case 226:
   if (!yytrial)
 #line 2125 "layerd_dpp_parser_beta.y"
-{/*	Block*/
+{/*	Block
+*/
 					tempNode=yyvsp[0].node;
+
 					tempNode->set_ElementName(L"bk");
+
 					yyval.node=tempNode;
+
 				}
 #line 7441 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -7366,64 +8513,98 @@ break;
 case 244:
   if (!yytrial)
 #line 2148 "layerd_dpp_parser_beta.y"
-{/*	error PUNTO_COMA*/
+{/*	error PUNTO_COMA
+*/
 					SINTAX_ERROR("invalid instruction before semicolon (;).");
+
 					CodeDOM::XplExpression *temp2=CodeDOM::XplFunctionBody::new_e();
+
 					temp2->set_texpression(CodeDOM::XplExpression::new_empty());
+
 					yyval.node=temp2;
+
 				}
 #line 7554 "layerd_dpp_parser_beta_tab.c"
 break;
 case 245:
   if (!yytrial)
 #line 2158 "layerd_dpp_parser_beta.y"
-{/*	PC_SET PC_ERROR PC_HANDLER IDENTIFICADOR*/
+{/*	PC_SET PC_ERROR PC_HANDLER IDENTIFICADOR
+*/
 					CodeDOM::string s1=yyvsp[-3].str,s2=yyvsp[-2].str;
+
 					if(s1!=L"error" || s2!=L"handler"){
+
 						SINTAX_ERROR("'set error' statement invalid. Use: set error handler LABEL ; ");
+
 					}
+
 					CodeDOM::XplSetonerror* se=CodeDOM::XplFunctionBody::new_setonerror();
+
 					se->set_label(yyvsp[-1].str);
+
 					yyval.node=se;
+
 					SET_SOURCE_DATA(se,-4,0);
+
 				}
 #line 7569 "layerd_dpp_parser_beta_tab.c"
 break;
 case 246:
   if (!yytrial)
 #line 2169 "layerd_dpp_parser_beta.y"
-{/*	PC_SET	error PUNTO_COMA*/
+{/*	PC_SET	error PUNTO_COMA
+*/
 					SINTAX_ERROR("'set error' statement invalid. Use: set error handler LABEL ; ");
+
 					CodeDOM::XplSetonerror* se=CodeDOM::XplFunctionBody::new_setonerror();
+
                     /*YYVALID;*/
+
                     yyps->errflag=1;
+
 					yyval.node=se;
+
 				}
 #line 7581 "layerd_dpp_parser_beta_tab.c"
 break;
 case 247:
   if (!yytrial)
 #line 2180 "layerd_dpp_parser_beta.y"
-{/*	PC_RESUME PUNTO_COMA*/
+{/*	PC_RESUME PUNTO_COMA
+*/
 					CodeDOM::XplJump* j=CodeDOM::XplFunctionBody::new_jump();
+
 					j->set_type(CodeDOM::ZOEJUMPTYPE_ENUM_RESUME);
+
 					yyval.node=j;
+
 					SET_SOURCE_DATA(j,-1,0);
+
 				}
 #line 7592 "layerd_dpp_parser_beta_tab.c"
 break;
 case 248:
   if (!yytrial)
 #line 2187 "layerd_dpp_parser_beta.y"
-{/*	PC_RESUME PC_NEXT PUNTO_COMA*/
+{/*	PC_RESUME PC_NEXT PUNTO_COMA
+*/
 					CodeDOM::string s1=yyvsp[-1].str;
+
 					if(s1!=L"next"){
+
 						SINTAX_ERROR("'resume' statement invalid. Use 'resume' o 'resume next'.");
+
 					}
+
 					CodeDOM::XplJump* j=CodeDOM::XplFunctionBody::new_jump();
+
 					j->set_type(CodeDOM::ZOEJUMPTYPE_ENUM_RESUMENEXT);
+
 					yyval.node=j;
+
 					SET_SOURCE_DATA(j,-2,0);
+
 				}
 #line 7607 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -7454,642 +8635,984 @@ break;
 case 253:
   if (!yytrial)
 #line 2208 "layerd_dpp_parser_beta.y"
-{/*	Expression PUNTO_COMA*/
+{/*	Expression PUNTO_COMA
+*/
 					CodeDOM::XplExpression *temp2=new CodeDOM::XplExpression(yyvsp[-1].node);
+
 					temp2->set_ElementName(L"e");
+
 					yyval.node=temp2;
+
 					SET_SOURCE_DATA_S(temp2,0);
+
 				}
 #line 7642 "layerd_dpp_parser_beta_tab.c"
 break;
 case 254:
   if (!yytrial)
 #line 2218 "layerd_dpp_parser_beta.y"
-{/*	PC_IF OPEN_PARENTESIS Expression CLOSE_PARENTESIS Statement*/
+{/*	PC_IF OPEN_PARENTESIS Expression CLOSE_PARENTESIS Statement
+*/
 					CodeDOM::XplIfStatement* pif=CodeDOM::XplFunctionBody::new_if();
+
 					pif->set_boolean(new CodeDOM::XplExpression(yyvsp[-2].node));
+
 					CodeDOM::XplFunctionBody*ifbk=NULL;
+
 					SET_SOURCE_DATA_S(pif,-4);
+
 					if(yyvsp[0].node->get_TypeName()==CodeDOM::CODEDOMTYPES_ZOEFUNCTIONBODY){
 
+
+
 						ifbk=(CodeDOM::XplFunctionBody*)yyvsp[0].node;
-						/*ifbk->set_ElementName(L"ifbk");*/
+
+						/*ifbk->set_ElementName(L"ifbk");
+*/
 					}
+
 					else{
+
 						ifbk=CodeDOM::XplIfStatement::new_ifbk();
+
 						ifbk->Childs()->InsertAtEnd(yyvsp[0].node);
+
 					}
+
 					pif->set_ifbk(ifbk);
 
+
+
 					yyval.node=pif;
+
 				}
 #line 7665 "layerd_dpp_parser_beta_tab.c"
 break;
 case 255:
   if (!yytrial)
 #line 2237 "layerd_dpp_parser_beta.y"
-{/*	PC_IF OPEN_PARENTESIS Expression CLOSE_PARENTESIS Statement_NoShort_If PC_ELSE Statement*/
+{/*	PC_IF OPEN_PARENTESIS Expression CLOSE_PARENTESIS Statement_NoShort_If PC_ELSE Statement
+*/
 					CodeDOM::XplIfStatement* pif=CodeDOM::XplFunctionBody::new_if();
+
 					pif->set_boolean(new CodeDOM::XplExpression(yyvsp[-4].node));
+
 					CodeDOM::XplFunctionBody*ifbk=NULL;
+
 					CodeDOM::XplNode*node=yyvsp[-2].node;
+
 					SET_SOURCE_DATA_S(pif,-6);
+
 					if(yyvsp[-2].node!=NULL){
+
 						if(yyvsp[-2].node->get_TypeName()==CodeDOM::CODEDOMTYPES_ZOEFUNCTIONBODY){
+
 							ifbk=(CodeDOM::XplFunctionBody*)yyvsp[-2].node;
-							/*ifbk->set_ElementName(L"ifbk");*/
+
+							/*ifbk->set_ElementName(L"ifbk");
+*/
 						}
+
 						else{
+
 							ifbk=CodeDOM::XplIfStatement::new_ifbk();
+
 							ifbk->Childs()->InsertAtEnd(yyvsp[-2].node);
+
 						}
+
 					}
+
 					else
+
 						WARNING_MESSAGE("Error; invalid if statement.");
+
 					pif->set_ifbk(ifbk);
 
+
+
 					if(yyvsp[0].node!=NULL){
+
 						if(yyvsp[0].node->get_TypeName()==CodeDOM::CODEDOMTYPES_ZOEFUNCTIONBODY){
+
 							ifbk=(CodeDOM::XplFunctionBody*)yyvsp[0].node;
-							/*ifbk->set_ElementName(L"else");*/
+
+							/*ifbk->set_ElementName(L"else");
+*/
 						}
+
 						else{
+
 							ifbk=CodeDOM::XplIfStatement::new_else();
+
 							ifbk->Childs()->InsertAtEnd(yyvsp[0].node);
+
 						}
+
 					}
+
 					else
+
 						WARNING_MESSAGE("Error; invalid else statement.");
+
 					SET_SOURCE_DATA_S(ifbk,-1);
+
 					pif->set_else(ifbk);
+
 					yyval.node=pif;
+
 				}
 #line 7706 "layerd_dpp_parser_beta_tab.c"
 break;
 case 256:
   if (!yytrial)
 #line 2277 "layerd_dpp_parser_beta.y"
-{/*	PC_WHILE OPEN_PARENTESIS Expression CLOSE_PARENTESIS Statement*/
+{/*	PC_WHILE OPEN_PARENTESIS Expression CLOSE_PARENTESIS Statement
+*/
 					CodeDOM::XplDowhileStatement* dw=CodeDOM::XplFunctionBody::new_while();
+
 					dw->set_boolean(new CodeDOM::XplExpression(yyvsp[-2].node));
+
 					CodeDOM::XplFunctionBody*dbk=NULL;
+
 					SET_SOURCE_DATA_S(dw,-4);
 
+
+
 					if(yyvsp[0].node->get_TypeName()==CodeDOM::CODEDOMTYPES_ZOEFUNCTIONBODY){
+
 						dbk=(CodeDOM::XplFunctionBody*)yyvsp[0].node;
+
 					}
+
 					else{
+
 						dbk=CodeDOM::XplDowhileStatement::new_dobk();
+
 						dbk->Childs()->InsertAtEnd(yyvsp[0].node);
+
 					}
+
 					dw->set_dobk(dbk);
 
+
+
 					yyval.node=dw;
+
 				}
 #line 7728 "layerd_dpp_parser_beta_tab.c"
 break;
 case 257:
   if (!yytrial)
 #line 2299 "layerd_dpp_parser_beta.y"
-{/*	PC_DO Statement PC_WHILE OPEN_PARENTESIS Expression CLOSE_PARENTESIS PUNTO_COMA*/
+{/*	PC_DO Statement PC_WHILE OPEN_PARENTESIS Expression CLOSE_PARENTESIS PUNTO_COMA
+*/
 					CodeDOM::XplDowhileStatement* dw=CodeDOM::XplFunctionBody::new_do();
+
 					dw->set_boolean(new CodeDOM::XplExpression(yyvsp[-2].node));
+
 					CodeDOM::XplFunctionBody*dbk=NULL;
+
 					SET_SOURCE_DATA_S(dw,-6);
 
+
+
 					if(yyvsp[-5].node->get_TypeName()==CodeDOM::CODEDOMTYPES_ZOEFUNCTIONBODY){
+
 						dbk=(CodeDOM::XplFunctionBody*)yyvsp[-5].node;
+
 					}
+
 					else{
+
 						dbk=CodeDOM::XplDowhileStatement::new_dobk();
+
 						dbk->Childs()->InsertAtEnd(yyvsp[-5].node);
+
 					}
+
 					dw->set_dobk(dbk);
 
+
+
 					yyval.node=dw;
+
 				}
 #line 7750 "layerd_dpp_parser_beta_tab.c"
 break;
 case 258:
   if (!yytrial)
 #line 2320 "layerd_dpp_parser_beta.y"
-{/*	PC_FOR OPEN_PARENTESIS For_Init PUNTO_COMA Expression PUNTO_COMA For_Update CLOSE_PARENTESIS Statement*/
+{/*	PC_FOR OPEN_PARENTESIS For_Init PUNTO_COMA Expression PUNTO_COMA For_Update CLOSE_PARENTESIS Statement
+*/
 					CodeDOM::XplForStatement*
+
 					fs=CreateFor(yyvsp[-6].node/*Init*/,yyvsp[-4].node/*Cond*/,yyvsp[-2].node/*Upd*/,yyvsp[0].node/*Stat*/);
+
 					yyval.node=fs;
+
 					SET_SOURCE_DATA(fs,-8,-1);
+
 				}
 #line 7761 "layerd_dpp_parser_beta_tab.c"
 break;
 case 259:
   if (!yytrial)
 #line 2327 "layerd_dpp_parser_beta.y"
-{/*	PC_FOR OPEN_PARENTESIS For_Init PC_IN Expression CLOSE_PARENTESIS Statement*/
+{/*	PC_FOR OPEN_PARENTESIS For_Init PC_IN Expression CLOSE_PARENTESIS Statement
+*/
+
 
 					CodeDOM::XplNode* foreachexp = CodeDOM::XplExpression::new_n();
+
 					foreachexp->set_Value(L"_FOR_EACH_");
+
 					CodeDOM::XplExpressionlist* fexp = CodeDOM::XplForStatement::new_repeat();
+
 					CodeDOM::XplExpression* uexp = CodeDOM::XplExpressionlist::new_e();
+
 					uexp->set_texpression(foreachexp);
+
 					fexp->Childs()->InsertAtEnd(uexp);
 
+
+
 					CodeDOM::XplForStatement*
+
 					fs=CreateFor(yyvsp[-4].node/*Init*/,yyvsp[-2].node/*Cond*/, fexp/*Upd*/,yyvsp[0].node/*Stat*/);
+
 					yyval.node=fs;
+
 					SET_SOURCE_DATA(fs,-6,-1);
+
 				}
 #line 7780 "layerd_dpp_parser_beta_tab.c"
 break;
 case 260:
   if (!yytrial)
 #line 2342 "layerd_dpp_parser_beta.y"
-{/*	PC_FOR OPEN_PARENTESIS PUNTO_COMA Expression PUNTO_COMA For_Update CLOSE_PARENTESIS Statement*/
+{/*	PC_FOR OPEN_PARENTESIS PUNTO_COMA Expression PUNTO_COMA For_Update CLOSE_PARENTESIS Statement
+*/
 					CodeDOM::XplForStatement*
+
 					fs=CreateFor(NULL/*Init*/,yyvsp[-4].node/*Cond*/,yyvsp[-2].node/*Upd*/,yyvsp[0].node/*Stat*/);
+
 					yyval.node=fs;
+
 					SET_SOURCE_DATA(fs,-7,-1);
+
 				}
 #line 7791 "layerd_dpp_parser_beta_tab.c"
 break;
 case 261:
   if (!yytrial)
 #line 2349 "layerd_dpp_parser_beta.y"
-{/*	PC_FOR OPEN_PARENTESIS For_Init PUNTO_COMA PUNTO_COMA For_Update CLOSE_PARENTESIS Statement*/
+{/*	PC_FOR OPEN_PARENTESIS For_Init PUNTO_COMA PUNTO_COMA For_Update CLOSE_PARENTESIS Statement
+*/
 					CodeDOM::XplForStatement*
+
 					fs=CreateFor(yyvsp[-5].node/*Init*/,NULL/*Cond*/,yyvsp[-2].node/*Upd*/,yyvsp[0].node/*Stat*/);
+
 					yyval.node=fs;
+
 					SET_SOURCE_DATA(fs,-7,-1);
+
 				}
 #line 7802 "layerd_dpp_parser_beta_tab.c"
 break;
 case 262:
   if (!yytrial)
 #line 2356 "layerd_dpp_parser_beta.y"
-{/*	PC_FOR OPEN_PARENTESIS For_Init PUNTO_COMA Expression PUNTO_COMA CLOSE_PARENTESIS Statement*/
+{/*	PC_FOR OPEN_PARENTESIS For_Init PUNTO_COMA Expression PUNTO_COMA CLOSE_PARENTESIS Statement
+*/
 					CodeDOM::XplForStatement*
+
 					fs=CreateFor(yyvsp[-5].node/*Init*/,yyvsp[-3].node/*Cond*/,NULL/*Upd*/,yyvsp[0].node/*Stat*/);
+
 					yyval.node=fs;
+
 					SET_SOURCE_DATA(fs,-7,-1);
+
 				}
 #line 7813 "layerd_dpp_parser_beta_tab.c"
 break;
 case 263:
   if (!yytrial)
 #line 2363 "layerd_dpp_parser_beta.y"
-{/*	PC_FOR OPEN_PARENTESIS PUNTO_COMA Expression PUNTO_COMA CLOSE_PARENTESIS Statement*/
+{/*	PC_FOR OPEN_PARENTESIS PUNTO_COMA Expression PUNTO_COMA CLOSE_PARENTESIS Statement
+*/
 					CodeDOM::XplForStatement*
+
 					fs=CreateFor(NULL/*Init*/,yyvsp[-3].node/*Cond*/,NULL/*Upd*/,yyvsp[0].node/*Stat*/);
+
 					yyval.node=fs;
+
 					SET_SOURCE_DATA(fs,-6,-1);
+
 				}
 #line 7824 "layerd_dpp_parser_beta_tab.c"
 break;
 case 264:
   if (!yytrial)
 #line 2370 "layerd_dpp_parser_beta.y"
-{/*	PC_FOR OPEN_PARENTESIS For_Init PUNTO_COMA PUNTO_COMA CLOSE_PARENTESIS Statement*/
+{/*	PC_FOR OPEN_PARENTESIS For_Init PUNTO_COMA PUNTO_COMA CLOSE_PARENTESIS Statement
+*/
 					CodeDOM::XplForStatement*
+
 					fs=CreateFor(yyvsp[-4].node/*Init*/,NULL/*Cond*/,NULL/*Upd*/,yyvsp[0].node/*Stat*/);
+
 					yyval.node=fs;
+
 					SET_SOURCE_DATA(fs,-6,-1);
+
 				}
 #line 7835 "layerd_dpp_parser_beta_tab.c"
 break;
 case 265:
   if (!yytrial)
 #line 2377 "layerd_dpp_parser_beta.y"
-{/*	PC_FOR OPEN_PARENTESIS PUNTO_COMA PUNTO_COMA For_Update CLOSE_PARENTESIS Statement*/
+{/*	PC_FOR OPEN_PARENTESIS PUNTO_COMA PUNTO_COMA For_Update CLOSE_PARENTESIS Statement
+*/
 					CodeDOM::XplForStatement*
+
 					fs=CreateFor(NULL/*Init*/,NULL/*Cond*/,yyvsp[-2].node/*Upd*/,yyvsp[0].node/*Stat*/);
+
 					yyval.node=fs;
+
 					SET_SOURCE_DATA(fs,-6,-1);
+
 				}
 #line 7846 "layerd_dpp_parser_beta_tab.c"
 break;
 case 266:
   if (!yytrial)
 #line 2384 "layerd_dpp_parser_beta.y"
-{/*	PC_FOR OPEN_PARENTESIS PUNTO_COMA PUNTO_COMA CLOSE_PARENTESIS Statement*/
+{/*	PC_FOR OPEN_PARENTESIS PUNTO_COMA PUNTO_COMA CLOSE_PARENTESIS Statement
+*/
 					CodeDOM::XplForStatement*
+
 					fs=CreateFor(NULL/*Init*/,NULL/*Cond*/,NULL/*Upd*/,yyvsp[0].node/*Stat*/);
+
 					yyval.node=fs;
+
 					SET_SOURCE_DATA(fs,-5,-1);
+
 				}
 #line 7857 "layerd_dpp_parser_beta_tab.c"
 break;
 case 267:
   if (!yytrial)
 #line 2394 "layerd_dpp_parser_beta.y"
-{/*	Expression_List*/
+{/*	Expression_List
+*/
 					CodeDOM::XplForinit*f=CodeDOM::XplForStatement::new_init();
+
 					yyvsp[0].node->set_ElementName(L"el");
+
 					f->set_tforinit(yyvsp[0].node);
+
 					yyval.node=f;
+
 				}
 #line 7868 "layerd_dpp_parser_beta_tab.c"
 break;
 case 268:
   if (!yytrial)
 #line 2401 "layerd_dpp_parser_beta.y"
-{/*	Expression_List*/
+{/*	Expression_List
+*/
 					CodeDOM::XplForinit*f=CodeDOM::XplForStatement::new_init();
+
 					yyvsp[0].node->set_ElementName(L"dl");
+
 					f->set_tforinit(yyvsp[0].node);
+
 					yyval.node=f;
+
 				}
 #line 7879 "layerd_dpp_parser_beta_tab.c"
 break;
 case 269:
   if (!yytrial)
 #line 2411 "layerd_dpp_parser_beta.y"
-{/*	Expression_List*/
+{/*	Expression_List
+*/
 					yyval.node=yyvsp[0].node;
+
 				}
 #line 7887 "layerd_dpp_parser_beta_tab.c"
 break;
 case 270:
   if (!yytrial)
 #line 2418 "layerd_dpp_parser_beta.y"
-{/*	PUNTO_COMA*/
+{/*	PUNTO_COMA
+*/
 					CodeDOM::XplExpression* e=CodeDOM::XplFunctionBody::new_e();
+
 					e->set_texpression(CodeDOM::XplExpression::new_empty());
+
 					yyval.node=e;
+
 					SET_SOURCE_DATA_S(e,0);
+
 				}
 #line 7898 "layerd_dpp_parser_beta_tab.c"
 break;
 case 271:
   if (!yytrial)
 #line 2428 "layerd_dpp_parser_beta.y"
-{/*	IDENTIFICADOR OP_DOSPUNTOS Statement*/
+{/*	IDENTIFICADOR OP_DOSPUNTOS Statement
+*/
 					tempNode=CodeDOM::XplFunctionBody::new_label();
+
 					tempNode->set_Value(yyvsp[-2].str);
+
 					yyval.node=tempNode;
+
 					yyval.nodos[1]=yyvsp[0].node;
+
 				}
 #line 7909 "layerd_dpp_parser_beta_tab.c"
 break;
 case 272:
   if (!yytrial)
 #line 2439 "layerd_dpp_parser_beta.y"
-{/*	PC_SWITCH OPEN_PARENTESIS Expression CLOSE_PARENTESIS Switch_Block*/
+{/*	PC_SWITCH OPEN_PARENTESIS Expression CLOSE_PARENTESIS Switch_Block
+*/
 					CodeDOM::XplExpression*e=CodeDOM::XplSwitchStatement::new_e();
+
 					e->set_texpression((CodeDOM::XplExpression*)yyvsp[-2].node);
+
 					CodeDOM::XplSwitchStatement*s=new CodeDOM::XplSwitchStatement(e,(CodeDOM::XplNodeList*)yyvsp[0].node);
+
 					s->set_ElementName(L"switch");
+
 					yyval.node=s;
+
 					SET_SOURCE_DATA_S(s,-4);
+
 				}
 #line 7922 "layerd_dpp_parser_beta_tab.c"
 break;
 case 273:
   if (!yytrial)
 #line 2448 "layerd_dpp_parser_beta.y"
-{/*	PC_SWITCH error*/
+{/*	PC_SWITCH error
+*/
 					SINTAX_ERROR("'switch' statement invalid. Use: switch( expression ) { options } ");
+
 					CodeDOM::XplSwitchStatement*s=new CodeDOM::XplSwitchStatement();
+
 					yyval.node=s;
+
 				}
 #line 7932 "layerd_dpp_parser_beta_tab.c"
 break;
 case 274:
   if (!yytrial)
 #line 2457 "layerd_dpp_parser_beta.y"
-{/*	OPEN_LLAVE Switch_Block_Statement_Groups Switch_Labels CLOSE_LLAVE*/
+{/*	OPEN_LLAVE Switch_Block_Statement_Groups Switch_Labels CLOSE_LLAVE
+*/
 					yyval.node=yyvsp[-2].node;
+
 				}
 #line 7940 "layerd_dpp_parser_beta_tab.c"
 break;
 case 275:
   if (!yytrial)
 #line 2461 "layerd_dpp_parser_beta.y"
-{/*	OPEN_LLAVE Switch_Block_Statement_Groups CLOSE_LLAVE*/
+{/*	OPEN_LLAVE Switch_Block_Statement_Groups CLOSE_LLAVE
+*/
 					yyval.node=yyvsp[-1].node;
+
 				}
 #line 7948 "layerd_dpp_parser_beta_tab.c"
 break;
 case 276:
   if (!yytrial)
 #line 2465 "layerd_dpp_parser_beta.y"
-{/*	OPEN_LLAVE Switch_Labels CLOSE_LLAVE*/
+{/*	OPEN_LLAVE Switch_Labels CLOSE_LLAVE
+*/
 					yyval.node=yyvsp[-1].node;
+
 					WARNING_MESSAGE("'switch' statement without effect.");
+
 				}
 #line 7957 "layerd_dpp_parser_beta_tab.c"
 break;
 case 277:
   if (!yytrial)
 #line 2470 "layerd_dpp_parser_beta.y"
-{/*	OPEN_LLAVE CLOSE_LLAVE*/
+{/*	OPEN_LLAVE CLOSE_LLAVE
+*/
 					yyval.node=NULL;
+
 					WARNING_MESSAGE("'switch' statement empty.");
+
 				}
 #line 7966 "layerd_dpp_parser_beta_tab.c"
 break;
 case 278:
   if (!yytrial)
 #line 2478 "layerd_dpp_parser_beta.y"
-{/*	Switch_Block_Statement_Group*/
+{/*	Switch_Block_Statement_Group
+*/
 					yyval.list=yyvsp[0].list;
+
 				}
 #line 7974 "layerd_dpp_parser_beta_tab.c"
 break;
 case 279:
   if (!yytrial)
 #line 2482 "layerd_dpp_parser_beta.y"
-{/*	Switch_Block_Statement_Groups Switch_Block_Statement_Group*/
+{/*	Switch_Block_Statement_Groups Switch_Block_Statement_Group
+*/
 					CodeDOM::XplNodeList*list=yyvsp[-1].list;
+
 					CodeDOM::XplNodeList*list2=yyvsp[0].list;
+
 					if(list!=NULL && list2!=NULL){
+
 						for(CodeDOM::XplNode* node = list2->FirstNode(); node != list2->GetLastNode() ; node = list2->NextNode()){
+
 							list->InsertAtEnd(node);
+
 						}
+
 						list2->Clear();
+
 						delete list2;
+
 					}
+
 					else{
+
 						WARNING_MESSAGE("Internal error on switch statement");
+
 						list = new CodeDOM::XplNodeList();
+
 					}
+
 					yyval.list=list;
+
 				}
 #line 7995 "layerd_dpp_parser_beta_tab.c"
 break;
 case 280:
   if (!yytrial)
 #line 2502 "layerd_dpp_parser_beta.y"
-{/*	Switch_Labels Block_Statements*/
+{/*	Switch_Labels Block_Statements
+*/
 					CodeDOM::XplNodeList*list=yyvsp[-1].list;
+
 					CodeDOM::XplCase*c=NULL;
+
 					if(list!=NULL)
+
 						c=(CodeDOM::XplCase*)list->LastNode();
+
 					else
+
 						c=new CodeDOM::XplCase();
+
 					c->set_bk((CodeDOM::XplFunctionBody*)yyvsp[0].node);
+
 					yyval.list=yyvsp[-1].list;
+
 				}
 #line 8010 "layerd_dpp_parser_beta_tab.c"
 break;
 case 281:
   if (!yytrial)
 #line 2516 "layerd_dpp_parser_beta.y"
-{/*	Switch_Label*/
+{/*	Switch_Label
+*/
 					CodeDOM::XplNodeList*l=NULL;
+
 					l=new CodeDOM::XplNodeList();
+
 					l->InsertAtEnd(yyvsp[0].node);
+
 					yyval.list=l;
+
 				}
 #line 8021 "layerd_dpp_parser_beta_tab.c"
 break;
 case 282:
   if (!yytrial)
 #line 2523 "layerd_dpp_parser_beta.y"
-{/*	Switch_Labels Switch_Label*/
+{/*	Switch_Labels Switch_Label
+*/
 					CodeDOM::XplNodeList*l=yyvsp[-1].list;
-					/*if(l==NULL)l=NEW_ERROR_RESUME_ZOENODELIST;*/
+
+					/*if(l==NULL)l=NEW_ERROR_RESUME_ZOENODELIST;
+*/
 					if(l==NULL)l=new CodeDOM::XplNodeList();
+
 					l->InsertAtEnd(yyvsp[0].node);
+
 					yyval.list=l;
+
 				}
 #line 8033 "layerd_dpp_parser_beta_tab.c"
 break;
 case 283:
   if (!yytrial)
 #line 2534 "layerd_dpp_parser_beta.y"
-{/*	PC_CASE Expression OP_DOSPUNTOS*/
+{/*	PC_CASE Expression OP_DOSPUNTOS
+*/
 					CodeDOM::XplCase*c=CodeDOM::XplSwitchStatement::new_case();
+
 					CodeDOM::XplExpression*e=CodeDOM::XplCase::new_e();
+
 					e->set_texpression((CodeDOM::XplExpression*)yyvsp[-1].node);
+
 					c->set_e(e);
+
 					yyval.node=c;
+
 					SET_SOURCE_DATA_S(c,-2);
+
 				}
 #line 8046 "layerd_dpp_parser_beta_tab.c"
 break;
 case 284:
   if (!yytrial)
 #line 2543 "layerd_dpp_parser_beta.y"
-{/*	PC_DEFAULT OP_DOSPUNTOS*/
+{/*	PC_DEFAULT OP_DOSPUNTOS
+*/
 					CodeDOM::XplCase*c=CodeDOM::XplSwitchStatement::new_case();
+
 					c->set_e((CodeDOM::XplExpression*)CodeDOM::XplFunctionBody::new_e());
+
 					c->get_e()->set_texpression(CodeDOM::XplExpression::new_empty());
+
 					yyval.node=c;
+
 					SET_SOURCE_DATA_S(c,-1);
+
 				}
 #line 8058 "layerd_dpp_parser_beta_tab.c"
 break;
 case 285:
   if (!yytrial)
 #line 2554 "layerd_dpp_parser_beta.y"
-{/*	PC_BREAK Label PUNTO_COMA*/
+{/*	PC_BREAK Label PUNTO_COMA
+*/
 					CodeDOM::XplJump* j=CodeDOM::XplFunctionBody::new_jump();
+
 					j->set_type(CodeDOM::ZOEJUMPTYPE_ENUM_BREAK);
+
 					j->set_label(yyvsp[-1].str);
+
 					yyval.node=j;
+
 					SET_SOURCE_DATA_S(j,-2);
+
 				}
 #line 8070 "layerd_dpp_parser_beta_tab.c"
 break;
 case 286:
   if (!yytrial)
 #line 2562 "layerd_dpp_parser_beta.y"
-{/*	PC_BREAK PUNTO_COMA*/
+{/*	PC_BREAK PUNTO_COMA
+*/
 					CodeDOM::XplJump* j=CodeDOM::XplFunctionBody::new_jump();
+
 					j->set_type(CodeDOM::ZOEJUMPTYPE_ENUM_BREAK);
+
 					yyval.node=j;
+
 					SET_SOURCE_DATA_S(j,-1);
+
 				}
 #line 8081 "layerd_dpp_parser_beta_tab.c"
 break;
 case 287:
   if (!yytrial)
 #line 2572 "layerd_dpp_parser_beta.y"
-{/*	PC_CONTINUE Label PUNTO_COMA*/
+{/*	PC_CONTINUE Label PUNTO_COMA
+*/
 					CodeDOM::XplJump* j=CodeDOM::XplFunctionBody::new_jump();
+
 					j->set_type(CodeDOM::ZOEJUMPTYPE_ENUM_CONTINUE);
+
 					j->set_label(yyvsp[-1].str);
+
 					yyval.node=j;
+
 					SET_SOURCE_DATA_S(j,-2);
+
 				}
 #line 8093 "layerd_dpp_parser_beta_tab.c"
 break;
 case 288:
   if (!yytrial)
 #line 2580 "layerd_dpp_parser_beta.y"
-{/*	PC_CONTINUE PUNTO_COMA*/
+{/*	PC_CONTINUE PUNTO_COMA
+*/
 					CodeDOM::XplJump* j=CodeDOM::XplFunctionBody::new_jump();
+
 					j->set_type(CodeDOM::ZOEJUMPTYPE_ENUM_CONTINUE);
+
 					yyval.node=j;
+
 					SET_SOURCE_DATA_S(j,-1);
+
 				}
 #line 8104 "layerd_dpp_parser_beta_tab.c"
 break;
 case 289:
   if (!yytrial)
 #line 2590 "layerd_dpp_parser_beta.y"
-{/*	PC_RETURN Expression PUNTO_COMA*/
+{/*	PC_RETURN Expression PUNTO_COMA
+*/
 					CodeDOM::XplExpression* re=CodeDOM::XplFunctionBody::new_return();
+
 					re->set_texpression(yyvsp[-1].node);
+
 					yyval.node=re;
+
 					SET_SOURCE_DATA(re,-2,0);
+
 				}
 #line 8115 "layerd_dpp_parser_beta_tab.c"
 break;
 case 290:
   if (!yytrial)
 #line 2597 "layerd_dpp_parser_beta.y"
-{/*	PC_RETURN PUNTO_COMA*/
+{/*	PC_RETURN PUNTO_COMA
+*/
 					CodeDOM::XplExpression* re=CodeDOM::XplFunctionBody::new_return();
+
 					yyval.node=re;
+
 					SET_SOURCE_DATA_S(re,-1);
+
 				}
 #line 8125 "layerd_dpp_parser_beta_tab.c"
 break;
 case 291:
   if (!yytrial)
 #line 2606 "layerd_dpp_parser_beta.y"
-{/*	PC_THROW PUNTO_COMA*/
+{/*	PC_THROW PUNTO_COMA
+*/
 					CodeDOM::XplExpression *t=CodeDOM::XplFunctionBody::new_throw();
+
 					t->set_texpression(CodeDOM::XplExpression::new_empty());
+
 					yyval.node=t;
+
 					SET_SOURCE_DATA(t,-1,0);
+
 				}
 #line 8136 "layerd_dpp_parser_beta_tab.c"
 break;
 case 292:
   if (!yytrial)
 #line 2613 "layerd_dpp_parser_beta.y"
-{/*	PC_THROW Expression PUNTO_COMA*/
+{/*	PC_THROW Expression PUNTO_COMA
+*/
 					CodeDOM::XplExpression *t=CodeDOM::XplFunctionBody::new_throw();
+
 					t->set_texpression((CodeDOM::XplExpression*)yyvsp[-1].node);
+
 					yyval.node=t;
+
 					SET_SOURCE_DATA(t,-2,0);
+
 				}
 #line 8147 "layerd_dpp_parser_beta_tab.c"
 break;
 case 293:
   if (!yytrial)
 #line 2620 "layerd_dpp_parser_beta.y"
-{/*	PC_THROW error*/
+{/*	PC_THROW error
+*/
 					SINTAX_ERROR("'throw' statement invalid. After 'throw' an expression is required.");
+
 					CodeDOM::XplExpression *t=CodeDOM::XplFunctionBody::new_throw();
+
 					t->set_texpression(CodeDOM::XplExpression::new_empty());
+
 					yyval.node=t;
+
 				}
 #line 8158 "layerd_dpp_parser_beta_tab.c"
 break;
 case 294:
   if (!yytrial)
 #line 2630 "layerd_dpp_parser_beta.y"
-{/*	PC_TRY Block Catches*/
+{/*	PC_TRY Block Catches
+*/
 					CodeDOM::XplTryStatement*tr=(CodeDOM::XplTryStatement*)yyvsp[0].node;
+
 					tr->set_trybk((CodeDOM::XplFunctionBody*)yyvsp[-1].node);
+
 					yyval.node=tr;
+
 					SET_SOURCE_DATA_S(tr,-2);
+
 				}
 #line 8169 "layerd_dpp_parser_beta_tab.c"
 break;
 case 295:
   if (!yytrial)
 #line 2637 "layerd_dpp_parser_beta.y"
-{/*	PC_TRY Block Catches Finally*/
+{/*	PC_TRY Block Catches Finally
+*/
 					CodeDOM::XplTryStatement*tr=(CodeDOM::XplTryStatement*)yyvsp[-1].node;
+
 					tr->set_trybk((CodeDOM::XplFunctionBody*)yyvsp[-2].node);
+
 					tr->set_finallybk((CodeDOM::XplFunctionBody*)yyvsp[0].node);
+
 					yyval.node=tr;
+
 					SET_SOURCE_DATA_S(tr,-3);
+
 				}
 #line 8181 "layerd_dpp_parser_beta_tab.c"
 break;
 case 296:
   if (!yytrial)
 #line 2645 "layerd_dpp_parser_beta.y"
-{/*	PC_TRY Block Finally*/
+{/*	PC_TRY Block Finally
+*/
 					CodeDOM::XplTryStatement*tr=CodeDOM::XplFunctionBody::new_try();
+
 					tr->set_trybk((CodeDOM::XplFunctionBody*)yyvsp[-1].node);
+
 					tr->set_finallybk((CodeDOM::XplFunctionBody*)yyvsp[0].node);
+
 					yyval.node=tr;
+
 					SET_SOURCE_DATA_S(tr,-2);
+
 				}
 #line 8193 "layerd_dpp_parser_beta_tab.c"
 break;
 case 297:
   if (!yytrial)
 #line 2653 "layerd_dpp_parser_beta.y"
-{/*	PC_TRY	error*/
+{/*	PC_TRY	error
+*/
 					SINTAX_ERROR("'try' statement invalid.");
+
 					CodeDOM::XplTryStatement*tr=CodeDOM::XplFunctionBody::new_try();
+
 					yyval.node=tr;
+
 				}
 #line 8203 "layerd_dpp_parser_beta_tab.c"
 break;
 case 298:
   if (!yytrial)
 #line 2662 "layerd_dpp_parser_beta.y"
-{/*	Catch_Clause*/
+{/*	Catch_Clause
+*/
 					CodeDOM::XplTryStatement*tr=CodeDOM::XplFunctionBody::new_try();
+
 					tr->get_catchbk()->InsertAtEnd(yyvsp[0].node);
+
 					yyval.node=tr;
+
 				}
 #line 8213 "layerd_dpp_parser_beta_tab.c"
 break;
 case 299:
   if (!yytrial)
 #line 2668 "layerd_dpp_parser_beta.y"
-{/*	Catches Catch_Clause*/
+{/*	Catches Catch_Clause
+*/
 					CodeDOM::XplTryStatement*tr=(CodeDOM::XplTryStatement*)yyvsp[-1].node;
+
 					tr->get_catchbk()->InsertAtEnd(yyvsp[0].node);
+
 					yyval.node=tr;
+
 				}
 #line 8223 "layerd_dpp_parser_beta_tab.c"
 break;
 case 300:
   if (!yytrial)
 #line 2677 "layerd_dpp_parser_beta.y"
-{/*	PC_CATCH OPEN_PARENTESIS For_Init CLOSE_PARENTESIS Block*/
+{/*	PC_CATCH OPEN_PARENTESIS For_Init CLOSE_PARENTESIS Block
+*/
 					CodeDOM::XplCatchinit*ci=CodeDOM::XplCatchStatement::new_init();
+
 					SET_SOURCE_DATA_S(ci,-4);
 
+
+
 					CodeDOM::XplForinit*f=(CodeDOM::XplForinit*)yyvsp[-2].node;
-					/*Primero veo que clase de nodo devuelve For_Init*/
+
+					/*Primero veo que clase de nodo devuelve For_Init
+*/
 					if(f->get_tforinit()->get_TypeName()==CodeDOM::CODEDOMTYPES_ZOEEXPRESSIONLIST){
+
 						ci->set_tcatchinit(((CodeDOM::XplExpressionlist*)f->get_tforinit())->Childs()->FirstNode());
+
 						if(((CodeDOM::XplExpressionlist*)f->get_tforinit())->Childs()->getLenght()>1){
+
 							SINTAX_ERROR("Can't use more than one expression inside a catch block initializer.");
+
 						}
-					}
-					else if(f->get_tforinit()->get_TypeName()==CodeDOM::CODEDOMTYPES_ZOEDECLARATORLIST){
-						ci->set_tcatchinit(((CodeDOM::XplDeclaratorlist*)f->get_tforinit())->Childs()->FirstNode());
-						if(((CodeDOM::XplDeclaratorlist*)f->get_tforinit())->Childs()->getLenght()>1){
-							SINTAX_ERROR("Can't use more than one declaration inside a catch block initializer.");
-						}
-					}
-					else{
-						SINTAX_ERROR("Internal Meta D++ compiler error.");
+
 					}
 
+					else if(f->get_tforinit()->get_TypeName()==CodeDOM::CODEDOMTYPES_ZOEDECLARATORLIST){
+
+						ci->set_tcatchinit(((CodeDOM::XplDeclaratorlist*)f->get_tforinit())->Childs()->FirstNode());
+
+						if(((CodeDOM::XplDeclaratorlist*)f->get_tforinit())->Childs()->getLenght()>1){
+
+							SINTAX_ERROR("Can't use more than one declaration inside a catch block initializer.");
+
+						}
+
+					}
+
+					else{
+
+						SINTAX_ERROR("Internal Meta D++ compiler error.");
+
+					}
+
+
+
 					CodeDOM::XplCatchStatement*c=CodeDOM::XplTryStatement::new_catchbk();
+
 					c->set_init(ci);
+
 					c->set_bk((CodeDOM::XplFunctionBody*)yyvsp[0].node);
+
 					yyval.node=c;
+
 				}
 #line 8255 "layerd_dpp_parser_beta_tab.c"
 break;
 case 301:
   if (!yytrial)
 #line 2705 "layerd_dpp_parser_beta.y"
-{/*	PC_CATCH error*/
+{/*	PC_CATCH error
+*/
 					SINTAX_ERROR("'catch' statement invalid.");
+
 					CodeDOM::XplCatchStatement*c=CodeDOM::XplTryStatement::new_catchbk();
+
 					yyval.node=c;
+
 				}
 #line 8265 "layerd_dpp_parser_beta_tab.c"
 break;
 case 302:
   if (!yytrial)
 #line 2715 "layerd_dpp_parser_beta.y"
-{/*	PC_FINALLY Block*/
+{/*	PC_FINALLY Block
+*/
 					yyval.node=yyvsp[0].node;
+
 				}
 #line 8273 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -8102,29 +9625,46 @@ break;
 case 304:
   if (!yytrial)
 #line 2729 "layerd_dpp_parser_beta.y"
-{/*	Expression*/
+{/*	Expression
+*/
 					CodeDOM::XplExpressionlist *el=new CodeDOM::XplExpressionlist();
+
 					CodeDOM::XplExpression *e=el->new_e();
+
 					e->set_texpression(yyvsp[0].node);
+
 					el->set_ElementName(L"params");
+
 					el->Childs()->InsertAtEnd(e);
+
 					yyval.node=el;
+
 				}
 #line 8292 "layerd_dpp_parser_beta_tab.c"
 break;
 case 305:
   if (!yytrial)
 #line 2738 "layerd_dpp_parser_beta.y"
-{/*	Expression_List COMA Expression*/
+{/*	Expression_List COMA Expression
+*/
 					CodeDOM::XplExpressionlist *el=(CodeDOM::XplExpressionlist*)yyvsp[-2].node;
+
 					if(el==NULL){
+
 						SINTAX_ERROR("invalid expression list.");
+
 						el = new CodeDOM::XplExpressionlist();
+
 					}
+
 					CodeDOM::XplExpression *e=el->new_e();
+
 					e->set_texpression(yyvsp[0].node);
+
 					el->Childs()->InsertAtEnd(e);
+
 					yyval.node=el;
+
 				}
 #line 8308 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -8132,8 +9672,11 @@ case 306:
   if (!yytrial)
 #line 2750 "layerd_dpp_parser_beta.y"
 {
+
 					SINTAX_ERROR("invalid expression list.");
+
 					yyval.node=new CodeDOM::XplExpressionlist();
+
 				}
 #line 8317 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -8141,61 +9684,81 @@ case 307:
   if (!yytrial)
 #line 2755 "layerd_dpp_parser_beta.y"
 {
+
 					SINTAX_ERROR("invalid expression list after comma.");
+
 					yyval.node=new CodeDOM::XplExpressionlist();
+
 				}
 #line 8326 "layerd_dpp_parser_beta_tab.c"
 break;
 case 308:
   if (!yytrial)
 #line 2764 "layerd_dpp_parser_beta.y"
-{/*	OPEN_PARENTESIS Expression CLOSE_PARENTESIS*/
+{/*	OPEN_PARENTESIS Expression CLOSE_PARENTESIS
+*/
 					yyval=yyvsp[-1];
+
 				}
 #line 8334 "layerd_dpp_parser_beta_tab.c"
 break;
 case 309:
   if (!yytrial)
 #line 2771 "layerd_dpp_parser_beta.y"
-{/*	Expression_Or_Punctuactor*/
+{/*	Expression_Or_Punctuactor
+*/
 					CodeDOM::XplCexpression *ce=CodeDOM::XplComplexfunctioncall::new_ce();
+
 					ce->Childs()->InsertAtEnd(yyvsp[0].node);
+
 					yyval.node=ce;
+
 				}
 #line 8344 "layerd_dpp_parser_beta_tab.c"
 break;
 case 310:
   if (!yytrial)
 #line 2777 "layerd_dpp_parser_beta.y"
-{/*	Complex_Expression_List  Expression_Or_Punctuactor*/
+{/*	Complex_Expression_List  Expression_Or_Punctuactor
+*/
 					CodeDOM::XplCexpression *ce=(CodeDOM::XplCexpression*)yyvsp[-1].node;
+
 					ce->Childs()->InsertAtEnd(yyvsp[0].node);
+
 					yyval.node=ce;
+
 				}
 #line 8354 "layerd_dpp_parser_beta_tab.c"
 break;
 case 311:
   if (!yytrial)
 #line 2786 "layerd_dpp_parser_beta.y"
-{/*	Expression_List*/
+{/*	Expression_List
+*/
 					yyvsp[0].node->set_ElementName(DT("l"));
+
 					yyval.node=yyvsp[0].node;
+
 				}
 #line 8363 "layerd_dpp_parser_beta_tab.c"
 break;
 case 312:
   if (!yytrial)
 #line 2791 "layerd_dpp_parser_beta.y"
-{/*	PUNTO_COMA*/
+{/*	PUNTO_COMA
+*/
 					yyval.node=CodeDOM::XplCexpression::new_ls();
+
 				}
 #line 8371 "layerd_dpp_parser_beta_tab.c"
 break;
 case 313:
   if (!yytrial)
 #line 2795 "layerd_dpp_parser_beta.y"
-{/*	OP_DOSPUNTOS*/
+{/*	OP_DOSPUNTOS
+*/
 					yyval.node=CodeDOM::XplCexpression::new_lp();
+
 				}
 #line 8379 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -8214,14 +9777,22 @@ break;
 case 316:
   if (!yytrial)
 #line 2807 "layerd_dpp_parser_beta.y"
-{/*	Assingment_Exp OP_IGUALMAYOR Argument_Exp*/
+{/*	Assingment_Exp OP_IGUALMAYOR Argument_Exp
+*/
 					CodeDOM::XplExpression *temp=new CodeDOM::XplExpression(yyvsp[-2].node);
+
 					temp->set_ElementName(DT("l"));
+
 					CodeDOM::XplExpression *temp2=new CodeDOM::XplExpression(yyvsp[0].node);
+
 					temp2->set_ElementName(DT("r"));
+
 					tempNode=new CodeDOM::XplBinaryoperator(CodeDOM::ZOEBINARYOPERATORS_ENUM_IMP, false,temp,temp2);
+
 					tempNode->set_ElementName(DT("bo"));
+
 					yyval.node=tempNode;
+
 				}
 #line 8405 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -8234,27 +9805,48 @@ break;
 case 318:
   if (!yytrial)
 #line 2821 "layerd_dpp_parser_beta.y"
-{/*	Unary_Exp Assing_Operator Assingment_Exp*/
+{/*	Unary_Exp Assing_Operator Assingment_Exp
+*/
 					CodeDOM::XplExpression *temp=new CodeDOM::XplExpression(yyvsp[-2].node);temp->set_ElementName(DT("l"));
+
 					CodeDOM::XplExpression *temp2=new CodeDOM::XplExpression(yyvsp[0].node);temp2->set_ElementName(DT("r"));
+
 					CodeDOM::XplAssingop_enum oper;
+
 					switch(yyvsp[-1].num){
+
 						case OP_IGUAL:oper=CodeDOM::ZOEASSINGOP_ENUM_NONE;break;
+
 						case OP_MASIGUAL:oper=CodeDOM::ZOEASSINGOP_ENUM_ADD;break;
+
 						case OP_MENOSIGUAL:oper=CodeDOM::ZOEASSINGOP_ENUM_SUB;break;
+
 						case OP_ASTERISCOIGUAL:oper=CodeDOM::ZOEASSINGOP_ENUM_MUL;break;
+
 						case OP_DIVIDIDOIGUAL:oper=CodeDOM::ZOEASSINGOP_ENUM_DIV;break;
+
 						case OP_YIGUAL:oper=CodeDOM::ZOEASSINGOP_ENUM_AND;break;
+
 						case OP_OIGUAL:oper=CodeDOM::ZOEASSINGOP_ENUM_OR;break;
+
 						case OP_SOMBREROIGUAL:oper=CodeDOM::ZOEASSINGOP_ENUM_XOR;break;
+
 						case OP_PORCENTAJEIGUAL:oper=CodeDOM::ZOEASSINGOP_ENUM_MOD;break;
+
 						case OP_SHIFTLEFTIGUAL:oper=CodeDOM::ZOEASSINGOP_ENUM_LSH;break;
+
 						case OP_SHIFTRIGHTIGUAL:oper=CodeDOM::ZOEASSINGOP_ENUM_RSH;break;
+
 						default:oper=CodeDOM::ZOEASSINGOP_ENUM_NONE;break;
+
 					};
+
 					CodeDOM::XplAssing* tempNode=new CodeDOM::XplAssing(oper,false,temp,temp2);
+
 					tempNode->set_ElementName(L"a");
+
 					yyval.node=tempNode;
+
 				}
 #line 8438 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -8267,14 +9859,22 @@ break;
 case 320:
   if (!yytrial)
 #line 2848 "layerd_dpp_parser_beta.y"
-{/*	Logical_OR_Exp OP_PREGUNTA Expression OP_DOSPUNTOS Conditional_Exp*/
+{/*	Logical_OR_Exp OP_PREGUNTA Expression OP_DOSPUNTOS Conditional_Exp
+*/
 					CodeDOM::XplExpression *temp=new CodeDOM::XplExpression(yyvsp[-4].node);temp->set_ElementName(DT("o1"));
+
 					CodeDOM::XplExpression *temp2=new CodeDOM::XplExpression(yyvsp[-2].node);temp2->set_ElementName(DT("o2"));
+
 					CodeDOM::XplExpression *temp3=new CodeDOM::XplExpression(yyvsp[0].node);temp2->set_ElementName(DT("o3"));
 
+
+
 					tempNode=new CodeDOM::XplTernaryoperator(CodeDOM::ZOETERNARYOPERATORS_ENUM_BOOLEAN,false,temp,temp2,temp3);
+
 					tempNode->set_ElementName(L"to");
+
 					yyval.node=tempNode;
+
 				}
 #line 8458 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -8287,12 +9887,18 @@ break;
 case 322:
   if (!yytrial)
 #line 2862 "layerd_dpp_parser_beta.y"
-{/*	Logical_OR_Exp OP_OO Logical_AND_Exp*/
+{/*	Logical_OR_Exp OP_OO Logical_AND_Exp
+*/
 					CodeDOM::XplExpression *temp=new CodeDOM::XplExpression(yyvsp[-2].node);temp->set_ElementName(DT("l"));
+
 					CodeDOM::XplExpression *temp2=new CodeDOM::XplExpression(yyvsp[0].node);temp2->set_ElementName(DT("r"));
+
 					tempNode=new CodeDOM::XplBinaryoperator(CodeDOM::ZOEBINARYOPERATORS_ENUM_OR,false,temp,temp2);
+
 					tempNode->set_ElementName(L"bo");
+
 					yyval.node=tempNode;
+
 				}
 #line 8476 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -8305,12 +9911,18 @@ break;
 case 324:
   if (!yytrial)
 #line 2874 "layerd_dpp_parser_beta.y"
-{/*	Logical_AND_Exp OP_YY Inclusive_OR_Exp*/
+{/*	Logical_AND_Exp OP_YY Inclusive_OR_Exp
+*/
 					CodeDOM::XplExpression *temp=new CodeDOM::XplExpression(yyvsp[-2].node);temp->set_ElementName(DT("l"));
+
 					CodeDOM::XplExpression *temp2=new CodeDOM::XplExpression(yyvsp[0].node);temp2->set_ElementName(DT("r"));
+
 					tempNode=new CodeDOM::XplBinaryoperator(CodeDOM::ZOEBINARYOPERATORS_ENUM_AND,false,temp,temp2);
+
 					tempNode->set_ElementName(L"bo");
+
 					yyval.node=tempNode;
+
 				}
 #line 8494 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -8323,12 +9935,18 @@ break;
 case 326:
   if (!yytrial)
 #line 2886 "layerd_dpp_parser_beta.y"
-{/*	Inclusive_OR_Exp OP_O Exclusive_OR_Exp*/
+{/*	Inclusive_OR_Exp OP_O Exclusive_OR_Exp
+*/
 					CodeDOM::XplExpression *temp=new CodeDOM::XplExpression(yyvsp[-2].node);temp->set_ElementName(DT("l"));
+
 					CodeDOM::XplExpression *temp2=new CodeDOM::XplExpression(yyvsp[0].node);temp2->set_ElementName(DT("r"));
+
 					tempNode=new CodeDOM::XplBinaryoperator(CodeDOM::ZOEBINARYOPERATORS_ENUM_BOR,false,temp,temp2);
+
 					tempNode->set_ElementName(L"bo");
+
 					yyval.node=tempNode;
+
 				}
 #line 8512 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -8341,12 +9959,18 @@ break;
 case 328:
   if (!yytrial)
 #line 2898 "layerd_dpp_parser_beta.y"
-{/*	Exclusive_OR_Exp OP_SOMBRERO And_Expression*/
+{/*	Exclusive_OR_Exp OP_SOMBRERO And_Expression
+*/
 					CodeDOM::XplExpression *temp=new CodeDOM::XplExpression(yyvsp[-2].node);temp->set_ElementName(DT("l"));
+
 					CodeDOM::XplExpression *temp2=new CodeDOM::XplExpression(yyvsp[0].node);temp2->set_ElementName(DT("r"));
+
 					tempNode=new CodeDOM::XplBinaryoperator(CodeDOM::ZOEBINARYOPERATORS_ENUM_XOR,false,temp,temp2);
+
 					tempNode->set_ElementName(L"bo");
+
 					yyval.node=tempNode;
+
 				}
 #line 8530 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -8359,12 +9983,18 @@ break;
 case 330:
   if (!yytrial)
 #line 2910 "layerd_dpp_parser_beta.y"
-{/*	And_Expression OP_Y Equality_Exp*/
+{/*	And_Expression OP_Y Equality_Exp
+*/
 					CodeDOM::XplExpression *temp=new CodeDOM::XplExpression(yyvsp[-2].node);temp->set_ElementName(DT("l"));
+
 					CodeDOM::XplExpression *temp2=new CodeDOM::XplExpression(yyvsp[0].node);temp2->set_ElementName(DT("r"));
+
 					tempNode=new CodeDOM::XplBinaryoperator(CodeDOM::ZOEBINARYOPERATORS_ENUM_BAND,false,temp,temp2);
+
 					tempNode->set_ElementName(L"bo");
+
 					yyval.node=tempNode;
+
 				}
 #line 8548 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -8377,24 +10007,36 @@ break;
 case 332:
   if (!yytrial)
 #line 2922 "layerd_dpp_parser_beta.y"
-{/*	Equality_Exp OP_IGUALIGUAL Relational_Exp*/
+{/*	Equality_Exp OP_IGUALIGUAL Relational_Exp
+*/
 					CodeDOM::XplExpression *temp=new CodeDOM::XplExpression(yyvsp[-2].node);temp->set_ElementName(DT("l"));
+
 					CodeDOM::XplExpression *temp2=new CodeDOM::XplExpression(yyvsp[0].node);temp2->set_ElementName(DT("r"));
+
 					tempNode=new CodeDOM::XplBinaryoperator(CodeDOM::ZOEBINARYOPERATORS_ENUM_EQ,false,temp,temp2);
+
 					tempNode->set_ElementName(L"bo");
+
 					yyval.node=tempNode;
+
 				}
 #line 8566 "layerd_dpp_parser_beta_tab.c"
 break;
 case 333:
   if (!yytrial)
 #line 2930 "layerd_dpp_parser_beta.y"
-{/*	Equality_Exp OP_ADMIRACIONIGUAL Relational_Exp*/
+{/*	Equality_Exp OP_ADMIRACIONIGUAL Relational_Exp
+*/
 					CodeDOM::XplExpression *temp=new CodeDOM::XplExpression(yyvsp[-2].node);temp->set_ElementName(DT("l"));
+
 					CodeDOM::XplExpression *temp2=new CodeDOM::XplExpression(yyvsp[0].node);temp2->set_ElementName(DT("r"));
+
 					tempNode=new CodeDOM::XplBinaryoperator(CodeDOM::ZOEBINARYOPERATORS_ENUM_NOTEQ,false,temp,temp2);
+
 					tempNode->set_ElementName(L"bo");
+
 					yyval.node=tempNode;
+
 				}
 #line 8578 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -8407,59 +10049,88 @@ break;
 case 335:
   if (!yytrial)
 #line 2942 "layerd_dpp_parser_beta.y"
-{/*	Relational_Exp OP_MENOR Shift_Exp*/
+{/*	Relational_Exp OP_MENOR Shift_Exp
+*/
 					CodeDOM::XplExpression *temp=new CodeDOM::XplExpression(yyvsp[-2].node);temp->set_ElementName(DT("l"));
+
 					CodeDOM::XplExpression *temp2=new CodeDOM::XplExpression(yyvsp[0].node);temp2->set_ElementName(DT("r"));
+
 					tempNode=new CodeDOM::XplBinaryoperator(CodeDOM::ZOEBINARYOPERATORS_ENUM_LS,false,temp,temp2);
+
 					tempNode->set_ElementName(L"bo");
+
 					yyval.node=tempNode;
+
 				}
 #line 8596 "layerd_dpp_parser_beta_tab.c"
 break;
 case 336:
   if (!yytrial)
 #line 2951 "layerd_dpp_parser_beta.y"
-{/*	Relational_Exp OP_MAYOR Shift_Exp*/
+{/*	Relational_Exp OP_MAYOR Shift_Exp
+*/
 					CodeDOM::XplExpression *temp=new CodeDOM::XplExpression(yyvsp[-2].node);temp->set_ElementName(DT("l"));
+
 					CodeDOM::XplExpression *temp2=new CodeDOM::XplExpression(yyvsp[0].node);temp2->set_ElementName(DT("r"));
+
 					tempNode=new CodeDOM::XplBinaryoperator(CodeDOM::ZOEBINARYOPERATORS_ENUM_GR,false,temp,temp2);
+
 					tempNode->set_ElementName(L"bo");
+
 					yyval.node=tempNode;
+
 				}
 #line 8608 "layerd_dpp_parser_beta_tab.c"
 break;
 case 337:
   if (!yytrial)
 #line 2959 "layerd_dpp_parser_beta.y"
-{/*	Relational_Exp OP_MENORIGUAL Shift_Exp*/
+{/*	Relational_Exp OP_MENORIGUAL Shift_Exp
+*/
 					CodeDOM::XplExpression *temp=new CodeDOM::XplExpression(yyvsp[-2].node);temp->set_ElementName(DT("l"));
+
 					CodeDOM::XplExpression *temp2=new CodeDOM::XplExpression(yyvsp[0].node);temp2->set_ElementName(DT("r"));
+
 					tempNode=new CodeDOM::XplBinaryoperator(CodeDOM::ZOEBINARYOPERATORS_ENUM_LSEQ,false,temp,temp2);
+
 					tempNode->set_ElementName(L"bo");
+
 					yyval.node=tempNode;
+
 				}
 #line 8620 "layerd_dpp_parser_beta_tab.c"
 break;
 case 338:
   if (!yytrial)
 #line 2967 "layerd_dpp_parser_beta.y"
-{/*	Relational_Exp OP_MAYORIGUAL Shift_Exp*/
+{/*	Relational_Exp OP_MAYORIGUAL Shift_Exp
+*/
 					CodeDOM::XplExpression *temp=new CodeDOM::XplExpression(yyvsp[-2].node);temp->set_ElementName(DT("l"));
+
 					CodeDOM::XplExpression *temp2=new CodeDOM::XplExpression(yyvsp[0].node);temp2->set_ElementName(DT("r"));
+
 					tempNode=new CodeDOM::XplBinaryoperator(CodeDOM::ZOEBINARYOPERATORS_ENUM_GREQ,false,temp,temp2);
+
 					tempNode->set_ElementName(L"bo");
+
 					yyval.node=tempNode;
+
 				}
 #line 8632 "layerd_dpp_parser_beta_tab.c"
 break;
 case 339:
   if (!yytrial)
 #line 2975 "layerd_dpp_parser_beta.y"
-{/*	Cast_Exp PC_IS Type_Declarator */
+{/*	Cast_Exp PC_IS Type_Declarator 
+*/
 					CodeDOM::XplExpression *temp=new CodeDOM::XplExpression(yyvsp[-2].node);
+
 					tempNode=new CodeDOM::XplCastexpression(temp,(CodeDOM::XplType*)yyvsp[0].node);
+
 					tempNode->set_ElementName(L"is");
+
 					yyval.node=tempNode;
+
 				}
 #line 8643 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -8472,24 +10143,36 @@ break;
 case 341:
   if (!yytrial)
 #line 2986 "layerd_dpp_parser_beta.y"
-{/*	Shift_Exp OP_SHIFTLEFT Additive_Exp*/
+{/*	Shift_Exp OP_SHIFTLEFT Additive_Exp
+*/
 					CodeDOM::XplExpression *temp=new CodeDOM::XplExpression(yyvsp[-2].node);temp->set_ElementName(DT("l"));
+
 					CodeDOM::XplExpression *temp2=new CodeDOM::XplExpression(yyvsp[0].node);temp2->set_ElementName(DT("r"));
+
 					tempNode=new CodeDOM::XplBinaryoperator(CodeDOM::ZOEBINARYOPERATORS_ENUM_LSH,false,temp,temp2);
+
 					tempNode->set_ElementName(L"bo");
+
 					yyval.node=tempNode;
+
 				}
 #line 8661 "layerd_dpp_parser_beta_tab.c"
 break;
 case 342:
   if (!yytrial)
 #line 2994 "layerd_dpp_parser_beta.y"
-{/*	Shift_Exp OP_SHIFTRIGHT Additive_Exp*/
+{/*	Shift_Exp OP_SHIFTRIGHT Additive_Exp
+*/
 					CodeDOM::XplExpression *temp=new CodeDOM::XplExpression(yyvsp[-2].node);temp->set_ElementName(DT("l"));
+
 					CodeDOM::XplExpression *temp2=new CodeDOM::XplExpression(yyvsp[0].node);temp2->set_ElementName(DT("r"));
+
 					tempNode=new CodeDOM::XplBinaryoperator(CodeDOM::ZOEBINARYOPERATORS_ENUM_RSH,false,temp,temp2);
+
 					tempNode->set_ElementName(L"bo");
+
 					yyval.node=tempNode;
+
 				}
 #line 8673 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -8502,24 +10185,36 @@ break;
 case 344:
   if (!yytrial)
 #line 3006 "layerd_dpp_parser_beta.y"
-{/*	Additive_Exp OP_MAS Multiplicative_Exp*/
+{/*	Additive_Exp OP_MAS Multiplicative_Exp
+*/
 					CodeDOM::XplExpression *temp=new CodeDOM::XplExpression(yyvsp[-2].node);temp->set_ElementName(DT("l"));
+
 					CodeDOM::XplExpression *temp2=new CodeDOM::XplExpression(yyvsp[0].node);temp2->set_ElementName(DT("r"));
+
 					tempNode=new CodeDOM::XplBinaryoperator(CodeDOM::ZOEBINARYOPERATORS_ENUM_ADD,false,temp,temp2);
+
 					tempNode->set_ElementName(L"bo");
+
 					yyval.node=tempNode;
+
 				}
 #line 8691 "layerd_dpp_parser_beta_tab.c"
 break;
 case 345:
   if (!yytrial)
 #line 3014 "layerd_dpp_parser_beta.y"
-{/*	Additive_Exp OP_MENOS Multiplicative_Exp*/
+{/*	Additive_Exp OP_MENOS Multiplicative_Exp
+*/
 					CodeDOM::XplExpression *temp=new CodeDOM::XplExpression(yyvsp[-2].node);temp->set_ElementName(DT("l"));
+
 					CodeDOM::XplExpression *temp2=new CodeDOM::XplExpression(yyvsp[0].node);temp2->set_ElementName(DT("r"));
+
 					tempNode=new CodeDOM::XplBinaryoperator(CodeDOM::ZOEBINARYOPERATORS_ENUM_MIN,false,temp,temp2);
+
 					tempNode->set_ElementName(L"bo");
+
 					yyval.node=tempNode;
+
 				}
 #line 8703 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -8532,36 +10227,54 @@ break;
 case 347:
   if (!yytrial)
 #line 3026 "layerd_dpp_parser_beta.y"
-{/*	Multiplicative_Exp OP_ASTERISCO PM_Access_Exp*/
+{/*	Multiplicative_Exp OP_ASTERISCO PM_Access_Exp
+*/
 					CodeDOM::XplExpression *temp=new CodeDOM::XplExpression(yyvsp[-2].node);temp->set_ElementName(DT("l"));
+
 					CodeDOM::XplExpression *temp2=new CodeDOM::XplExpression(yyvsp[0].node);temp2->set_ElementName(DT("r"));
+
 					tempNode=new CodeDOM::XplBinaryoperator(CodeDOM::ZOEBINARYOPERATORS_ENUM_MUL,false,temp,temp2);
+
 					tempNode->set_ElementName(L"bo");
+
 					yyval.node=tempNode;
+
 				}
 #line 8721 "layerd_dpp_parser_beta_tab.c"
 break;
 case 348:
   if (!yytrial)
 #line 3034 "layerd_dpp_parser_beta.y"
-{/*	Multiplicative_Exp OP_DIVIDIDO PM_Access_Exp*/
+{/*	Multiplicative_Exp OP_DIVIDIDO PM_Access_Exp
+*/
 					CodeDOM::XplExpression *temp=new CodeDOM::XplExpression(yyvsp[-2].node);temp->set_ElementName(DT("l"));
+
 					CodeDOM::XplExpression *temp2=new CodeDOM::XplExpression(yyvsp[0].node);temp2->set_ElementName(DT("r"));
+
 					tempNode=new CodeDOM::XplBinaryoperator(CodeDOM::ZOEBINARYOPERATORS_ENUM_DIV,false,temp,temp2);
+
 					tempNode->set_ElementName(L"bo");
+
 					yyval.node=tempNode;
+
 				}
 #line 8733 "layerd_dpp_parser_beta_tab.c"
 break;
 case 349:
   if (!yytrial)
 #line 3042 "layerd_dpp_parser_beta.y"
-{/*	Multiplicative_Exp OP_PORCENTAJE PM_Access_Exp*/
+{/*	Multiplicative_Exp OP_PORCENTAJE PM_Access_Exp
+*/
 					CodeDOM::XplExpression *temp=new CodeDOM::XplExpression(yyvsp[-2].node);temp->set_ElementName(DT("l"));
+
 					CodeDOM::XplExpression *temp2=new CodeDOM::XplExpression(yyvsp[0].node);temp2->set_ElementName(DT("r"));
+
 					tempNode=new CodeDOM::XplBinaryoperator(CodeDOM::ZOEBINARYOPERATORS_ENUM_MOD,false,temp,temp2);
+
 					tempNode->set_ElementName(L"bo");
+
 					yyval.node=tempNode;
+
 				}
 #line 8745 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -8574,24 +10287,36 @@ break;
 case 351:
   if (!yytrial)
 #line 3054 "layerd_dpp_parser_beta.y"
-{/*	PM_Access_Exp OP_PUNTOASTERISCO Cast_Exp*/
+{/*	PM_Access_Exp OP_PUNTOASTERISCO Cast_Exp
+*/
 					CodeDOM::XplExpression *temp=new CodeDOM::XplExpression(yyvsp[-2].node);temp->set_ElementName(DT("l"));
+
 					CodeDOM::XplExpression *temp2=new CodeDOM::XplExpression(yyvsp[0].node);temp2->set_ElementName(DT("r"));
+
 					tempNode=new CodeDOM::XplBinaryoperator(CodeDOM::ZOEBINARYOPERATORS_ENUM_MP,false,temp,temp2);
+
 					tempNode->set_ElementName(L"bo");
+
 					yyval.node=tempNode;
+
 				}
 #line 8763 "layerd_dpp_parser_beta_tab.c"
 break;
 case 352:
   if (!yytrial)
 #line 3062 "layerd_dpp_parser_beta.y"
-{/*	PM_Access_Exp OP_MENOSMAYORASTERISCO Cast_Exp*/
+{/*	PM_Access_Exp OP_MENOSMAYORASTERISCO Cast_Exp
+*/
 					CodeDOM::XplExpression *temp=new CodeDOM::XplExpression(yyvsp[-2].node);temp->set_ElementName(DT("l"));
+
 					CodeDOM::XplExpression *temp2=new CodeDOM::XplExpression(yyvsp[0].node);temp2->set_ElementName(DT("r"));
+
 					tempNode=new CodeDOM::XplBinaryoperator(CodeDOM::ZOEBINARYOPERATORS_ENUM_PMP,false,temp,temp2);
+
 					tempNode->set_ElementName(L"bo");
+
 					yyval.node=tempNode;
+
 				}
 #line 8775 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -8604,11 +10329,16 @@ break;
 case 354:
   if (!yytrial)
 #line 3074 "layerd_dpp_parser_beta.y"
-{/*	OPEN_PARENTESIS Type_Name CLOSE_PARENTESIS Cast_Exp*/
+{/*	OPEN_PARENTESIS Type_Name CLOSE_PARENTESIS Cast_Exp
+*/
 					CodeDOM::XplExpression *temp=new CodeDOM::XplExpression(yyvsp[0].node);
+
 					tempNode=new CodeDOM::XplCastexpression(temp,(CodeDOM::XplType*)yyvsp[-2].node);
+
 					tempNode->set_ElementName(L"cast");
+
 					yyval.node=tempNode;
+
 				}
 #line 8792 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -8621,65 +10351,100 @@ break;
 case 356:
   if (!yytrial)
 #line 3085 "layerd_dpp_parser_beta.y"
-{/*	OP_MASMAS Unary_Exp*/
+{/*	OP_MASMAS Unary_Exp
+*/
 					CodeDOM::XplExpression *temp2=new CodeDOM::XplExpression();
+
 					temp2->set_texpression(yyvsp[0].node);temp2->set_ElementName(L"u");
+
 					tempNode=new CodeDOM::XplUnaryoperator(CodeDOM::ZOEUNARYOPERATORS_ENUM_PREINC , false, temp2);
+
 					tempNode->set_ElementName(L"uo");
+
 					yyval.node=tempNode;
+
 				}
 #line 8810 "layerd_dpp_parser_beta_tab.c"
 break;
 case 357:
   if (!yytrial)
 #line 3093 "layerd_dpp_parser_beta.y"
-{/*	OP_MENOSMENOS Unary_Exp*/
+{/*	OP_MENOSMENOS Unary_Exp
+*/
 					CodeDOM::XplExpression *temp2=new CodeDOM::XplExpression();
+
 					temp2->set_texpression(yyvsp[0].node);temp2->set_ElementName(L"u");
+
 					tempNode=new CodeDOM::XplUnaryoperator(CodeDOM::ZOEUNARYOPERATORS_ENUM_PREDEC , false,temp2);
+
 					tempNode->set_ElementName(L"uo");
+
 					yyval.node=tempNode;
+
 				}
 #line 8822 "layerd_dpp_parser_beta_tab.c"
 break;
 case 358:
   if (!yytrial)
 #line 3101 "layerd_dpp_parser_beta.y"
-{/*	Unary_Operator Cast_Exp*/
+{/*	Unary_Operator Cast_Exp
+*/
 					CodeDOM::XplExpression *temp2=new CodeDOM::XplExpression();
+
 					temp2->set_texpression(yyvsp[0].node);temp2->set_ElementName(L"u");
+
 					CodeDOM::XplUnaryoperators_enum oper=CodeDOM::ZOEUNARYOPERATORS_ENUM_MIN;
+
 					switch(yyvsp[-1].num){
+
 						case OP_MENOS:oper=CodeDOM::ZOEUNARYOPERATORS_ENUM_MIN;break;
+
 						case OP_ADMIRACION:oper=CodeDOM::ZOEUNARYOPERATORS_ENUM_NOT;break;
+
 						case OP_Y:oper=CodeDOM::ZOEUNARYOPERATORS_ENUM_AOF;break;
+
 						case OP_ASTERISCO:oper=CodeDOM::ZOEUNARYOPERATORS_ENUM_IND;break;
+
 						case OP_CELDILLA:oper=CodeDOM::ZOEUNARYOPERATORS_ENUM_ONECOMP;break;
+
 					};
+
 					tempNode=new CodeDOM::XplUnaryoperator(oper, false,temp2);
+
 					tempNode->set_ElementName(L"uo");
+
 					yyval.node=tempNode;
+
 				}
 #line 8842 "layerd_dpp_parser_beta_tab.c"
 break;
 case 359:
   if (!yytrial)
 #line 3117 "layerd_dpp_parser_beta.y"
-{/*	PC_SIZEOF Unary_Exp*/
+{/*	PC_SIZEOF Unary_Exp
+*/
 					CodeDOM::XplExpression *temp2=new CodeDOM::XplExpression();
+
 					temp2->set_texpression(yyvsp[-1].node);temp2->set_ElementName(L"u");
+
 					tempNode=new CodeDOM::XplUnaryoperator(CodeDOM::ZOEUNARYOPERATORS_ENUM_SIZEOF, false ,temp2);
+
 					tempNode->set_ElementName(L"uo");
+
 					yyval.node=tempNode;
+
 				}
 #line 8854 "layerd_dpp_parser_beta_tab.c"
 break;
 case 360:
   if (!yytrial)
 #line 3125 "layerd_dpp_parser_beta.y"
-{/*	PC_SIZEOF OPEN_PARENTESIS R_Type_Decl CLOSE_PARENTESIS*/
+{/*	PC_SIZEOF OPEN_PARENTESIS R_Type_Decl CLOSE_PARENTESIS
+*/
 					WARNING_MESSAGE("Internal: sizeof expression for types not implemented.");
+
 					yyval.node=CodeDOM::XplExpression::new_empty();
+
 				}
 #line 8863 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -8692,77 +10457,112 @@ break;
 case 362:
   if (!yytrial)
 #line 3131 "layerd_dpp_parser_beta.y"
-{/*	PC_GETTYPE OPEN_PARENTESIS R_Type_Decl CLOSE_PARENTESIS*/
+{/*	PC_GETTYPE OPEN_PARENTESIS R_Type_Decl CLOSE_PARENTESIS
+*/
 					CodeDOM::XplType *type = (CodeDOM::XplType*)yyvsp[-1].node;
+
 					type->set_ElementName(L"t");
+
 					yyval.node=type;
+
 				}
 #line 8879 "layerd_dpp_parser_beta_tab.c"
 break;
 case 363:
   if (!yytrial)
 #line 3137 "layerd_dpp_parser_beta.y"
-{/*	PC_TYPEOF OPEN_PARENTESIS Expression CLOSE_PARENTESIS*/
+{/*	PC_TYPEOF OPEN_PARENTESIS Expression CLOSE_PARENTESIS
+*/
 					CodeDOM::XplExpression *temp2=new CodeDOM::XplExpression();
+
 					temp2->set_texpression(yyvsp[-1].node);temp2->set_ElementName(L"u");
+
 					tempNode=new CodeDOM::XplUnaryoperator(CodeDOM::ZOEUNARYOPERATORS_ENUM_TYPEOF, false ,temp2);
+
 					tempNode->set_ElementName(L"uo");
+
 					yyval.node=tempNode;
+
 				}
 #line 8891 "layerd_dpp_parser_beta_tab.c"
 break;
 case 364:
   if (!yytrial)
 #line 3145 "layerd_dpp_parser_beta.y"
-{/*	PC_GETTYPE OPEN_PARENTESIS R_Type_Decl CLOSE_PARENTESIS*/
+{/*	PC_GETTYPE OPEN_PARENTESIS R_Type_Decl CLOSE_PARENTESIS
+*/
 					CodeDOM::XplType *type = (CodeDOM::XplType*)yyvsp[-1].node;
+
 					type->set_ElementName(L"toft");
+
 					yyval.node=type;
+
 				}
 #line 8901 "layerd_dpp_parser_beta_tab.c"
 break;
 case 365:
   if (!yytrial)
 #line 3154 "layerd_dpp_parser_beta.y"
-{/*	PC_WRITECODE WC_Block*/
+{/*	PC_WRITECODE WC_Block
+*/
 					CodeDOM::XplWriteCodeBody*wb=CodeDOM::XplExpression::new_writecode();
+
 					wb->set_tWriteCodeBody(yyvsp[0].node);
+
 					yyval.node=wb;
+
 					SET_SOURCE_DATA_S(wb,-1);
+
 				}
 #line 8912 "layerd_dpp_parser_beta_tab.c"
 break;
 case 366:
   if (!yytrial)
 #line 3161 "layerd_dpp_parser_beta.y"
-{/*	PC_WRITECODE OPEN_PARENTESIS Expression CLOSE_PARENTESIS PUNTO_COMA*/
+{/*	PC_WRITECODE OPEN_PARENTESIS Expression CLOSE_PARENTESIS PUNTO_COMA
+*/
 					CodeDOM::XplWriteCodeBody*wb=CodeDOM::XplExpression::new_writecode();
+
 					CodeDOM::XplExpression*e=CodeDOM::XplWriteCodeBody::new_e();
+
 					e->set_texpression(yyvsp[-1].node);
+
 					wb->set_tWriteCodeBody(e);
+
 					yyval.node=wb;
+
 					SET_SOURCE_DATA_S(wb,-3);
+
 				}
 #line 8925 "layerd_dpp_parser_beta_tab.c"
 break;
 case 367:
   if (!yytrial)
 #line 3170 "layerd_dpp_parser_beta.y"
-{/*	PC_WRITECODE WC_Block*/
+{/*	PC_WRITECODE WC_Block
+*/
 					CodeDOM::XplWriteCodeBody*wb=CodeDOM::XplExpression::new_writecode();
+
 					wb->set_tWriteCodeBody(yyvsp[0].node);
+
 					yyval.node=wb;
+
 					SET_SOURCE_DATA_S(wb,-1);
+
 				}
 #line 8936 "layerd_dpp_parser_beta_tab.c"
 break;
 case 368:
   if (!yytrial)
 #line 3177 "layerd_dpp_parser_beta.y"
-{/*	PC_WRITECODE error*/
+{/*	PC_WRITECODE error
+*/
 					SINTAX_ERROR("'writecode' expression invalid.");
+
 					CodeDOM::XplWriteCodeBody*wb=CodeDOM::XplExpression::new_writecode();
+
 					yyval.node=wb;
+
 				}
 #line 8946 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -8776,7 +10576,9 @@ case 370:
   if (!yytrial)
 #line 3187 "layerd_dpp_parser_beta.y"
 {
+
 					yyval.node=yyvsp[0].node;
+
 				}
 #line 8960 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -8784,228 +10586,367 @@ case 371:
   if (!yytrial)
 #line 3191 "layerd_dpp_parser_beta.y"
 {
+
 					CodeDOM::XplComplexfunctioncall *cfc=CodeDOM::XplExpression::new_cfc();
+
 					CodeDOM::XplExpression*leftExp=CodeDOM::XplComplexfunctioncall::new_l();
+
 					leftExp->set_texpression(yyvsp[-5].node);
+
 					cfc->set_l(leftExp);
+
 					cfc->set_ce((CodeDOM::XplCexpression*)yyvsp[-2].node);
+
 					yyval.node=cfc;
+
 				}
 #line 8973 "layerd_dpp_parser_beta_tab.c"
 break;
 case 372:
   if (!yytrial)
 #line 3200 "layerd_dpp_parser_beta.y"
-{/*	Postfix_Exp OPEN_CORCHETE Expression_List CLOSE_CORCHETE*/
+{/*	Postfix_Exp OPEN_CORCHETE Expression_List CLOSE_CORCHETE
+*/
 					CodeDOM::XplExpression *temp2=CodeDOM::XplFunctioncall::new_l();
+
 					temp2->set_texpression(yyvsp[-3].node);
+
 					CodeDOM::XplFunctioncall *br=new CodeDOM::XplFunctioncall(temp2,(CodeDOM::XplExpressionlist*)yyvsp[-1].node,NULL);
+
 					br->set_ElementName(L"b");
+
 					tempNode=br;
+
 					yyval.node=tempNode;
+
 				}
 #line 8986 "layerd_dpp_parser_beta_tab.c"
 break;
 case 373:
   if (!yytrial)
 #line 3209 "layerd_dpp_parser_beta.y"
-{/*	Postfix_Exp OPEN_PARENTESIS Expression_List CLOSE_PARENTESIS*/
+{/*	Postfix_Exp OPEN_PARENTESIS Expression_List CLOSE_PARENTESIS
+*/
 					CodeDOM::XplExpression *temp2=CodeDOM::XplFunctioncall::new_l();
+
 					temp2->set_texpression(yyvsp[-3].node);
+
 					CodeDOM::XplFunctioncall *fc=new CodeDOM::XplFunctioncall();
+
 					fc->set_ElementName(L"fc");
+
 					fc->set_l(temp2);
+
 					fc->set_args((CodeDOM::XplExpressionlist*)yyvsp[-1].node);
+
 					tempNode=fc;
+
 					yyval.node=tempNode;
+
 				}
 #line 9001 "layerd_dpp_parser_beta_tab.c"
 break;
 case 374:
   if (!yytrial)
 #line 3220 "layerd_dpp_parser_beta.y"
-{/*	Postfix_Exp OPEN_PARENTESIS CLOSE_PARENTESIS*/
+{/*	Postfix_Exp OPEN_PARENTESIS CLOSE_PARENTESIS
+*/
 					CodeDOM::XplExpression *temp2=CodeDOM::XplFunctioncall::new_l();
+
 					temp2->set_texpression(yyvsp[-2].node);
+
 					CodeDOM::XplFunctioncall *fc=new CodeDOM::XplFunctioncall();
+
 					fc->set_ElementName(L"fc");
+
 					fc->set_l(temp2);
+
 					fc->set_args(CodeDOM::XplFunctioncall::new_args());
+
 					tempNode=fc;
+
 					yyval.node=tempNode;
+
 				}
 #line 9016 "layerd_dpp_parser_beta_tab.c"
 break;
 case 375:
   if (!yytrial)
 #line 3231 "layerd_dpp_parser_beta.y"
-{/*	Postfix_Exp Block*/
+{/*	Postfix_Exp Block
+*/
 					CodeDOM::XplNode *postfix=yyvsp[-1].node;
+
 					CodeDOM::XplFunctioncall *fc = NULL ;
 
+
+
 					if(postfix==NULL){
+
 						SINTAX_ERROR("Invalid postfix expression.");
+
 						break;
+
 					}
+
 					if(postfix->get_ElementName()==L"fc"){
+
 						fc=(CodeDOM::XplFunctioncall*)postfix;
-						/*postfix->set_texpression(NULL);*/
-						/*delete postfix;*/
+
+						/*postfix->set_texpression(NULL);
+*/
+						/*delete postfix;
+*/
 					}
+
 					else{
+
 						fc = new CodeDOM::XplFunctioncall();
+
 						CodeDOM::XplExpression *temp2=CodeDOM::XplFunctioncall::new_l();
+
 						temp2->set_texpression(yyvsp[-1].node);
+
 						fc->set_ElementName(L"fc");
+
 						fc->set_l(temp2);
+
 						fc->set_args(NULL);
+
 					}
+
 					fc->set_bk((CodeDOM::XplFunctionBody*)yyvsp[0].node);
+
 					tempNode=fc;
+
 					yyval.node=tempNode;
+
 				}
 #line 9046 "layerd_dpp_parser_beta_tab.c"
 break;
 case 376:
   if (!yytrial)
 #line 3257 "layerd_dpp_parser_beta.y"
-{/*	Postfix_Exp PUNTO Complete_Class_Name*/
+{/*	Postfix_Exp PUNTO Complete_Class_Name
+*/
 					CodeDOM::XplExpression *temp=new CodeDOM::XplExpression();
+
 					temp->set_texpression(temp->new_n());
+
 					temp->get_texpression()->set_Value(yyvsp[0].str);
+
 					temp->set_ElementName(DT("r"));
+
 					CodeDOM::XplExpression *temp2=new CodeDOM::XplExpression();
+
 					temp2->set_texpression(yyvsp[-2].node);
+
 					temp2->set_ElementName(DT("l"));
+
 					tempNode=new CodeDOM::XplBinaryoperator(CodeDOM::ZOEBINARYOPERATORS_ENUM_M,false,temp2,temp);
+
 					tempNode->set_ElementName(L"bo");
+
 					yyval.node=tempNode;
+
 				}
 #line 9063 "layerd_dpp_parser_beta_tab.c"
 break;
 case 377:
   if (!yytrial)
 #line 3270 "layerd_dpp_parser_beta.y"
-{/*	Postfix_Exp OP_MENOSMAYOR IDENTIFICADOR*/
+{/*	Postfix_Exp OP_MENOSMAYOR IDENTIFICADOR
+*/
 					CodeDOM::XplExpression *temp=new CodeDOM::XplExpression();
+
 					temp->set_texpression(temp->new_n());
+
 					temp->get_texpression()->set_Value(yyvsp[0].str);
+
 					temp->set_ElementName(DT("r"));
+
 					CodeDOM::XplExpression *temp2=new CodeDOM::XplExpression();
+
 					temp2->set_texpression(yyvsp[-2].node);
+
 					temp2->set_ElementName(DT("l"));
+
 					tempNode=new CodeDOM::XplBinaryoperator(CodeDOM::ZOEBINARYOPERATORS_ENUM_PM,false,temp2,temp);
+
 					tempNode->set_ElementName(L"bo");
+
 					yyval.node=tempNode;
+
 				}
 #line 9080 "layerd_dpp_parser_beta_tab.c"
 break;
 case 378:
   if (!yytrial)
 #line 3283 "layerd_dpp_parser_beta.y"
-{/*	Postfix_Exp OP_MASMAS*/
+{/*	Postfix_Exp OP_MASMAS
+*/
 					CodeDOM::XplExpression *temp2=new CodeDOM::XplExpression();
+
 					temp2->set_texpression(yyvsp[-1].node);
+
 					temp2->set_ElementName(L"u");
+
 					tempNode=new CodeDOM::XplUnaryoperator(CodeDOM::ZOEUNARYOPERATORS_ENUM_INC, false ,temp2);
+
 					tempNode->set_ElementName(L"uo");
+
 					yyval.node=tempNode;
+
 				}
 #line 9093 "layerd_dpp_parser_beta_tab.c"
 break;
 case 379:
   if (!yytrial)
 #line 3292 "layerd_dpp_parser_beta.y"
-{/*	Postfix_Exp OP_MENOSMENOS*/
+{/*	Postfix_Exp OP_MENOSMENOS
+*/
 					CodeDOM::XplExpression *temp2=new CodeDOM::XplExpression();
+
 					temp2->set_texpression(yyvsp[-1].node);
+
 					temp2->set_ElementName(L"u");
+
 					tempNode=new CodeDOM::XplUnaryoperator(CodeDOM::ZOEUNARYOPERATORS_ENUM_DEC, false ,temp2);
+
 					tempNode->set_ElementName(L"uo");
+
 					yyval.node=tempNode;
+
 				}
 #line 9106 "layerd_dpp_parser_beta_tab.c"
 break;
 case 380:
   if (!yytrial)
 #line 3304 "layerd_dpp_parser_beta.y"
-{/*	PC_NEW New_Placement Type_Declarator Initializer*/
+{/*	PC_NEW New_Placement Type_Declarator Initializer
+*/
 					CodeDOM::XplType* t=(CodeDOM::XplType*)yyvsp[-1].nodos[0];
+
 					t->set_ElementName(DT("type"));
+
 					CodeDOM::XplNewExpression* ne=CodeDOM::XplExpression::new_new();
+
 					ne->set_type(t);
-					SetNewTypeModifiers(ne,(unsigned)yyvsp[-1].nodos[1]);
+
+					SetNewTypeModifiers(ne,(unsigned long)yyvsp[-1].nodos[1]);
+
 					ne->set_GCParams((CodeDOM::XplExpressionlist*)yyvsp[-2].node);
+
 					ne->set_init((CodeDOM::XplInitializerList*)yyvsp[0].node);
+
 					yyval.node=ne;
+
 				}
 #line 9121 "layerd_dpp_parser_beta_tab.c"
 break;
 case 381:
   if (!yytrial)
 #line 3315 "layerd_dpp_parser_beta.y"
-{/*	PC_NEW Type_Declarator Initializer*/
+{/*	PC_NEW Type_Declarator Initializer
+*/
 					CodeDOM::XplType* t=(CodeDOM::XplType*)yyvsp[-1].nodos[0];
+
 					t->set_ElementName(DT("type"));
+
 					CodeDOM::XplNewExpression* ne=CodeDOM::XplExpression::new_new();
+
 					ne->set_type(t);
-					SetNewTypeModifiers(ne,(unsigned)yyvsp[-1].nodos[1]);
+
+					SetNewTypeModifiers(ne,(unsigned long)yyvsp[-1].nodos[1]);
+
 					ne->set_init((CodeDOM::XplInitializerList*)yyvsp[0].node);
+
 					yyval.node=ne;
+
 				}
 #line 9135 "layerd_dpp_parser_beta_tab.c"
 break;
 case 382:
   if (!yytrial)
 #line 3325 "layerd_dpp_parser_beta.y"
-{/*	PC_NEW New_Placement Type_Declarator */
+{/*	PC_NEW New_Placement Type_Declarator 
+*/
 					CodeDOM::XplType* t=(CodeDOM::XplType*)yyvsp[0].nodos[0];
+
 					t->set_ElementName(DT("type"));
+
 					CodeDOM::XplNewExpression* ne=CodeDOM::XplExpression::new_new();
+
 					ne->set_type(t);
-					SetNewTypeModifiers(ne,(unsigned)yyvsp[0].nodos[1]);
+
+					SetNewTypeModifiers(ne,(unsigned long)yyvsp[0].nodos[1]);
+
 					ne->set_GCParams((CodeDOM::XplExpressionlist*)yyvsp[-1].node);
+
 					yyval.node=ne;
+
 				}
 #line 9149 "layerd_dpp_parser_beta_tab.c"
 break;
 case 383:
   if (!yytrial)
 #line 3335 "layerd_dpp_parser_beta.y"
-{/*	PC_NEW Type_Declarator */
+{/*	PC_NEW Type_Declarator 
+*/
 					CodeDOM::XplType* t=(CodeDOM::XplType*)yyvsp[0].nodos[0];
+
 					t->set_ElementName(DT("type"));
+
 					CodeDOM::XplNewExpression* ne=CodeDOM::XplExpression::new_new();
+
 					ne->set_type(t);
-					SetNewTypeModifiers(ne,(unsigned)yyvsp[0].nodos[1]);
+
+					SetNewTypeModifiers(ne,(unsigned long)yyvsp[0].nodos[1]);
+
 					yyval.node=ne;
+
 				}
 #line 9162 "layerd_dpp_parser_beta_tab.c"
 break;
 case 384:
   if (!yytrial)
 #line 3345 "layerd_dpp_parser_beta.y"
-{/*	PC_NEW New_Placement Type_Declarator */
+{/*	PC_NEW New_Placement Type_Declarator 
+*/
 					CodeDOM::XplType* t=(CodeDOM::XplType*)yyvsp[-2].nodos[0];
+
 					t->set_ElementName(DT("type"));
+
 					CodeDOM::XplNewExpression* ne=CodeDOM::XplExpression::new_new();
+
 					ne->set_type(t);
-					SetNewTypeModifiers(ne,(unsigned)yyvsp[-2].nodos[1]);
+
+					SetNewTypeModifiers(ne,(unsigned long)yyvsp[-2].nodos[1]);
+
 					ne->set_GCParams((CodeDOM::XplExpressionlist*)yyvsp[-3].node);
+
 					yyval.node=ne;
+
 				}
 #line 9176 "layerd_dpp_parser_beta_tab.c"
 break;
 case 385:
   if (!yytrial)
 #line 3355 "layerd_dpp_parser_beta.y"
-{/*	PC_NEW Type_Declarator */
+{/*	PC_NEW Type_Declarator 
+*/
 					CodeDOM::XplType* t=(CodeDOM::XplType*)yyvsp[-2].nodos[0];
+
 					t->set_ElementName(DT("type"));
+
 					CodeDOM::XplNewExpression* ne=CodeDOM::XplExpression::new_new();
+
 					ne->set_type(t);
-					SetNewTypeModifiers(ne,(unsigned)yyvsp[-2].nodos[1]);
+
+					SetNewTypeModifiers(ne,(unsigned long)yyvsp[-2].nodos[1]);
+
 					yyval.node=ne;
+
 				}
 #line 9189 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -9018,19 +10959,26 @@ break;
 case 387:
   if (!yytrial)
 #line 3371 "layerd_dpp_parser_beta.y"
-{/*	PC_DELETE Cast_Exp*/
+{/*	PC_DELETE Cast_Exp
+*/
 					CodeDOM::XplExpression*de=CodeDOM::XplExpression::new_delete();
+
 					de->set_texpression(yyvsp[0].node);
+
 					yyval.node=de;
+
 				}
 #line 9205 "layerd_dpp_parser_beta_tab.c"
 break;
 case 388:
   if (!yytrial)
 #line 3380 "layerd_dpp_parser_beta.y"
-{/*	Literal*/
+{/*	Literal
+*/
 					yyvsp[0].literal->set_ElementName(L"lit");
+
 					yyval.node=yyvsp[0].literal;
+
 				}
 #line 9214 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -9043,11 +10991,16 @@ break;
 case 390:
   if (!yytrial)
 #line 3394 "layerd_dpp_parser_beta.y"
-{/*	Complete_Class_Name*/
+{/*	Complete_Class_Name
+*/
 					tempNode=new CodeDOM::XplNode(CodeDOM::ZOENODETYPE_STRING);
+
 					tempNode->set_ElementName(L"n");
+
 					tempNode->set_Value(yyvsp[0].str);
+
 					yyval.node=tempNode;
+
 				}
 #line 9231 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -9067,23 +11020,41 @@ case 393:
   if (!yytrial)
 #line 3406 "layerd_dpp_parser_beta.y"
 {
+
 					RET_POS=GET_PARSER_POS[0];
+
 					unsigned check=0;
+
                     if(yyvsp[-1].num==PC_UNSIGNED)check=yyvsp[0].num;
+
                     else if(yyvsp[0].num==PC_UNSIGNED){
+
                         check=yyvsp[0].num;
+
                         WARNING_MESSAGE("It's recommended to use 'unsigned T' instead of 'T unsigned'.");
+
                     }
+
                     else{
+
                         SINTAX_ERROR("Invalid combination of base types.");
+
                     }
+
                     switch(check){
+
                         case PC_SBYTE:yyval.num=PC_BYTE;break;
+
                         case PC_SHORT:yyval.num=PC_USHORT;break;
+
                         case PC_INT:yyval.num=PC_UINT;break;
+
                         case PC_LONG:yyval.num=PC_ULONG;break;
+
                         default:yyval.num=PC_INT;SINTAX_ERROR("Invalid combination of base types.");break;
+
                     };
+
                  }
 #line 9267 "layerd_dpp_parser_beta_tab.c"
 break;
@@ -9583,41 +11554,65 @@ case 476:
   if (!yytrial)
 #line 3536 "layerd_dpp_parser_beta.y"
 {
+
                                 CodeDOM::string str(yyvsp[0].str);
+
                                 if(str==(CodeDOM::string)L"implicit"){
+
                                     yyval.num=PC_IMPLICIT;
+
                                 }
+
                                 else if(str==(CodeDOM::string)L"explicit"){
+
                                     yyval.num=PC_EZOEICIT;
+
                                 }
+
                                 else{
+
                                     SINTAX_ERROR("Operator not valid on overloading declaration, 'implicit' or 'explicit' was expected. Using operator '+'.");
+
                                     yyval.num=OP_MAS;
+
                                 }
+
                             }
 #line 9777 "layerd_dpp_parser_beta_tab.c"
 break;
 case 477:
   if (!yytrial)
 #line 3553 "layerd_dpp_parser_beta.y"
-{/*	Postfix_Exp PUNTO_COMA*/
+{/*	Postfix_Exp PUNTO_COMA
+*/
 					CodeDOM::XplExpression* ne=new CodeDOM::XplExpression(yyvsp[-1].node);
-					/*ASSING_COMMENT(ne);*/
+
+					/*ASSING_COMMENT(ne);
+*/
 					ne->set_ElementName(L"e");
+
 					yyval.node=ne;
+
 					SET_SOURCE_DATA_S(ne,0);
+
 				}
 #line 9789 "layerd_dpp_parser_beta_tab.c"
 break;
 case 478:
   if (!yytrial)
 #line 3561 "layerd_dpp_parser_beta.y"
-{/*	Postfix_Exp PUNTO_COMA*/
+{/*	Postfix_Exp PUNTO_COMA
+*/
 					CodeDOM::XplExpression* ne=new CodeDOM::XplExpression(yyvsp[-1].node);
-					/*ASSING_COMMENT(ne);*/
+
+					/*ASSING_COMMENT(ne);
+*/
 					ne->set_ElementName(L"e");
+
 					yyval.node=ne;
+
 					SET_SOURCE_DATA_S(ne,0);
+
 				}
 #line 9801 "layerd_dpp_parser_beta_tab.c"
 break;
