@@ -496,6 +496,7 @@ namespace LayerD.OutputModules
                     relatedError.set_ErrorSourceFileData(error.get_ErrorSourceFileData());
                     relatedError.set_ErrorSource(error.get_ErrorSource());
                     relatedError.set_ErrorLevel(error.get_ErrorLevel());
+                    relatedError.set_ErrorCode(error.get_ErrorCode());
 
                     int lineToUse = p_CurrentRealLine + 1;
 
@@ -844,7 +845,7 @@ namespace LayerD.OutputModules
                 if (currentType.get_ispointer())
                 {
                     pi = currentType.get_pi();
-                    if (derived != null && !derived.get_isarray())
+                    if (pi!=null && derived != null && !derived.get_isarray())
                     {
                         if (pi.get_ref()) ptrStr = "^";
                         else ptrStr = "*";
@@ -1059,7 +1060,7 @@ namespace LayerD.OutputModules
                 for (int n = 1; n < (str1.Length - str2.Length); n++) pad += " ";
                 writeLineComment(str2 + pad);
                 writeLineComment("                                                                          ");
-                writeLineComment(" Generado por: DotNET LayerD Generator - Modulo de Salida LayerD-Zoe a C# ");
+                writeLineComment(" Generado por: DotNET LayerD Generator - Modulo de Salida Zoe a Meta D++ ");
                 writeLineComment("                                                                          ");
                 if (!p_dontWriteCopyrightComment)
                 {
@@ -1664,6 +1665,7 @@ namespace LayerD.OutputModules
 		}
         protected override string renderBeginInitializerList(XplInitializerList initializerList, EZOEContext context)
         {
+            CheckErrorForNode(initializerList);
             return "(";
         }
         protected override string renderEndInitializerList(XplInitializerList initializerList, EZOEContext context)
@@ -1681,6 +1683,7 @@ namespace LayerD.OutputModules
         }
         protected override string renderEndArrayInitializer(XplInitializerList initializerList, EZOEContext context)
         {
+            CheckErrorForNode(initializerList);
             return "}";
         }
         protected override string renderBeginArrayInitializer(XplInitializerList initializerList, EZOEContext context)
@@ -1691,6 +1694,8 @@ namespace LayerD.OutputModules
 
 		#region Instrucciones
 		protected override void renderBeginBlock( XplFunctionBody functionBody, EZOEContext context ){
+            CheckErrorForNode(functionBody);
+
             writeLineDirective(functionBody.get_ldsrc(), false);
             if (context == EZOEContext.FunctionBody)
             {
@@ -1707,13 +1712,17 @@ namespace LayerD.OutputModules
 			}
 		}
 		protected override void renderLabel( XplNode label, EZOEContext context ){
-			writeOut(label.get_StringValue()+":");
+            CheckErrorForNode(label);
+
+            writeOut(label.get_StringValue()+":");
 			writeNewLine();
 		}
 		protected override void renderSetonerror( XplSetonerror setOnerror , EZOEContext context ){
-			AddError("Instrucción 'setonerror' no soportada por el modulo de salida.");
+            CheckErrorForNode(setOnerror);
+            AddError("Instrucción 'setonerror' no soportada por el modulo de salida.");
 		}
 		protected override void renderExpressionStatement(XplExpression expression, string expressionString,EZOEContext context){
+            CheckErrorForNode(expression);
             if (expressionString != String.Empty)
             {
                 RenderComments(expression);
@@ -1730,16 +1739,22 @@ namespace LayerD.OutputModules
             }
 		}
 		protected override void renderThrow(XplExpression throwExpression, string expressionString,EZOEContext context){
+            CheckErrorForNode(throwExpression);
+
             writeLineDirective(throwExpression.get_ldsrc(), false);
             writeOut(ThrowPC + expressionString + ";");
 			writeNewLine();
 		}
 		protected override void renderReturn(XplExpression returnExpression, string expressionString,EZOEContext context){
+            CheckErrorForNode(returnExpression);
+
             writeLineDirective(returnExpression.get_ldsrc(), false);
             writeOut(ReturnPC + expressionString + ";");
 			writeNewLine();
 		}
 		protected override void renderLocalDeclarator(XplDeclarator decl, string varName, string typeStr, string initializerStr, bool isVolatile){
+            CheckErrorForNode(decl);
+
             RenderComments(decl);
             writeLineDirective(decl.get_ldsrc(), false);
             if (isVolatile) writeOut(VolatilePC);
@@ -1754,6 +1769,8 @@ namespace LayerD.OutputModules
 		}
         bool p_isOnCase = false;
 		protected override void renderBeginSwitch(XplSwitchStatement switchSta, string boolExpStr, EZOEContext context){
+            CheckErrorForNode(switchSta);
+
             writeLineDirective(switchSta.get_ldsrc(), false);
             writeOut(SwitchPC + "(" + boolExpStr + "){");
 			incNLevel();
@@ -1761,6 +1778,8 @@ namespace LayerD.OutputModules
 			tempStr=boolExpStr;
 		}
 		protected override void renderCaseLabel(XplCase caseNode, string caseExpStr, EZOEContext context){
+            CheckErrorForNode(caseNode);
+
             writeLineDirective(caseNode.get_ldsrc(), false);
             if (p_isOnCase) decNLevel();
             if (caseExpStr == "")
@@ -1772,6 +1791,8 @@ namespace LayerD.OutputModules
 			writeNewLine();
 		}
 		protected override void renderEndSwitch(XplSwitchStatement switchSta, EZOEContext context){
+            CheckErrorForNode(switchSta);
+
             if (p_isOnCase) decNLevel();
             p_isOnCase = false;
             decNLevel();
@@ -1781,6 +1802,8 @@ namespace LayerD.OutputModules
             if (p_writeDetailedComments) writeComment("Fin Switch '" + tempStr + "'");
 		}
 		protected override void renderIfStatement(XplIfStatement ifSta, string boolExp, bool isElse, EZOEContext context){
+            CheckErrorForNode(ifSta);
+
             writeLineDirective(ifSta.get_ldsrc(), false);
             if (!isElse)
             {
@@ -1791,11 +1814,15 @@ namespace LayerD.OutputModules
 			}
 		}
 		protected override void renderElseStatement(XplIfStatement ifSta, XplFunctionBody elseBody, EZOEContext context){
+            CheckErrorForNode(elseBody);
+
             if (elseBody != null) writeOut(ElsePC);
         }
 		protected override void renderForStatement(XplForStatement forSta, string initStr, string boolExpStr, string updateStr, EZOEContext context){
+            CheckErrorForNode(forSta);
+
             writeLineDirective(forSta.get_ldsrc(), false);
-            if(updateStr=="_FOR_EACH_")
+            if(updateStr == "_FOR_EACH_")
                 writeOut(ForPC + "(" + initStr + " in " + boolExpStr + ")");
             else
                 writeOut(ForPC + "(" + initStr + ";" + boolExpStr + ";" + updateStr + ")");
@@ -1811,6 +1838,8 @@ namespace LayerD.OutputModules
             for (int n = 0; n < listaDeclaraciones.GetLength(); n++)
             {
                 XplDeclarator nodo = (XplDeclarator)listaDeclaraciones.GetNodeAt(n);
+                CheckErrorForNode(nodo);
+
                 varName = nodo.get_name();
                 initStr = processInitializer(nodo.get_i(), EZOEContext.Statement);
                 typeStr = renderType(nodo.get_type(), "", EZOETypeContext.ForVarDecl, EZOEContext.Statement);
@@ -1837,10 +1866,14 @@ namespace LayerD.OutputModules
             return retStr;
         }
 		protected override void renderWhileStatement(XplDowhileStatement doSta, string boolExpStr, EZOEContext context){
+            CheckErrorForNode(doSta);
+
             writeLineDirective(doSta.get_ldsrc(), false);
             writeOut(WhilePC + "(" + boolExpStr + ")");
 		}
 		protected override void renderBeginDoStatement(XplDowhileStatement doSta, string boolExpStr, EZOEContext context){
+            CheckErrorForNode(doSta);
+
             writeLineDirective(doSta.get_ldsrc(), false);
             writeOut(DoPC);
 		}
@@ -1850,6 +1883,8 @@ namespace LayerD.OutputModules
             writeNewLine();
         }
 		protected override void renderBeginTry(XplTryStatement trySta, EZOEContext context){
+            CheckErrorForNode(trySta);
+
             writeLineDirective(trySta.get_ldsrc(), false);
             writeOut(TryPC);
 		}
@@ -1857,6 +1892,8 @@ namespace LayerD.OutputModules
 			writeNewLine();
 		}
 		protected override void renderCatchStatement(XplCatchStatement catchSta, string declExp, EZOEContext context){
+            CheckErrorForNode(catchSta);
+
             writeLineDirective(catchSta.get_ldsrc(), false);
             writeOut(CatchPC + "(" + declExp + ")");
 		}
@@ -1865,37 +1902,49 @@ namespace LayerD.OutputModules
             writeOut(FinallyPC);
 		}
 		protected override void renderBreak(XplJump jump, EZOEContext context){
+            CheckErrorForNode(jump);
+
             writeLineDirective(jump.get_ldsrc(), false);
             writeOut(BreakPC + ";");
 			writeNewLine();
 		}
 		protected override void renderContinue(XplJump jump, EZOEContext context){
+            CheckErrorForNode(jump);
+
             writeLineDirective(jump.get_ldsrc(), false);
             writeOut(ContinuePC + ";");
 			writeNewLine();
 		}
 		protected override void renderGoto(XplJump jump, string label, EZOEContext context){
+            CheckErrorForNode(jump);
+
             writeLineDirective(jump.get_ldsrc(), false);
             writeOut(GotoPC + label + ";");
 			writeNewLine();
 		}
 		protected override void renderResume(XplJump jump, EZOEContext context){
+            CheckErrorForNode(jump);
+
 			AddError("Instrucción 'resume' no soportada por el Modulo de Salida.");
 		}
 		protected override void renderResumeNext(XplJump jump, EZOEContext context){
-			AddError("Instrucción 'resume next' no soportada por el Modulo de Salida.");
+            CheckErrorForNode(jump);
+            AddError("Instrucción 'resume next' no soportada por el Modulo de Salida.");
 		}
 		protected override void renderDirectOutput(XplDirectoutput directOutput, string outputStr, EZOEContext context){
-			AddWarning("renderDirectOutput: no implementado en Modulo de Salida.");
+            CheckErrorForNode(directOutput);
+            AddWarning("renderDirectOutput: no implementado en Modulo de Salida.");
 		}
 		protected override void renderOnpointerStatement(XplFunctionBody functionBody, EZOEContext context){
-			AddError("Instrucción 'onpointer' no soportada por el Modulo de Salida.");
+            CheckErrorForNode(functionBody);
+            AddError("Instrucción 'onpointer' no soportada por el Modulo de Salida.");
 		}
 		#endregion
 
 		#region Expresiones
         protected override string renderGetTypeExp(XplType xplType, string typeStr, ExtendedZOEProcessor.EZOEContext eZOEContext)
         {
+            CheckErrorForNode(xplType);
             return "gettype(" + typeStr + ")";
         }
         protected override string renderNewExp(XplNewExpression newExp, string typeStr, string initializerStr, EZOEContext context)
@@ -1922,16 +1971,23 @@ namespace LayerD.OutputModules
         }
         protected override string renderBeginExpressionList(XplExpressionlist list, int expCount, EZOEContext context)
         {
-			return "";
+            CheckErrorForNode(list);
+            return "";
 		}
 		protected override string renderExpressionListItem(XplExpression expNode, string expStr, int expNumber, int expCount, EZOEContext context){
-			if(expNumber!=expCount)return expStr+", ";
+            CheckErrorForNode(expNode);
+            if (expNumber != expCount) return expStr + ", ";
 			else return expStr;
 		}
 		protected override string renderEndExpressionList(XplExpressionlist list, EZOEContext context){
 			return "";
 		}
-		protected override string renderSimpleName(string name, EZOEContext context){
+		protected override string renderSimpleName(XplNode node, string name, EZOEContext context){
+            CheckErrorForNode(node);
+
+            if (String.IsNullOrEmpty(name))
+                return "+error_empty_node+";
+
 			///Simplemente asumo que todo es correcto y debo reemplazar "::" por "."
             if (name.IndexOf(':') > -1 || name.IndexOf('.') > -1)
                 return removeUsings(processUserTypeName(name));
@@ -1997,7 +2053,8 @@ namespace LayerD.OutputModules
             return DeletePC + expStr;
 		}
 		protected override string renderOnpointerExp(XplExpression onpointerExp, string expStr, EZOEContext context){
-			AddError("Expresión 'onpointer' no soportada por el Modulo de Salida.");
+            CheckErrorForNode(onpointerExp);
+            AddError("Expresión 'onpointer' no soportada por el Modulo de Salida.");
 			return "/*Expresion Onpointer No Soportada*/";
 		}
 		protected override string renderAssingExp(XplAssing assing, string leftExpStr, string rightExpStr, XplAssingop_enum operation, EZOEContext context){
@@ -2147,7 +2204,15 @@ namespace LayerD.OutputModules
 				case XplBinaryoperators_enum.XOR: //Xor de Bits
 					tempStr=leftExpStr+" ^ "+rightExpStr;
 					break;
-			}
+                case XplBinaryoperators_enum.COMMA:
+                    tempStr = leftExpStr + "+" + rightExpStr;
+                    AddError("Comma operator not supported in Meta D++.");
+                    break;
+                default:
+                    tempStr = leftExpStr + "+" + rightExpStr;
+                    AddError("Unrecognized binary operator in expression.");
+                    break;
+            }
 			#endregion
 			if(p_OptimiseParenthesis){
 				if(!flag && requireParenthesis(bopExp))tempStr="("+tempStr+")";
@@ -2171,6 +2236,7 @@ namespace LayerD.OutputModules
         /// <returns>rendered string</returns>
         protected override string renderTernaryOpExp(XplTernaryoperator bopExp, string o1ExpStr, string o2ExpStr, string o3ExpStr, XplTernaryoperators_enum op, EZOEContext context)
         {
+            CheckErrorForNode(bopExp);
             if (op == XplTernaryoperators_enum.BOOLEAN)
             {
                 return "((" + o1ExpStr + ") ? (" + o2ExpStr + ") : (" + o3ExpStr + "))";
@@ -2183,7 +2249,8 @@ namespace LayerD.OutputModules
         }
 
 		protected override string renderUnOpExp(XplUnaryoperator uopExp, string expStr, XplUnaryoperators_enum op, EZOEContext context){
-			#region Switch de Operadores Unarios
+            CheckErrorForNode(uopExp);
+            #region Switch de Operadores Unarios
 			switch(op){
 				case XplUnaryoperators_enum.AOF: //Address of '&'
 					if(!p_isUnsafeContext)AddWarning("Operador 'Address of' usado en posible contexto no seguro, posible error.");
@@ -2238,6 +2305,7 @@ namespace LayerD.OutputModules
 			return tempStr;
 		}
 		protected override string renderFunctionCallExp(XplFunctioncall fcallExp, string leftExpStr, string argsStr, bool useBrackets, EZOEContext context){
+            CheckErrorForNode(fcallExp);
             XplFunctionBody bloque = fcallExp.get_bk();
             string blockArgStr = "";
             bool onWritecode = p_onWritecode;
@@ -2271,7 +2339,9 @@ namespace LayerD.OutputModules
             }
 		}
 		protected override string renderCastExp(XplCastexpression castExp, string typeStr, string castExpStr, XplCasttype_enum castType, EZOEContext context){
-			tempStr="("+typeStr+")"+castExpStr;
+            CheckErrorForNode(castExp);
+
+            tempStr = "(" + typeStr + ")" + castExpStr;
 			if(p_OptimiseParenthesis){
 				if(requireParenthesis(castExp))tempStr="("+tempStr+")";
 			}
@@ -2545,12 +2615,14 @@ namespace LayerD.OutputModules
 
         protected override string renderWritecodeExpression(XplExpression xplExpression, string expStr, ExtendedZOEProcessor.EZOEContext context)
         {
+            CheckErrorForNode(xplExpression);
             return WritecodePC + "( " + expStr + " )";
         }
 
         protected override string renderWritecodeBlock(XplWriteCodeBody xplWriteCodeBody, ExtendedZOEProcessor.EZOEContext context)
         {
-            string retStr=null;
+            CheckErrorForNode(xplWriteCodeBody);
+            string retStr = null;
             bool onWritecode = p_onWritecode;
             string backWCS = p_currentWritecodeStr;
             bool backIsNewLine = p_newLineFlag;
@@ -2610,12 +2682,78 @@ namespace LayerD.OutputModules
 
         protected override string renderTypeOfExp(XplType typeofExpNode, string typeStr, ExtendedZOEProcessor.EZOEContext eZOEContext)
         {
+            CheckErrorForNode(typeofExpNode);
             return "typeof( " + typeStr + " )";
         }
 
         protected override string renderIsExp(XplCastexpression xplExpression, string expStr, string typeStr, ExtendedZOEProcessor.EZOEContext eZOEContext)
         {
+            CheckErrorForNode(xplExpression);
             return expStr + " is " + typeStr;
         }
+
+        protected override string renderSizeofExp(XplType xplType, string typeStr, EZOEContext eZOEContext)
+        {
+            CheckErrorForNode(xplType);
+            return "sizeof( " + typeStr + " )";
+        }
+
+        public virtual string ConvertToString(XplNode node)
+        {
+            string retStr = null;
+            bool onWritecode = p_onWritecode;
+            string backWCS = p_currentWritecodeStr;
+            bool backIsNewLine = p_newLineFlag;
+
+            p_currentWritecodeStr = String.Empty;
+            p_onWritecode = true;
+
+            switch (node.get_TypeName())
+            {
+                case CodeDOMTypes.XplDocumentBody:
+                    processDocumentBody((XplDocumentBody)node);
+                    break;
+                case CodeDOMTypes.XplNamespace:
+                    processNamespace((XplNamespace)node);
+                    break;
+                case CodeDOMTypes.XplClass:
+                    processClass((XplClass)node, EZOEContext.NamespaceBody);
+                    break;
+                case CodeDOMTypes.XplClassMembersList:
+                    processClassMembers(((XplClassMembersList)node).Children(), EZOEContext.ClassBody);
+                    break;
+                case CodeDOMTypes.XplFunction:
+                    processFunction((XplFunction)node,((XplFunction)node).get_access(), EZOEContext.ClassBody);
+                    break;
+                case CodeDOMTypes.XplField:
+                    processField((XplField)node, ((XplField)node).get_access(), EZOEContext.ClassBody);
+                    break;
+                case CodeDOMTypes.XplProperty:
+                    processProperty((XplProperty)node, ((XplProperty)node).get_access(), EZOEContext.ClassBody);
+                    break;
+                case CodeDOMTypes.XplFunctionBody:
+                    processFunctionBody((XplFunctionBody)node, EZOEContext.FunctionBody);
+                    break;
+                case CodeDOMTypes.XplParameter:
+                    processParameter((XplParameter)node, EZOEContext.FunctionDecl);
+                    break;
+                case CodeDOMTypes.XplType:
+                    p_onWritecode = false;
+                    return renderType((XplType)node, String.Empty, EZOETypeContext.Unknow, EZOEContext.FunctionBody);
+                case CodeDOMTypes.XplExpression:
+                    p_onWritecode = false;
+                    return RenderExpression((XplExpression)node);
+                default:
+                    return "## Can't convert to string this node.";
+            }
+
+            p_onWritecode = onWritecode;
+            retStr = p_currentWritecodeStr;
+            p_newLineFlag = backIsNewLine;
+            p_currentWritecodeStr = backWCS;
+
+            return retStr;
+        }
+
     }
 }

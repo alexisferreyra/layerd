@@ -1,12 +1,13 @@
 /*******************************************************************************
-* Copyright (c) 2007, 2008 Alexis Ferreyra.
+* Copyright (c) 2007, 2012 Alexis Ferreyra, Intel Corporation.
 * All rights reserved. This program and the accompanying materials
 * are made available under the terms of the Eclipse Public License v1.0
 * which accompanies this distribution, and is available at
 * http://www.eclipse.org/legal/epl-v10.html
 *
 * Contributors:
-*     Alexis Ferreyra - initial API and implementation
+*       Alexis Ferreyra - initial API and implementation
+*       Alexis Ferreyra (Intel Corporation)
 *******************************************************************************/
 /****************************************************************************
 * 
@@ -26,6 +27,7 @@ using LayerD.CodeDOM;
 using System.IO;
 using System.Reflection;
 using LayerD.OutputModules;
+using System.Globalization;
 
 namespace LayerD.ZOECompiler{
     class BuildingControler
@@ -129,7 +131,7 @@ namespace LayerD.ZOECompiler{
             {
                 if (p_currentClientCore.get_ShowFullDebugInfo())
                     ZOECompilerCore.WriteDebugTextLine("Begin Execution of Subprogram.");
-                p_VSPType.InvokeMember("Run", BindingFlags.InvokeMethod, null, p_VSPObject, new object[] { p_argumentsVector, p_RIPVector, p_contextVector });
+                p_VSPType.InvokeMember("Run", BindingFlags.InvokeMethod, null, p_VSPObject, new object[] { p_argumentsVector, p_RIPVector, p_contextVector },CultureInfo.InvariantCulture);
                 if (p_currentClientCore.get_ShowFullDebugInfo())
                     ZOECompilerCore.WriteDebugTextLine("End Execution of Subprogram.");
             }
@@ -173,20 +175,20 @@ namespace LayerD.ZOECompiler{
                 //    CFBase = Type.GetType("zoe.lang.ClassfactoryBase,FactoryLib");
                 //else
                 CFBase = typeof(ClassfactoryBase);
-                CFBase.InvokeMember("__compiler", BindingFlags.SetField, null, null, new object[] { p_currentClientCore });
+                CFBase.InvokeMember("__compiler", BindingFlags.SetField, null, null, new object[] { p_currentClientCore },CultureInfo.InvariantCulture);
                 //Seteo el objeto CurrentDTE
-                CFBase.InvokeMember("__currentDTE", BindingFlags.SetField, null, null, new object[] { p_parameterDocument });
+                CFBase.InvokeMember("__currentDTE", BindingFlags.SetField, null, null, new object[] { p_parameterDocument },CultureInfo.InvariantCulture);
                 //Seteo el objeto CurrentDTE
-                CFBase.InvokeMember("__program", BindingFlags.SetField, null, null, new object[] { p_currentClientCore.get_LastProgram() });
+                CFBase.InvokeMember("__program", BindingFlags.SetField, null, null, new object[] { p_currentClientCore.get_LastProgram() },CultureInfo.InvariantCulture);
                 //Si es interactivo seteo los campos de la clase interactiva
                 if (p_currentClientCore.get_InteractiveOnly())
                 {
                     Type CFBase2 = typeof(ClassfactoryInteractiveBase);
-                    CFBase2.InvokeMember("__compiler", BindingFlags.SetField, null, null, new object[] { p_currentClientCore });
+                    CFBase2.InvokeMember("__compiler", BindingFlags.SetField, null, null, new object[] { p_currentClientCore },CultureInfo.InvariantCulture);
                     //Seteo el objeto CurrentDTE
-                    CFBase2.InvokeMember("__currentDTE", BindingFlags.SetField, null, null, new object[] { p_parameterDocument });
+                    CFBase2.InvokeMember("__currentDTE", BindingFlags.SetField, null, null, new object[] { p_parameterDocument },CultureInfo.InvariantCulture);
                     //Seteo el objeto CurrentDTE
-                    CFBase2.InvokeMember("__program", BindingFlags.SetField, null, null, new object[] { p_currentClientCore.get_LastProgram() });
+                    CFBase2.InvokeMember("__program", BindingFlags.SetField, null, null, new object[] { p_currentClientCore.get_LastProgram() },CultureInfo.InvariantCulture);
                 }
             }
             catch (Exception error)
@@ -253,7 +255,7 @@ namespace LayerD.ZOECompiler{
             //XplNodeList.CopyNodesAtEnd(virtualSubprogramProgram[1].get_DocumentBody().Children(), virtualSubprogramProgram[0].get_DocumentBody().Children());
             XplNodeList.CopyNodesAtEnd(virtualSubprogramProgram[2].get_DocumentBody().Children(), virtualSubprogramProgram[0].get_DocumentBody().Children());
 
-            p_VSPfileName = Path.Combine(p_currentClientCore.WorkingPath, VSP_FILENAME + p_subprogramCounter.ToString() + ".dll");
+            p_VSPfileName = Path.Combine(p_currentClientCore.WorkingPath, VSP_FILENAME + p_subprogramCounter.ToString(CultureInfo.InvariantCulture) + ".dll");
             CSZOERenderModule rm = new CSZOERenderModule();
             rm.CheckTypes = false;
             rm.CompileInMemory = true;

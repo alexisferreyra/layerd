@@ -1,0 +1,140 @@
+import "apt.base.js", "platform=JavaScript", "type=script", "copy=true";
+import "default.wrapper.js", "platform=JavaScript", "type=script", "copy=true", "extern=default.externs.zoe";
+
+using js;
+
+namespace T
+{
+	enum E1
+	{
+		V1,
+		V2 = 4,
+		V3
+	}
+
+	interface Namer 
+	{
+		string^ GetName();
+		void SetName(string^ newName);
+	}
+
+	class C1 implements Namer
+	{
+	protected:
+		string^ _name;
+	public:
+		C1()
+		{
+			global::console::log("C1 constructor");
+		}
+		C1(string^ arg1)
+		{
+			global::console::log("C1 constructor 2");
+			this._name = arg1;
+		}
+		static int Main(string^[] args)
+		{
+			E1 var1 = E1::V3;
+
+			C3^ obj3 = new T::C3();
+
+			C1^ obj1 = new T::C1();
+			obj1.SetName("Alexis");
+			C2^ obj2 = new T::C2();
+			obj2.SetName("Adriel");
+			obj3.SetName("Ferreyra");
+			obj3.fooBase();
+
+			global::console::log("C1 Says: " + obj1.GetName());
+			global::console::log("C2 Says: " + obj2.GetName());
+			global::console::log("C2 Says: " + obj2.GetNameFromField());
+			global::console::log("C3 Says: " + obj3.GetName());
+		}
+		void fooBase()
+		{
+			global::console::log("C1.fooBase");
+		}
+
+		void foo()
+		{
+			int n = 10;
+			// test try-catch-finally
+			try
+			{
+				n = n / 0;
+			}
+			catch(object^ error)
+			{
+				n = 2;
+				throw error;
+			}
+			finally
+			{
+				n = 0;
+			}
+			// test switch
+			switch(n)
+			{
+			case 0:
+				n++;
+				break;
+			case 1:
+				n += 2;
+				break;
+			default:
+				n += 3;
+				break;
+			}
+			// bye
+		}
+
+		virtual string^ GetName()
+		{
+			return this._name;
+		}
+		virtual void SetName(string^ newName)
+		{
+			this._name = newName;
+		}
+	}
+
+	class C2 inherits C1
+	{
+	public:
+		C2()
+		{
+			global::console::log("C2 constructor");
+		}
+		override string^ GetName()
+		{
+			return "Hi " + base.GetName();
+		}
+		override void SetName(string^ newName)
+		{
+			base.SetName(newName + "Ho");
+		}
+		string^ GetNameFromField()
+		{
+			return this._name;
+		}
+		string^ GetNameFromBaseField()
+		{
+			return base._name;
+		}
+	}
+
+	// this a class 
+	class C3 inherits C2
+	{
+	public:
+		C3()
+		{
+			global::console::log("C3 constructor");
+		}
+		override string^ GetName()
+		{
+			// say something
+			return "C3 Says " + base.GetName();
+		}
+	}
+}

@@ -1,12 +1,24 @@
-﻿/****************************************************************************
+﻿/*******************************************************************************
+* Copyright (c) 2009, 2012 Mateo Bengualid, Intel Corporation.
+* All rights reserved. This program and the accompanying materials
+* are made available under the terms of the Eclipse Public License v1.0
+* which accompanies this distribution, and is available at
+* http://www.eclipse.org/legal/epl-v10.html
+*
+* Contributors:
+*       Mateo Bengualid - initial API and implementation
+*       Julieta Alvarez (Intel Corporation)
+*       Alexis Ferreyra (Intel Corporation)
+*******************************************************************************/
+/****************************************************************************
  
-  C++ Output Module for Zoe compiler (for interactive compiling)
+C++ Output Module for Zoe compiler (for interactive compiling)
   
-  Original Author: Mateo Bengualid
-  Contact: apoteoticos@gmail.com
+Original Author: Mateo Bengualid
+Contact: apoteoticos@gmail.com
   
-  Please visit http://layerd.net to get the last version
-  of the software and information about LayerD technology.
+Please visit http://layerd.net to get the last version
+of the software and information about LayerD technology.
 
 ****************************************************************************/
 /*-

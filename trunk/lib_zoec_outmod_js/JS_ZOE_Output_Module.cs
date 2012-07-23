@@ -1,19 +1,24 @@
-﻿using System;
+﻿/*******************************************************************************
+ * Copyright (c) 2012 Intel Corporation.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *    Alexis Ferreyra (Intel Corporation) - initial API and implementation and/or initial documentation
+ *******************************************************************************/
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
 namespace LayerD.OutputModules
 {
-	/// <summary>
-	/// Implementa la interfaz IEZOEOutputModuleServices, y 
-	/// es la clase principal que implementa el Modulo de Salida
-	/// operador por el Compilador ZOE.
-	/// </summary>
 	public class JS_ZOE_Output_Module: IEZOEOutputModuleServices
 	{
         const string _outputModuleVersion = "1.0 Beta";
-        const string _defaultPlatform = "Javascript";
+        const string _defaultPlatform = "JavaScript";
 
         #region IEZOEOutputModuleServices Members
 
@@ -73,6 +78,13 @@ namespace LayerD.OutputModules
         }
 
         #endregion
+
+        internal static bool IsSupportedPlatform(string platformName)
+        {
+            if (String.IsNullOrEmpty(platformName)) return false;
+
+            return platformName.ToLowerInvariant().StartsWith(_defaultPlatform.ToLowerInvariant());
+        }
     }
 
 }

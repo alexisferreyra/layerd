@@ -1,3 +1,14 @@
+/*******************************************************************************
+* Copyright (c) 2008, 2012 Alexis Ferreyra, Intel Corporation.
+* All rights reserved. This program and the accompanying materials
+* are made available under the terms of the Eclipse Public License v1.0
+* which accompanies this distribution, and is available at
+* http://www.eclipse.org/legal/epl-v10.html
+*
+* Contributors:
+*       Alexis Ferreyra - initial API and implementation
+*       Alexis Ferreyra (Intel Corporation) - minor fixes
+*******************************************************************************/
 /****************************************************************************
  
   Base library for Zoe Output Modules
@@ -262,8 +273,8 @@ namespace LayerD.OutputModules
             string checkStr = (string)p_ignoredClasses[classDecl.get_name()];
             if (checkStr != null && checkStr == p_currentNS) return;
 			//Preparo varaibles temporales
-			string implementsStr=renderImplements(classDecl,classDecl.get_ImplementsNodeList(), context);
-			string inheritsStr=renderInherits(classDecl,classDecl.get_InheritsNodeList(), context);
+            string implementsStr = renderImplements(classDecl, classDecl.get_ImplementsNodeList(), context);
+            string inheritsStr = renderInherits(classDecl, classDecl.get_InheritsNodeList(), context);
 			EZOEClassType classType=EZOEClassType.Class;
             if (classDecl.get_isinterface()) classType = EZOEClassType.Interface;
             else if (classDecl.get_isstruct()) classType = EZOEClassType.Struct;
@@ -702,7 +713,7 @@ namespace LayerD.OutputModules
 					expStr=processBFCExp((XplFunctioncall)expNode, EZOEContext.Expression );
 					break;
 				case "n":
-					expStr=renderSimpleName(expNode.get_StringValue(), EZOEContext.Expression );
+					expStr=renderSimpleName(expNode, expNode.get_StringValue(), EZOEContext.Expression );
 					break;
 				case "lit":
 					expStr=renderLiteral((XplLiteral)expNode, ((XplLiteral)expNode).get_str(), EZOEContext.Expression );
@@ -734,6 +745,9 @@ namespace LayerD.OutputModules
                 case "is": //exp is type
                     expStr = processIsExp((XplCastexpression)expNode, EZOEContext.Expression);
                     break;
+                case "sizeof":
+                    expStr = processSizeofExp((XplType)expNode, EZOEContext.Expression);
+                    break;
                 case "empty":
 					expStr="";
 					break;
@@ -743,6 +757,12 @@ namespace LayerD.OutputModules
 			}
 			return expStr;
 		}
+
+        private string processSizeofExp(XplType xplType, EZOEContext eZOEContext)
+        {
+            string typeStr = renderType(xplType, "", EZOETypeContext.Expression, eZOEContext);
+            return renderSizeofExp(xplType, typeStr, eZOEContext);
+        }
 
         private string processIsExp(XplCastexpression xplExpression, EZOEContext eZOEContext)
         {
@@ -933,7 +953,7 @@ namespace LayerD.OutputModules
 		protected abstract string renderBeginExpressionList(XplExpressionlist list, int expCount, EZOEContext context);
 		protected abstract string renderExpressionListItem(XplExpression expNode, string expStr, int expNumber, int expCount, EZOEContext context);
 		protected abstract string renderEndExpressionList(XplExpressionlist list, EZOEContext context);
-		protected abstract string renderSimpleName(string name, EZOEContext context);
+		protected abstract string renderSimpleName(XplNode expNode, string name, EZOEContext context);
 		protected abstract string renderLiteral(XplLiteral litNode, string litStr, EZOEContext context);
 		protected abstract string renderDeleteExp(XplExpression deleteExp, string expStr, EZOEContext context);
 		protected abstract string renderOnpointerExp(XplExpression onpointerExp, string expStr, EZOEContext context);
@@ -944,6 +964,7 @@ namespace LayerD.OutputModules
 		protected abstract string renderFunctionCallExp(XplFunctioncall fcallExp, string leftExpStr, string argsStr, bool useBrackets, EZOEContext context);
 		protected abstract string renderCastExp(XplCastexpression castExp, string typeStr, string castExpStr, XplCasttype_enum castType, EZOEContext context);
         protected abstract string renderNewExp(XplNewExpression newExp, string typeStr, string initializerStr, EZOEContext context);
+        protected abstract string renderSizeofExp(XplType xplType, string typeStr, EZOEContext eZOEContext);
         #endregion
 
 		#region Otros

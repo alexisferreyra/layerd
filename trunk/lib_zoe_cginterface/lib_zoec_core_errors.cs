@@ -1,3 +1,14 @@
+/*******************************************************************************
+* Copyright (c) 2008, 2012 Alexis Ferreyra, Intel Corporation.
+* All rights reserved. This program and the accompanying materials
+* are made available under the terms of the Eclipse Public License v1.0
+* which accompanies this distribution, and is available at
+* http://www.eclipse.org/legal/epl-v10.html
+*
+* Contributors:
+*       Alexis Ferreyra - initial API and implementation
+*       Alexis Ferreyra (Intel Corporation)
+*******************************************************************************/
 /****************************************************************************
  
   Base library for Zoe Output Modules
@@ -348,6 +359,16 @@ namespace LayerD.ZOECompiler
         /// </summary>
         /// <returns>A Boolean value.</returns>
         bool get_PersistentError();
+        /// <summary>
+        /// returns an string with the error code.
+        /// </summary>
+        /// <returns>error code string</returns>
+        string get_ErrorCode();
+        /// <summary>
+        /// Set the error code identifier
+        /// </summary>
+        /// <param name="errorCode">error code string</param>
+        void set_ErrorCode(string errorCode);
     }
     /// <summary>
     /// Interface that error collections must implement
@@ -644,6 +665,7 @@ namespace LayerD.ZOECompiler
         ErrorLevel p_errorLevel;
         XplNode p_errorNode;
         bool p_persistentError;
+        string p_errorCode = "N/A";
         #endregion
 
         #region Constructores
@@ -997,6 +1019,16 @@ namespace LayerD.ZOECompiler
         public bool get_PersistentError()
         {
             return p_persistentError;
+        }
+
+        public string get_ErrorCode()
+        {
+            return p_errorCode;
+        }
+
+        public void set_ErrorCode(string errorCode)
+        {
+            p_errorCode = errorCode;
         }
         #endregion
 

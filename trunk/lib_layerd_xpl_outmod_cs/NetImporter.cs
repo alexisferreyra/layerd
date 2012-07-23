@@ -1,3 +1,14 @@
+/*******************************************************************************
+* Copyright (c) 2008, 2012 Alexis Ferreyra, Intel Corporation.
+* All rights reserved. This program and the accompanying materials
+* are made available under the terms of the Eclipse Public License v1.0
+* which accompanies this distribution, and is available at
+* http://www.eclipse.org/legal/epl-v10.html
+*
+* Contributors:
+*       Alexis Ferreyra - initial API and implementation
+*       Alexis Ferreyra (Intel Corporation)
+*******************************************************************************/
 /****************************************************************************
  
   C# Output Module for Zoe compiler
@@ -224,7 +235,7 @@ namespace LayerD.OutputModules.Importers
                 
 				p_TypesCount=0;
 				foreach(Type type2 in allTypes){
-					if(type2.Namespace!=null && type2.Namespace.StartsWith(p_import.Namespace)
+                    if (type2.Namespace != null && type2.Namespace.StartsWith(p_import.Namespace, StringComparison.InvariantCulture)
                         && !type2.IsNested){                        
                         ns = getNamespaceFor(type2);
                         node = ImportType(type2);
@@ -431,7 +442,8 @@ namespace LayerD.OutputModules.Importers
 
 			XplFunction newFunc=XplClass.new_Function();
 			//Aqui tendria que procesar el nombre del metodo para el caso de los operadores
-			if(method.Name.StartsWith("op_")){
+            if (method.Name.StartsWith("op_", StringComparison.InvariantCulture))
+            {
 				newFunc.set_name(getOperatorName(method.Name));
 			}
 			else{
@@ -516,10 +528,10 @@ namespace LayerD.OutputModules.Importers
             string mname=method.Name ;
             //No importo los metodos q implementan propiedades :-),
             //es decir que empiezan con "get_" o "set_"
-            if ( (mname.StartsWith("get_") || mname.StartsWith("set_")) && method.IsSpecialName) 
+            if ((mname.StartsWith("get_", StringComparison.InvariantCulture) || mname.StartsWith("set_", StringComparison.InvariantCulture)) && method.IsSpecialName) 
                 return;
 
-            if (mname.StartsWith("op_"))
+            if (mname.StartsWith("op_", StringComparison.InvariantCulture))
             {
                 string funcName = "%op_";
                 //Operadores en ZOE : 
@@ -788,26 +800,26 @@ namespace LayerD.OutputModules.Importers
                     case "Int32":
                     case "Int64":
                         lit.set_type(XplLiteraltype_enum.INTEGER);
-                        lit.set_str(ZoeHelper.Att_ToString(Convert.ToInt64(field.GetRawConstantValue())));
+                        lit.set_str(ZoeHelper.Att_ToString(Convert.ToInt64(field.GetRawConstantValue(),CultureInfo.InvariantCulture)));
                         break;
                     case "Byte":
                     case "UInt16":
                     case "UInt32":
                     case "UInt64":
                         lit.set_type(XplLiteraltype_enum.INTEGER);                        
-                        lit.set_str(ZoeHelper.Att_ToString(Convert.ToUInt64(field.GetRawConstantValue())));
+                        lit.set_str(ZoeHelper.Att_ToString(Convert.ToUInt64(field.GetRawConstantValue(),CultureInfo.InvariantCulture)));
                         break;
                     case "Single":
                         lit.set_type(XplLiteraltype_enum.FLOAT);
-                        lit.set_str(Convert.ToSingle(field.GetRawConstantValue()).ToString(CultureInfo.InvariantCulture) + "f");
+                        lit.set_str(Convert.ToSingle(field.GetRawConstantValue(),CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture) + "f");
                         break;
                     case "Double":
                         lit.set_type(XplLiteraltype_enum.DOUBLE);
-                        lit.set_str(Convert.ToDouble(field.GetRawConstantValue()).ToString(CultureInfo.InvariantCulture));
+                        lit.set_str(Convert.ToDouble(field.GetRawConstantValue(),CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture));
                         break;
                     case "Decimal":
                         lit.set_type(XplLiteraltype_enum.DECIMAL);
-                        lit.set_str(Convert.ToDecimal(field.GetRawConstantValue()).ToString(CultureInfo.InvariantCulture));
+                        lit.set_str(Convert.ToDecimal(field.GetRawConstantValue(),CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture));
                         break;
                     case "Char":
                         lit.set_type(XplLiteraltype_enum.CHAR);
@@ -1100,14 +1112,14 @@ namespace LayerD.OutputModules.Importers
                 foreach (string arg in args)
                 {
                     count++;
-                    index = arg.IndexOf("=");
+                    index = arg.IndexOf("=", StringComparison.InvariantCulture);
                     if (index < 0)
                     { //Se trata del Espacio de nombres o Tipo a importar
                         p_import.Namespace = arg;
                     }
                     else
                     { //Es un argumento de configuracion
-                        temp = arg.Substring(0, index).ToLower();
+                        temp = arg.Substring(0, index).ToLower(CultureInfo.InvariantCulture);
                         temp2 = arg.Substring(index + 1);
                         switch (temp)
                         {
@@ -1118,7 +1130,7 @@ namespace LayerD.OutputModules.Importers
                                 //Ignoro, asumo que LayerD-Zoe lo proceso correctamente
                                 break;
                             case "blockinheritance":
-                                p_import.AllTypesFinal = Convert.ToBoolean(temp2);
+                                p_import.AllTypesFinal = Convert.ToBoolean(temp2,CultureInfo.InvariantCulture);
                                 break;
                             case "methodsclass":
                                 p_import.GlobalsNamespace = temp2;
@@ -1145,22 +1157,22 @@ namespace LayerD.OutputModules.Importers
                                 p_import.NetVersion = temp2;
                                 break;
                             case "omitattributes":
-                                p_import.IncludeAttributes = Convert.ToBoolean(temp2);
+                                p_import.IncludeAttributes = Convert.ToBoolean(temp2,CultureInfo.InvariantCulture);
                                 break;
                             case "omitevents":
-                                p_import.IncludeEvents = Convert.ToBoolean(temp2);
+                                p_import.IncludeEvents = Convert.ToBoolean(temp2,CultureInfo.InvariantCulture);
                                 break;
                             case "omitdelegates":
-                                p_import.IncludeDelegates = Convert.ToBoolean(temp2);
+                                p_import.IncludeDelegates = Convert.ToBoolean(temp2,CultureInfo.InvariantCulture);
                                 break;
                             case "omitenums":
-                                p_import.IgnoreEnums = Convert.ToBoolean(temp2);
+                                p_import.IgnoreEnums = Convert.ToBoolean(temp2,CultureInfo.InvariantCulture);
                                 break;
                             case "includeprivatemembers":
-                                p_import.IncludePrivateMembers = Convert.ToBoolean(temp2);
+                                p_import.IncludePrivateMembers = Convert.ToBoolean(temp2,CultureInfo.InvariantCulture);
                                 break;
                             case "ignoregenerics":
-                                p_import.IgnoreGenerics = Convert.ToBoolean(temp2);
+                                p_import.IgnoreGenerics = Convert.ToBoolean(temp2,CultureInfo.InvariantCulture);
                                 break;
                             default:
                                 AddError("Argumento de importación desconocido. Argumento Nº" + count + ".", ErrorType.Arguments);

@@ -1,3 +1,14 @@
+/*******************************************************************************
+* Copyright (c) 2002-2008, 2012 Alexis Ferreyra, Intel Corporation.
+* All rights reserved. This program and the accompanying materials
+* are made available under the terms of the Eclipse Public License v1.0
+* which accompanies this distribution, and is available at
+* http://www.eclipse.org/legal/epl-v10.html
+*
+* Contributors:
+*       Alexis Ferreyra - initial API and implementation
+*       Alexis Ferreyra (Intel Corporation) - bug fixing and improvements
+*******************************************************************************/
 /*-
  * Copyright (c) 2008 Alexis Ferreyra
  * All rights reserved.
@@ -39,8 +50,297 @@ using System.Collections.Generic;
 using System.Globalization;
 
 namespace LayerD.CodeDOM{
+
+    public static class TypeString
+    {
+        /// <summary>
+        /// Determina si el nombre proporcionado es un nombre calificado.
+        /// No analiza semántica. No valida la corrección sintactica del nombre.
+        /// 
+        /// Busca ":" o "."
+        /// </summary>
+        public static bool IsQualifiedName(string name)
+        {
+            for (int n = 0; n < name.Length; n++)
+            {
+                if (name[n] == ':' || name[n] == '.') return true;
+            }
+            return false;
+        }
+        /// <summary>
+        /// returns a simple name from qualified one. for example a.b.c returns c.
+        /// If the name is not qualified returns the same name
+        /// </summary>
+        /// <param name="fullName">A qualified fullname or a simple name</param>
+        /// <returns>most external simple name like c in a.b.c or d in d</returns>
+        public static string GetSimpleNameFromQualified(string fullName)
+        {
+            int index1 = fullName.LastIndexOf('.'),
+                index2 = fullName.LastIndexOf(':');
+            index1 = index1 > index2 ? index1 : index2;
+            if (index1 < 0) return fullName;
+            return fullName.Substring(index1 + 1);
+        }
+
+        /// <summary>
+        /// removes simple name from a qualified name. for example a.b.c returns a.b
+        /// If the name is not qualified returns the same name
+        /// </summary>
+        /// <param name="fullName">A qualified fullname or a simple name</param>
+        /// <returns>internal name like a.b in a.b.c or d in d</returns>
+        public static string GetTypeNameFromQualified(string fullName)
+        {
+            int index1 = fullName.LastIndexOf('.'),
+                index2 = fullName.LastIndexOf(':');
+            index1 = index1 > index2 ? index1 : index2;
+            if (index1 < 0) return fullName;
+            if (fullName[index1] == ':')
+            {
+                return fullName.Substring(0, index1 - 1);
+            }
+            else
+            {
+                return fullName.Substring(0, index1);
+            }
+        }
+
+        /// <summary>
+        /// Convierte una referencia a un tipo puntero.
+        /// 
+        /// No llamar con tipos no referencia o valores nulos o vacios.
+        /// </summary>
+        public static string ChangeReferenceToPointer(string typeStr)
+        {
+            return '*' + typeStr.Substring(1);
+        }
+        /// <summary>
+        /// Crea una referencia al tipo 'typeStr'.
+        /// 
+        /// No llamar con valores nulos o vacios.
+        /// </summary>
+        public static string MakeReferenceTypeTo(string typeStr)
+        {
+            return "^_" + typeStr;
+        }
+        /// <summary>
+        /// Devuelve la cantidad de dimensiones de un tipo Array.
+        /// 
+        /// Indeterminado si no se llama con un tipo matriz.
+        /// </summary>
+        public static int GetArrayDimensions(string arrayTypeStr)
+        {
+            int count = 0, pos = 0;
+            while (arrayTypeStr[pos] == '[')
+            {
+                //PENDIENTE : Considerar cuando se tiene dimensiones fijas como
+                //en "[2][3][5]MiTipo"
+                count++; pos += 2;
+            }
+            return count;
+        }
+        /// <summary>
+        /// Determina si el tipo es un puntero de un nivel a un Array.
+        /// O una referencia de un nivel a un Array.
+        /// 
+        /// Si el tipo no es un puntero el resultado es indeterminado.
+        /// </summary>
+        public static bool IsPointerToArrayType(string typeStr)
+        {
+            //Para ser un puntero a un Array debe tener la forma:
+            //     *_[]tipoElemento
+            //     ^_[]tipoElemento
+            return typeStr[2] == '[';
+        }
+        /// <summary>
+        /// Elimina todas las dimensiones de un tipo y retorna el tipo
+        /// de elementos del array más interno.
+        /// 
+        /// Ej: [][][]$CHAR$ --> $CHAR$
+        /// 
+        /// Indeterminado si no se llama con una cadena que no sea un array.
+        /// </summary>
+        public static string RemoveAllDimensionsFromArrayType(string typeStr)
+        {
+            do
+                typeStr = RemoveArrayTypeFromType(typeStr);
+            while (IsArrayType(typeStr));
+            return typeStr;
+        }
+        /// <summary>
+        /// Crea una cadena designando un "Puntero al tipo typeStr".
+        /// Admite punteros con semantica de referencia.
+        /// 
+        /// NO LLAMAR CON NULL
+        /// </summary>
+        public static string MakePointerTypeTo(string typeStr)
+        {
+            //PENDIENTE : revisar cuando se tenga en cuenta los modificadores
+            //const y volatile.
+            //Revisar punteros a miembro de clases.
+            //
+            if (typeStr[0] == '^') typeStr = '*' + typeStr.Substring(1);
+            return "*_" + typeStr;
+        }
+        /// <summary>
+        /// Indica si el tipo identificado por "typeStr" es un tipo puntero o no.
+        /// También devuelve verdadero si es un puntero con semántica de referencia.
+        /// 
+        /// NO LLAMAR CON NULL
+        /// </summary>
+        public static bool IsPointerType(string typeStr)
+        {
+            return typeStr[0] == '*' || typeStr[0] == '^';
+        }
+        /// <summary>
+        /// Indica si el tipo identificado por "typeStr" es un tipo puntero
+        /// con semantica de referencia o no.
+        /// 
+        /// NO LLAMAR CON NULL
+        /// </summary>
+        public static bool IsReferencePointerType(string typeStr)
+        {
+            if (typeStr[0] == '^') return true;
+            else if (typeStr[0] == '*')
+            {
+                if (typeStr[2] == ':')
+                {
+                    int endIndex = typeStr.IndexOf(':', 3);
+                    return IsReferencePointerType(typeStr.Substring(endIndex + 1));
+                }
+                else
+                {
+                    return IsReferencePointerType(typeStr.Substring(2));
+                }
+            }
+            else return false;
+        }
+        /// <summary>
+        /// Indica si el tipo identificado por "typeStr" es un tipo
+        /// matriz o no.
+        /// 
+        /// NO LLAMAR CON NULL
+        /// </summary>
+        public static bool IsArrayType(string typeStr)
+        {
+            return typeStr[0] == '[';
+        }
+        public enum RemoveReferenciesType
+        {
+            ExtractType,
+            SimpleExpression,
+            MemberAccess,
+            ArrayAccess,
+            IndirectionOperator
+        }
+        /// <summary>
+        /// Calcula el tipo obtenido a partir de "typeStr" luego
+        /// de aplicar las indirecciones automaticas en un tipo puntero
+        /// con semantica de referencia.
+        /// 
+        /// NO LLAMAR CON NULL
+        /// "TYPESTR" DEBE SER UN TIPO DE REFERENCIA; DE LO CONTRARIO
+        /// EL RESULTADO ES INDETERMINADO.
+        /// </summary>
+        public static string RemoveReferencesFromType(string typeStr, RemoveReferenciesType type)
+        {
+            switch (type)
+            {
+                case RemoveReferenciesType.SimpleExpression:
+                    while (IsPointerType(RemovePointerIndirectionsFromType(typeStr, 1))) typeStr = RemovePointerIndirectionsFromType(typeStr, 1);
+                    Debug.Assert(typeStr[0] == '^' || typeStr[0] == '*', "Internal error while dereferencing.");
+                    typeStr = '^' + typeStr.Substring(1);
+                    break;
+                case RemoveReferenciesType.ExtractType:
+                    while (IsPointerType(typeStr)) typeStr = RemovePointerIndirectionsFromType(typeStr, 1);
+                    break;
+                case RemoveReferenciesType.ArrayAccess:
+                case RemoveReferenciesType.MemberAccess:
+                    typeStr = RemovePointerIndirectionsFromType(typeStr, 1);
+                    break;
+                case RemoveReferenciesType.IndirectionOperator:
+                    typeStr = RemovePointerIndirectionsFromType(typeStr, 1);
+                    break;
+                default:
+                    break;
+            }
+            return typeStr;
+        }
+        /// <summary>
+        /// Realiza "count" indirecciones en "typeStr" y retorna la 
+        /// cadena de tipo obtenida.
+        /// Se puede utilizar con referencias en dicho caso elimina la referencia.
+        /// 
+        /// Si la cantidad de indirecciones es mayor a la indirección del tipo
+        /// puntero el resultado es indeterminado.
+        /// Si el tipo no es un tipo puntero el resultado es indeterminado.
+        /// Si se llama con "count" menor a "1" el resultado es indeterminado.
+        /// </summary>
+        public static string RemovePointerIndirectionsFromType(string typeStr, int count)
+        {
+            if (typeStr[2] != ':')
+            {
+                typeStr = typeStr.Substring(2);
+            }
+            else
+            {
+                int index = typeStr.IndexOf(':', 3);
+                typeStr = typeStr.Substring(index + 1);
+            }
+            //typeStr = typeStr.Remove(0, 2);
+            if (count <= 1) return typeStr;
+            else return RemovePointerIndirectionsFromType(typeStr, count - 1);
+        }
+        /// <summary>
+        /// Elmina el tipo Array de una cadena de identificadora de tipo y devuelve
+        /// el tipo de los elementos.
+        /// 
+        /// No llamar con una cadena que no sea un tipo matriz, nula o vacia.
+        /// </summary>
+        public static string RemoveArrayTypeFromType(string paramTypeStr)
+        {
+            if (paramTypeStr[1] == ']') return paramTypeStr.Substring(2);
+            else return paramTypeStr.Substring(paramTypeStr.IndexOf(']') + 1);
+        }
+    }
+
 	public class ZoeHelper{
 		private ZoeHelper(){}
+
+        public static void SaveCDOMFile(XplNode node, string fileName)
+        {
+            XplWriter writer = null;
+            try
+            {
+                writer = new XplWriter(fileName);
+                node.Write(writer);
+            }
+            finally
+            {
+                if (writer != null) writer.Close();
+            }
+        }
+        public static void LoadCDOMFile(XplNode node, string fileName)
+        {
+            XplReader reader = null;
+            try
+            {
+                reader = new XplReader(fileName);
+                reader.Read();
+                node.Read(reader);
+            }
+            finally
+            {
+                if (reader != null) reader.Close();
+            }
+        }
+
+        public static XplDocument LoadSingleSource(string fileName)
+        {
+            XplDocument doc = new XplDocument();
+            LoadCDOMFile(doc, fileName);
+            return doc;
+        }
+
 		static public string Att_ToString(string p){
             return p;
         }
@@ -72,6 +372,7 @@ namespace LayerD.CodeDOM{
 		static public DateTime StringAtt_To_DATETIME(string str){
             return Convert.ToDateTime(str, CultureInfo.InvariantCulture);
 		}
+
         /// <summary>
         /// Busca la primera información de fuente LayerD que encuentre empezando
         /// por el nodo "node" y subiendo en el árbol hasta encontrar la info
@@ -250,7 +551,7 @@ namespace LayerD.CodeDOM{
             }
             else
             {
-                if (typeString.EndsWith("_LIT$")) typeString = typeString.Substring(0, typeString.LastIndexOf("_LIT$")) + "$";
+                if (typeString.EndsWith("_LIT$", StringComparison.InvariantCulture)) typeString = typeString.Substring(0, typeString.LastIndexOf("_LIT$", StringComparison.InvariantCulture)) + "$";
                 retType.set_typename(typeString);
             }
             return retType;
@@ -272,8 +573,23 @@ namespace LayerD.CodeDOM{
         public static string WriteToString(XplNode node)
         {
             StringBuilder sb = new StringBuilder();
-            TextWriter tw=new StringWriter(sb);
+            TextWriter tw=new StringWriter(sb,CultureInfo.InvariantCulture);
             XplWriter writer = new XplWriter(tw);
+            if (node.Write(writer))
+            {
+                return sb.ToString();
+            }
+            return String.Empty;
+        }
+        /// <summary>
+        /// Writes the node to an indented XML string.
+        /// </summary>
+        public static string WriteToIndentedString(XplNode node)
+        {
+            StringBuilder sb = new StringBuilder();
+            TextWriter tw = new StringWriter(sb,CultureInfo.InvariantCulture);
+            XplWriter writer = new XplWriter(tw);
+            writer.Formatting = Formatting.Indented;
             if (node.Write(writer))
             {
                 return sb.ToString();
@@ -309,16 +625,14 @@ namespace LayerD.CodeDOM{
 
         /// <summary>
         /// returns a simple name from qualified one. for example a.b.c returns c.
+        /// If the name is not qualified returns the same name
         /// </summary>
         /// <param name="fullName">A qualified fullname or a simple name</param>
         /// <returns>most external simple name like c in a.b.c or d in d</returns>
+        [Obsolete]
         public static string GetSimpleNameFromQualified(string fullName)
         {
-            int index1 = fullName.LastIndexOf('.'),
-                index2 = fullName.LastIndexOf(':');
-            index1 = index1 > index2 ? index1 : index2;
-            if (index1 < 0) return fullName;
-            return fullName.Substring(index1 + 1);
+            return TypeString.GetSimpleNameFromQualified(fullName);
         }
 
         /// <summary>
@@ -429,259 +743,277 @@ namespace LayerD.CodeDOM{
                 XplNodeList[] matchedNatives = new XplNodeList[natives.Count / 2];
 
                 //1º)Busco todas las coincidencias
-                //Expresiones
-                if (expressions.Count > 0)
-                    for (int n = 0; n < matchedExpressions.Length; n++)
-                    {
-                        //matchedExpressions[n] = template.FindNodes("/@XplExpression/n(" + expressions[n * 2] + ")");
-                        matchedExpressions[n] = _FindExpression((string)expressions[n * 2], template);
-                    }
-                //INames
-                //Para los inames debo buscar:
-                //- XplNode n=iname
-                //- XplDeclarator name=iname
-                //- XplParameter name=iname
-                //- XplField name=iname
-                //- XplProperty name=iname
-                //- XplClass name=iname
-                //- XplFunction name=iname
-                //- XplNamespace name=iname
-                //- XplInherit name=iname -- Esto no deberia ser con Type?
-                //- XplImplement name=iname -- Esto no deberia ser con Type?
-                //- XplDocumentation
-                if (inames.Count > 0)
-                    for (int n = 0; n < matchedINames.Length; n++)
-                    {
-                        //PENDIENTE : optimizar esto es una pasta, cero performance :-)
-                        string inameName = (string)inames[n * 2];
-                        matchedINames[n] = _FindINames(inameName, template, ((XplIName)inames[n * 2 + 1]).Identifier);
-                    }
-
-                //Types
-                //No deberia tambien buscar?
-                //- XplInherit 
-                //- XplImplement 
-                if (types.Count > 0)
-                    for (int n = 0; n < matchedTypes.Length; n++)
-                    {
-                        //matchedTypes[n] = template.FindNodes("/@XplType[typename='" + types[n * 2] + "']");
-                        XplType _type = (XplType)types[n * 2 + 1];
-                        matchedTypes[n] = _FindTypes((string)types[n * 2], template, String.IsNullOrEmpty(_type.get_typeStr()) ? _type.get_typename() : _type.get_typeStr() );
-                    }
-                //Blocks
-                if (blocks.Count > 0)
-                    for (int n = 0; n < matchedBlocks.Length; n++)
-                    {
-                        //matchedBlocks[n] = template.FindNodes("/@XplExpression/n(" + blocks[n * 2] + ")");
-                        matchedBlocks[n] = _FindBlocks((string)blocks[n * 2], template);
-                    }
-                //Natives
-                if (natives.Count > 0)
-                    for (int n = 0; n < matchedNatives.Length; n++)
-                    {
-                        //matchedNatives[n] = template.FindNodes("/@XplExpression/n(" + natives[n * 2] + ")");
-                        matchedNatives[n] = _FindNativeTypes((string)natives[n * 2], template);
-                    }
+                _InternalWritecodeImplFindMatches(template, expressions, inames, types, blocks, natives, matchedExpressions, matchedINames, matchedTypes, matchedBlocks, matchedNatives);
 
                 //2º)Ahora reemplazo todo junto
-                //Expressions
-                for (int n = 0; n < expressions.Count / 2; n++)
-                {
-                    if (matchedExpressions[n] != null)
-                        foreach (XplNode match in matchedExpressions[n])
-                            match.set_Content(
-                                ((XplNode)expressions[n * 2 + 1]).get_Content().Clone()
-                                );
-                }
-                //INames
-                for (int n = 0; n < inames.Count / 2; n++)
-                {
-                    if (matchedINames[n] != null)
-                        foreach (XplNode match in matchedINames[n])
-                        {
-                            string inameString = ((XplIName)inames[n * 2 + 1]).FullIdentifier;
-                            string simpleName = GetSimpleNameFromQualified(inameString);
-                            switch (match.get_TypeName())
-                            {
-                                case CodeDOMTypes.XplExpression:
-                                    match.get_Content().set_Value(
-                                        match.get_Content().get_StringValue().Replace(
-                                        (string)inames[n * 2], inameString)
-                                    );
-                                    //match.get_Content().set_Value(inameString);
-                                    break;
-                                case CodeDOMTypes.XplDeclarator:
-                                    ((XplDeclarator)match).set_name(simpleName);
-                                    break;
-                                case CodeDOMTypes.XplParameter:
-                                    ((XplParameter)match).set_name(simpleName);
-                                    break;
-                                case CodeDOMTypes.XplField:
-                                    ((XplField)match).set_name(simpleName);
-                                    break;
-                                case CodeDOMTypes.XplProperty:
-                                    ((XplProperty)match).set_name(simpleName);
-                                    break;
-                                case CodeDOMTypes.XplClass:
-                                    ((XplClass)match).set_name(simpleName);
-                                    break;
-                                case CodeDOMTypes.XplFunction:
-                                    ((XplFunction)match).set_name(inameString);
-                                    break;
-                                case CodeDOMTypes.XplNamespace:
-                                    ((XplNamespace)match).set_name(inameString);
-                                    break;
-                                case CodeDOMTypes.XplType:
-                                    ((XplType)match).set_typename(inameString);
-                                    break;
-                                case CodeDOMTypes.XplInherit:
-                                    ((XplInherit)match).get_type().set_typename(inameString);
-                                    break;
-                            }
-                        }
-                }
-                //Types
-                for (int n = 0; n < types.Count / 2; n++)
-                {
-                    if (matchedTypes[n] != null)
+                _InternalWritecodeImplReplaceMatches(expressions, inames, types, blocks, natives, matchedExpressions, matchedINames, matchedTypes, matchedBlocks, matchedNatives);
+            }
+
+            // replace ileft
+            _InternalWritecodeImplReplaceIleft(contextNode, template, ilefts);
+
+            return template;
+        }
+
+        private static void _InternalWritecodeImplReplaceMatches(ArrayList expressions, ArrayList inames, ArrayList types, ArrayList blocks, ArrayList natives, XplNodeList[] matchedExpressions, XplNodeList[] matchedINames, XplNodeList[] matchedTypes, XplNodeList[] matchedBlocks, XplNodeList[] matchedNatives)
+        {
+            //Expressions
+            for (int n = 0; n < expressions.Count / 2; n++)
+            {
+                if (matchedExpressions[n] != null)
+                    foreach (XplNode match in matchedExpressions[n])
+                        match.set_Content(
+                            ((XplNode)expressions[n * 2 + 1]).get_Content().Clone()
+                            );
+            }
+            //INames
+            for (int n = 0; n < inames.Count / 2; n++)
+            {
+                if (matchedINames[n] != null)
+                    foreach (XplNode match in matchedINames[n])
                     {
-                        XplType typeArgument = (XplType)types[n * 2 + 1];
-                        foreach (XplType match in matchedTypes[n])
+                        string inameString = ((XplIName)inames[n * 2 + 1]).FullIdentifier;
+                        string simpleName = GetSimpleNameFromQualified(inameString);
+                        switch (match.get_TypeName())
                         {
-                            if (match.get_Parent() is XplType)
+                            case CodeDOMTypes.XplExpression:
+                                match.get_Content().set_Value(
+                                    match.get_Content().get_StringValue().Replace(
+                                    (string)inames[n * 2], inameString)
+                                );
+                                //match.get_Content().set_Value(inameString);
+                                break;
+                            case CodeDOMTypes.XplDeclarator:
+                                ((XplDeclarator)match).set_name(simpleName);
+                                break;
+                            case CodeDOMTypes.XplParameter:
+                                ((XplParameter)match).set_name(simpleName);
+                                break;
+                            case CodeDOMTypes.XplField:
+                                ((XplField)match).set_name(simpleName);
+                                break;
+                            case CodeDOMTypes.XplProperty:
+                                ((XplProperty)match).set_name(simpleName);
+                                break;
+                            case CodeDOMTypes.XplClass:
+                                ((XplClass)match).set_name(simpleName);
+                                break;
+                            case CodeDOMTypes.XplFunction:
+                                ((XplFunction)match).set_name(inameString);
+                                break;
+                            case CodeDOMTypes.XplNamespace:
+                                ((XplNamespace)match).set_name(inameString);
+                                break;
+                            case CodeDOMTypes.XplType:
+                                ((XplType)match).set_typename(inameString);
+                                break;
+                            case CodeDOMTypes.XplInherit:
+                                ((XplInherit)match).get_type().set_typename(inameString);
+                                break;
+                        }
+                    }
+            }
+            //Types
+            for (int n = 0; n < types.Count / 2; n++)
+            {
+                if (matchedTypes[n] != null)
+                {
+                    XplType typeArgument = (XplType)types[n * 2 + 1];
+                    foreach (XplType match in matchedTypes[n])
+                    {
+                        if (match.get_Parent() is XplType)
+                        {
+                            ((XplType)match.get_Parent()).set_dt((XplType)typeArgument.Clone());
+                        }
+                        else
+                        {
+                            #region Copio el tipo Argumento en el destino
+                            if (typeArgument.get_ae() != null)
+                                match.set_ae((XplExpression)typeArgument.get_ae().Clone());
+                            else
+                                match.set_ae(null);
+                            match.set_const(typeArgument.get_const());
+                            match.set_customTypeCheck(typeArgument.get_customTypeCheck());
+                            if (typeArgument.get_dt() != null)
+                                match.set_dt((XplType)typeArgument.get_dt().Clone());
+                            else
+                                match.set_dt(null);
+                            match.set_exec(typeArgument.get_exec());
+                            match.set_ftype(typeArgument.get_ftype());
+                            match.set_isarray(typeArgument.get_isarray());
+                            match.set_ispointer(typeArgument.get_ispointer());
+                            if (typeArgument.get_pi() != null)
+                                match.set_pi((XplPointerinfo)typeArgument.get_pi().Clone());
+                            else
+                                match.set_pi(null);
+                            match.set_pointertype(typeArgument.get_pointertype());
+                            match.set_typename(typeArgument.get_typename());
+                            match.set_typeStr(typeArgument.get_typeStr());
+                            match.set_volatile(typeArgument.get_volatile());
+                            #endregion
+                        }
+                    }
+                }
+            }
+            //Blocks
+            //
+            for (int n = 0; n < blocks.Count / 2; n++)
+            {
+                if (matchedBlocks[n] != null)
+                    foreach (XplNode match in matchedBlocks[n])
+                    {
+                        if (match.get_Parent() is XplFunctionBody)
+                        {
+                            XplFunctionBody parent = (XplFunctionBody)match.get_Parent();
+                            XplFunctionBody toInsert = (XplFunctionBody)((XplNode)blocks[n * 2 + 1]).Clone();
+                            toInsert.set_ElementName("bk");
+                            if (parent.Children().GetLength() > 1)
                             {
-                                ((XplType)match.get_Parent()).set_dt((XplType)typeArgument.Clone());
+                                parent.Children().InsertBefore(toInsert, match);
+                                parent.Children().Remove(match);
                             }
                             else
                             {
-                                #region Copio el tipo Argumento en el destino
-                                if (typeArgument.get_ae() != null)
-                                    match.set_ae((XplExpression)typeArgument.get_ae().Clone());
-                                else
-                                    match.set_ae(null);
-                                match.set_const(typeArgument.get_const());
-                                match.set_customTypeCheck(typeArgument.get_customTypeCheck());
-                                if (typeArgument.get_dt() != null)
-                                    match.set_dt((XplType)typeArgument.get_dt().Clone());
-                                else
-                                    match.set_dt(null);
-                                match.set_exec(typeArgument.get_exec());
-                                match.set_ftype(typeArgument.get_ftype());
-                                match.set_isarray(typeArgument.get_isarray());
-                                match.set_ispointer(typeArgument.get_ispointer());
-                                if (typeArgument.get_pi() != null)
-                                    match.set_pi((XplPointerinfo)typeArgument.get_pi().Clone());
-                                else
-                                    match.set_pi(null);
-                                match.set_pointertype(typeArgument.get_pointertype());
-                                match.set_typename(typeArgument.get_typename());
-                                match.set_typeStr(typeArgument.get_typeStr());
-                                match.set_volatile(typeArgument.get_volatile());
-                                #endregion
+                                //Si el bloque en el cual inserto sólo existe una instrucción copio la lista
+                                parent.Children().Clear();
+                                parent.Children().InsertAtEnd(toInsert.Children());
                             }
                         }
                     }
-                }
-                //Blocks
-                //
-                for (int n = 0; n < blocks.Count / 2; n++)
-                {
-                    if (matchedBlocks[n] != null)
-                        foreach (XplNode match in matchedBlocks[n])
-                        {
-                            if (match.get_Parent() is XplFunctionBody)
-                            {
-                                XplFunctionBody parent = (XplFunctionBody)match.get_Parent();
-                                XplFunctionBody toInsert = (XplFunctionBody)((XplNode)blocks[n * 2 + 1]).Clone();
-                                toInsert.set_ElementName("bk");
-                                if (parent.Children().GetLength() > 1)
-                                {
-                                    parent.Children().InsertBefore(toInsert, match);
-                                    parent.Children().Remove(match);
-                                }
-                                else
-                                {
-                                    //Si el bloque en el cual inserto sólo existe una instrucción copio la lista
-                                    parent.Children().Clear();
-                                    parent.Children().InsertAtEnd(toInsert.Children());
-                                }
-                            }
-                        }
-                }
-                //Natives
-                for (int n = 0; n < natives.Count / 2; n++)
-                {
-                    if (matchedNatives[n] != null)
-                        foreach (XplNode match in matchedNatives[n])
-                        {
-                            XplLiteral literal = XplExpression.new_lit();
-                            //PENDIENTE : Aqui la conversión del valor a string debe realizarse correctamente
-                            //para el caso de flotantes tambien, esto sólo funcionara para enteros...
-                            object value = natives[n * 2 + 1];
-                            string stringValue = null;
-
-                            if (value is short)
-                            {
-                                stringValue = ((short)value).ToString();
-                                literal.set_type(XplLiteraltype_enum.INTEGER);
-                            }
-                            else if (value is int)
-                            {
-                                stringValue = ((int)value).ToString();
-                                literal.set_type(XplLiteraltype_enum.INTEGER);
-                            }
-                            else if (value is long)
-                            {
-                                stringValue = ((long)value).ToString();
-                                literal.set_type(XplLiteraltype_enum.INTEGER);
-                            }
-                            else if (value is ushort)
-                            {
-                                stringValue = ((ushort)value).ToString(System.Globalization.NumberFormatInfo.InvariantInfo);
-                                literal.set_type(XplLiteraltype_enum.INTEGER);
-                            }
-                            else if (value is uint)
-                            {
-                                stringValue = ((uint)value).ToString(System.Globalization.NumberFormatInfo.InvariantInfo);
-                                literal.set_type(XplLiteraltype_enum.INTEGER);
-                            }
-                            else if (value is ulong)
-                            {
-                                stringValue = ((ulong)value).ToString(System.Globalization.NumberFormatInfo.InvariantInfo);
-                                literal.set_type(XplLiteraltype_enum.INTEGER);
-                            }
-                            else if (value is float)
-                            {
-                                stringValue = ((float)value).ToString(System.Globalization.NumberFormatInfo.InvariantInfo);
-                                literal.set_type(XplLiteraltype_enum.FLOAT);
-                            }
-                            else if (value is double)
-                            {
-                                stringValue = ((double)value).ToString(System.Globalization.NumberFormatInfo.InvariantInfo);
-                                literal.set_type(XplLiteraltype_enum.DOUBLE);
-                            }
-                            else if (value is char)
-                            {
-                                stringValue = value.ToString();
-                                literal.set_type(XplLiteraltype_enum.CHAR);
-                            }
-                            else if (value is string)
-                            {
-                                stringValue = (string)value;
-                                literal.set_type(XplLiteraltype_enum.STRING);
-                            }
-                            else if (value is bool)
-                            {
-                                stringValue = ((bool)value) ? "true" : "false";
-                                literal.set_type(XplLiteraltype_enum.BOOL);
-                            }
-
-                            literal.set_str(stringValue);
-                            match.set_Content(literal);
-                        }
-                }
-
             }
+            //Natives
+            for (int n = 0; n < natives.Count / 2; n++)
+            {
+                if (matchedNatives[n] != null)
+                    foreach (XplNode match in matchedNatives[n])
+                    {
+                        XplLiteral literal = XplExpression.new_lit();
+                        //PENDIENTE : Aqui la conversión del valor a string debe realizarse correctamente
+                        //para el caso de flotantes tambien, esto sólo funcionara para enteros...
+                        object value = natives[n * 2 + 1];
+                        string stringValue = null;
+
+                        if (value is short)
+                        {
+                            stringValue = ((short)value).ToString(CultureInfo.InvariantCulture);
+                            literal.set_type(XplLiteraltype_enum.INTEGER);
+                        }
+                        else if (value is int)
+                        {
+                            stringValue = ((int)value).ToString(CultureInfo.InvariantCulture);
+                            literal.set_type(XplLiteraltype_enum.INTEGER);
+                        }
+                        else if (value is long)
+                        {
+                            stringValue = ((long)value).ToString(CultureInfo.InvariantCulture);
+                            literal.set_type(XplLiteraltype_enum.INTEGER);
+                        }
+                        else if (value is ushort)
+                        {
+                            stringValue = ((ushort)value).ToString(System.Globalization.NumberFormatInfo.InvariantInfo);
+                            literal.set_type(XplLiteraltype_enum.INTEGER);
+                        }
+                        else if (value is uint)
+                        {
+                            stringValue = ((uint)value).ToString(System.Globalization.NumberFormatInfo.InvariantInfo);
+                            literal.set_type(XplLiteraltype_enum.INTEGER);
+                        }
+                        else if (value is ulong)
+                        {
+                            stringValue = ((ulong)value).ToString(System.Globalization.NumberFormatInfo.InvariantInfo);
+                            literal.set_type(XplLiteraltype_enum.INTEGER);
+                        }
+                        else if (value is float)
+                        {
+                            stringValue = ((float)value).ToString(System.Globalization.NumberFormatInfo.InvariantInfo);
+                            literal.set_type(XplLiteraltype_enum.FLOAT);
+                        }
+                        else if (value is double)
+                        {
+                            stringValue = ((double)value).ToString(System.Globalization.NumberFormatInfo.InvariantInfo);
+                            literal.set_type(XplLiteraltype_enum.DOUBLE);
+                        }
+                        else if (value is char)
+                        {
+                            stringValue = value.ToString();
+                            literal.set_type(XplLiteraltype_enum.CHAR);
+                        }
+                        else if (value is string)
+                        {
+                            stringValue = (string)value;
+                            literal.set_type(XplLiteraltype_enum.STRING);
+                        }
+                        else if (value is bool)
+                        {
+                            stringValue = ((bool)value) ? "true" : "false";
+                            literal.set_type(XplLiteraltype_enum.BOOL);
+                        }
+
+                        literal.set_str(stringValue);
+                        match.set_Content(literal);
+                    }
+            }
+        }
+
+        private static void _InternalWritecodeImplFindMatches(XplNode template, ArrayList expressions, ArrayList inames, ArrayList types, ArrayList blocks, ArrayList natives, XplNodeList[] matchedExpressions, XplNodeList[] matchedINames, XplNodeList[] matchedTypes, XplNodeList[] matchedBlocks, XplNodeList[] matchedNatives)
+        {
+            //Expresiones
+            if (expressions.Count > 0)
+                for (int n = 0; n < matchedExpressions.Length; n++)
+                {
+                    //matchedExpressions[n] = template.FindNodes("/@XplExpression/n(" + expressions[n * 2] + ")");
+                    matchedExpressions[n] = _FindExpression((string)expressions[n * 2], template);
+                }
+            //INames
+            //Para los inames debo buscar:
+            //- XplNode n=iname
+            //- XplDeclarator name=iname
+            //- XplParameter name=iname
+            //- XplField name=iname
+            //- XplProperty name=iname
+            //- XplClass name=iname
+            //- XplFunction name=iname
+            //- XplNamespace name=iname
+            //- XplInherit name=iname -- Esto no deberia ser con Type?
+            //- XplImplement name=iname -- Esto no deberia ser con Type?
+            //- XplDocumentation
+            if (inames.Count > 0)
+                for (int n = 0; n < matchedINames.Length; n++)
+                {
+                    //PENDIENTE : optimizar esto es una pasta, cero performance :-)
+                    string inameName = (string)inames[n * 2];
+                    matchedINames[n] = _FindINames(inameName, template, ((XplIName)inames[n * 2 + 1]).Identifier);
+                }
+
+            //Types
+            //No deberia tambien buscar?
+            //- XplInherit 
+            //- XplImplement 
+            if (types.Count > 0)
+                for (int n = 0; n < matchedTypes.Length; n++)
+                {
+                    //matchedTypes[n] = template.FindNodes("/@XplType[typename='" + types[n * 2] + "']");
+                    XplType _type = (XplType)types[n * 2 + 1];
+                    matchedTypes[n] = _FindTypes((string)types[n * 2], template, String.IsNullOrEmpty(_type.get_typeStr()) ? _type.get_typename() : _type.get_typeStr());
+                }
+            //Blocks
+            if (blocks.Count > 0)
+                for (int n = 0; n < matchedBlocks.Length; n++)
+                {
+                    //matchedBlocks[n] = template.FindNodes("/@XplExpression/n(" + blocks[n * 2] + ")");
+                    matchedBlocks[n] = _FindBlocks((string)blocks[n * 2], template);
+                }
+            //Natives
+            if (natives.Count > 0)
+                for (int n = 0; n < matchedNatives.Length; n++)
+                {
+                    //matchedNatives[n] = template.FindNodes("/@XplExpression/n(" + natives[n * 2] + ")");
+                    matchedNatives[n] = _FindNativeTypes((string)natives[n * 2], template);
+                }
+        }
+
+        private static void _InternalWritecodeImplReplaceIleft(XplNode contextNode, XplNode template, XplNodeList ilefts)
+        {
             // 3º)Reemplazo el nombre especial "ileft"
             if (contextNode != null)
             {
@@ -712,28 +1044,34 @@ namespace LayerD.CodeDOM{
                         {
                             if (reemplazo.get_TypeName() == CodeDOMTypes.XplBinaryoperator)
                             {
-                                if (((XplBinaryoperator)reemplazo).get_op() == XplBinaryoperators_enum.M)
+                                var binop = ((XplBinaryoperator)reemplazo).get_op();
+                                if (binop == XplBinaryoperators_enum.M ||
+                                    binop == XplBinaryoperators_enum.PM ||
+                                    binop == XplBinaryoperators_enum.PMP ||
+                                    binop == XplBinaryoperators_enum.RM)
                                 {
-                                    reemplazo = ((XplBinaryoperator)reemplazo).get_l();
+                                    XplNode temp = ((XplBinaryoperator)reemplazo).get_l();
                                     //ileft.get_Parent().set_Content(reemplazo.get_Content());
-                                    ileft.set_Content(reemplazo.get_Content());
+                                    ileft.set_Content(temp.get_Content().Clone());
+                                    if (ileft.get_Parent().IsA(CodeDOMTypes.XplBinaryoperator))
+                                    {
+                                        ((XplBinaryoperator)ileft.get_Parent()).set_op(XplBinaryoperators_enum.RM);
+                                    }
                                 }
                             }
                             else
                             {
-                                if(contextType==CodeDOMTypes.XplFunctioncall || contextType==CodeDOMTypes.XplNode)
+                                if (contextType == CodeDOMTypes.XplFunctioncall || contextType == CodeDOMTypes.XplNode)
                                     // Context node isn't a.b() form, but b() what is the same that this.b()
                                     // assume that content of ileft it's a XplNode
                                     ileft.get_Content().set_Value("this");
                                 else
-                                    ileft.set_Content(reemplazo);
+                                    ileft.set_Content(reemplazo.Clone());
                             }
                         }
                     }
                 }
             }
-
-            return template;
         }
 
         private static XplNodeList _FindINames(string inameName, XplNode template, string currentINameValue)
@@ -771,7 +1109,7 @@ namespace LayerD.CodeDOM{
                         if (contentStr == searchFor) list.InsertAtEnd(currentNode);
                         else if (contentStr.Contains(searchFor + ".")) list.InsertAtEnd(currentNode);
                         else if (contentStr.Contains(searchFor + ":")) list.InsertAtEnd(currentNode);
-                        else if (contentStr.EndsWith(searchFor)) list.InsertAtEnd(currentNode);
+                        else if (contentStr.EndsWith(searchFor, StringComparison.InvariantCulture)) list.InsertAtEnd(currentNode);
                         
                         /*if (index >= 0)
                         {
@@ -1038,7 +1376,7 @@ namespace LayerD.CodeDOM{
         public static string MakeUniqueIdentifier()
         {
             DateTime now = DateTime.Now;
-            return "__iuicdom_" + Path.GetFileNameWithoutExtension( Path.GetRandomFileName() ) + now.Ticks.ToString();
+            return "__iuicdom_" + Path.GetFileNameWithoutExtension( Path.GetRandomFileName() ) + now.Ticks.ToString(CultureInfo.InvariantCulture);
         }
         /// <summary>
         /// Crea un iname con un nombre de identificador especificado
@@ -1192,7 +1530,11 @@ namespace LayerD.CodeDOM{
 
     [Serializable]
 	public class XplNode{
-		//string p_elementName;
+
+        static object _renderModule;
+        static bool _renderModuleLoaded;
+
+        //string p_elementName;
 		string p_errorString;
 		XplNodeType_enum p_nodeType;
 		object p_value;
@@ -1529,13 +1871,13 @@ namespace LayerD.CodeDOM{
                                 case XplNodeType_enum.STRING:
                                     p_value = reader.Value; break;
                                 case XplNodeType_enum.INT:
-                                    p_value = Convert.ToInt32(reader.Value); break;
+                                    p_value = Convert.ToInt32(reader.Value,CultureInfo.InvariantCulture); break;
                                 case XplNodeType_enum.UNSIGNED:
-                                    p_value = Convert.ToUInt32(reader.Value); break;
+                                    p_value = Convert.ToUInt32(reader.Value,CultureInfo.InvariantCulture); break;
                                 case XplNodeType_enum.DATETIME:
-                                    p_value = Convert.ToDateTime(reader.Value); break;
+                                    p_value = Convert.ToDateTime(reader.Value,CultureInfo.InvariantCulture); break;
                                 case XplNodeType_enum.BOOL:
-                                    p_value = Convert.ToBoolean(reader.Value); break;
+                                    p_value = Convert.ToBoolean(reader.Value,CultureInfo.InvariantCulture); break;
                                 case XplNodeType_enum.EMPTY:
                                     break;
                             };
@@ -1577,6 +1919,20 @@ namespace LayerD.CodeDOM{
                 // empty setter to allow the use of operator += to add nodes
             }
         }
+
+        /// <summary>
+        /// Returns current statement or null if the node is not a subnode of an statement
+        /// </summary>
+        public XplNode CurrentStatement
+        {
+            get
+            {
+                XplNode next = this;
+                while (next.get_Parent() != null && next.get_Parent().get_TypeName() != CodeDOMTypes.XplFunctionBody) next = next.get_Parent();
+                return next.get_Parent() == null ? null : next;
+            }
+        }
+
         /// <summary>
         /// Returns current DocumentBody node or null if it isn't inside a DocumentNode node.
         /// </summary>
@@ -1650,6 +2006,83 @@ namespace LayerD.CodeDOM{
 				return (XplProperty)next;
 			}
 		}
+
+        /// <summary>
+        /// returns zoe representation of the node
+        /// </summary>
+        public string ZoeXmlString
+        {
+            get
+            {
+                return ZoeHelper.WriteToIndentedString(this);
+            }
+        }
+
+        /// <summary>
+        /// returns Meta D++ string representation for current node
+        /// </summary>
+        public string ReadableString
+        {
+            get
+            {
+                if (!_renderModuleLoaded) LoadMetaDppRenderModule();
+                if (_renderModule == null) return "## Can't find Meta D++ render module";
+                return RenderToString();
+            }
+        }
+
+        /// <summary>
+        /// Internal method, try to call "ConvertToString" method on render module
+        /// </summary>
+        /// <returns>Renderized string or error</returns>
+        private string RenderToString()
+        {
+            return (string)_renderModule.GetType().InvokeMember(
+                "ConvertToString",
+                BindingFlags.Public | BindingFlags.InvokeMethod | BindingFlags.Instance, 
+                null, 
+                _renderModule, 
+                new object[]{ this }, 
+                CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>
+        /// Sets the render module used by ReadableString property.
+        /// </summary>
+        /// <param name="renderModule">An object with "string ConvertToString(XplNode node)" instance method which is able to render XplNodes.</param>
+        static public void SetStringRenderModule(object renderModule)
+        {
+            _renderModule = renderModule;
+            _renderModuleLoaded = true;
+        }
+
+        static private void LoadMetaDppRenderModule()
+        {
+            _renderModuleLoaded = true;
+            Assembly metaDppModule = null;
+            string filename = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "/lib_zoe_outmod_dpp.dll";
+            if (!File.Exists(filename)) filename = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "/outputmodules/lib_zoe_outmod_dpp.dll"; ;
+            try
+            {
+                metaDppModule = Assembly.LoadFrom(filename);
+            }
+            catch (FileNotFoundException)
+            {
+                return;
+            }
+            if (metaDppModule != null)
+            {
+                Type metaDppModuleType = metaDppModule.GetType("LayerD.OutputModules.DPPZOERenderModule");
+                _renderModule = Activator.CreateInstance(metaDppModuleType);
+            }
+        }
+
+        public override string ToString()
+        {
+            var tempStr = this.ReadableString;
+            if (tempStr.StartsWith("##", StringComparison.InvariantCulture)) return this.ZoeXmlString;
+            return tempStr;
+        }
 
         /// <summary>
         /// Adds a node to the end of Children collection.
@@ -1892,6 +2325,16 @@ namespace LayerD.CodeDOM{
         public XplNode get_Parent()
         {
             return p_parent;
+        }
+        /// <summary>
+        /// Returns the index of child in the list.
+        /// If the item is not in the list -1 is returned.
+        /// </summary>
+        /// <param name="child">Child to find</param>
+        /// <returns>Zero based index of child or -1 if not found</returns>
+        public int IndexOf(XplNode child)
+        {
+            return p_list.IndexOf(child);
         }
 		public virtual bool Write(XplWriter writer){
 			foreach(XplNode node in this){

@@ -1,12 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <ZOECodeGenerators>
-  <ZOECodeGenerator name="NET1CodeGenerator_Beta" interfaceFileName="OutputModules\lib_zoe_outmod_cs.dll" isDynamic="true"></ZOECodeGenerator>
-  <ZOECodeGenerator name="JavaCodeGenerator_Beta" interfaceFileName="OutputModules\lib_zoe_outmod_java.dll" isDynamic="true"></ZOECodeGenerator>
-  <ZOECodeGenerator name="CPP1CodeGenerator_Beta" interfaceFileName="OutputModules\lib_zoe_output_cpp.dll" isDynamic="true"></ZOECodeGenerator>
-  <ZOECodeGenerator name="DPP1CodeGenerator_Beta" interfaceFileName="OutputModules\lib_zoe_outmod_dpp.dll" isDynamic="true"></ZOECodeGenerator>
-  <!--
-  <ZOECodeGenerator name="GccDpp1CodeGenerator_Beta" interfaceFileName="OutputModules\lib_zoe_outmod_gcc_dpp.dll" isDynamic="true"></ZOECodeGenerator>
-  <ZOECodeGenerator name="SIFTAL1CodeGenerator_Beta" interfaceFileName="OutputModules\lib_zoe_outmod_siftal.dll" isDynamic="true"></ZOECodeGenerator>
-  -->
-  <ZOECodeGenerator name="JSCodeGenerator" interfaceFileName="OutputModules\lib_zoe_outmod_js.dll" isDynamic="true"></ZOECodeGenerator>
+  <ZOECodeGenerator name="NET1CodeGenerator_Beta" interfaceFileName="./outputmodules/lib_zoe_outmod_cs.dll" isDynamic="true"></ZOECodeGenerator>
+  <ZOECodeGenerator name="JavaCodeGenerator_Beta" interfaceFileName="./outputmodules/lib_zoe_outmod_java.dll" isDynamic="true"></ZOECodeGenerator>
+  <ZOECodeGenerator name="CPP1CodeGenerator_Beta" interfaceFileName="./outputmodules/lib_zoe_output_cpp.dll" isDynamic="true"></ZOECodeGenerator>
+  <ZOECodeGenerator name="DPP1CodeGenerator_Beta" interfaceFileName="./outputmodules/lib_zoe_outmod_dpp.dll" isDynamic="true"></ZOECodeGenerator>
+  <ZOECodeGenerator name="JSCodeGenerator" interfaceFileName="./outputmodules/lib_zoec_outmod_js.dll" isDynamic="true"></ZOECodeGenerator>
 </ZOECodeGenerators>

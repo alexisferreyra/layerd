@@ -1,12 +1,13 @@
 /*******************************************************************************
-* Copyright (c) 2007, 2008 Alexis Ferreyra.
+* Copyright (c) 2007, 2012 Alexis Ferreyra, Intel Corporation.
 * All rights reserved. This program and the accompanying materials
 * are made available under the terms of the Eclipse Public License v1.0
 * which accompanies this distribution, and is available at
 * http://www.eclipse.org/legal/epl-v10.html
 *
 * Contributors:
-*     Alexis Ferreyra - initial API and implementation
+*       Alexis Ferreyra - initial API and implementation
+*       Alexis Ferreyra (Intel Corporation)
 *******************************************************************************/
 /****************************************************************************
 * 
@@ -37,10 +38,174 @@ namespace LayerD.ZOECompiler{
         }
 
         #region Intefaz Publica
+        /// <summary>
+        /// Try to find and return the type for provided argument expression.
+        /// Argument must be in a valid context and the function call must be resolved.
+        /// If the function call is not resolved null is returned
+        /// </summary>
+        /// <param name="argumentExp">Argument to find parameter type</param>
+        /// <returns>Type of parameter</returns>
+        public XplType GetParameterTypeForArgument(XplExpression argumentExp)
+        {
+            XplParameter parameter = GetParameterForArgument(argumentExp);
+            if (parameter == null) return null;
+            return parameter.get_type();
+        }
+
+        public MemberInfo GetMemberInfoFromInternalMemberName(string fulltypeName, string internalMemberName)
+        {
+            if (String.IsNullOrEmpty(fulltypeName)) return null;
+
+            TypeInfo typeInfo = (TypeInfo)this[fulltypeName];
+            if (typeInfo == null) return null;
+
+            MemberInfo memberInfo = typeInfo.get_MemberInfoCollection().get_MembersInfoFromInternalName(internalMemberName);
+
+            return memberInfo;
+        }
+
+        public MemberInfo GetMemberInfoFromMemberName(string fulltypeName, string memberName)
+        {
+            if (String.IsNullOrEmpty(fulltypeName)) return null;
+
+            TypeInfo typeInfo = (TypeInfo)this[fulltypeName];
+            if (typeInfo == null) return null;
+
+            MemberInfo[] memberInfo = typeInfo.get_MemberInfoCollection().get_MembersInfo(memberName);
+
+            if (memberInfo != null)
+                return memberInfo[0];
+            else
+                return null;
+        }
+
+        public MemberInfo GetMemberInfoForFunctionCall(XplFunctioncall functionCall)
+        {
+            if (functionCall == null) return null;
+
+            string targetMember = functionCall.get_targetMember();
+            if (!String.IsNullOrEmpty(targetMember) && targetMember != "?")
+            {
+                return GetMemberInfoFromInternalMemberName(functionCall.get_targetClass(), functionCall.get_targetMember());
+            }
+            else
+            {
+                string functionName = GetFunctionNameFromFunctionCall(functionCall);
+                if (functionCall != null)
+                {
+                    return GetMemberInfoFromMemberName(functionCall.get_targetClass(), functionName);
+                }
+            }
+            return null;
+        }
+
+        public string GetFunctionNameFromFunctionCall(XplFunctioncall functionCall)
+        {
+            if (functionCall == null || functionCall.get_l() == null || functionCall.get_l().get_Content() == null) return null;
+
+            XplNode leftContent = functionCall.get_l().get_Content();
+            XplNode memberNameNode = null;
+            if (leftContent.IsA(CodeDOMTypes.XplBinaryoperator))
+            {
+                XplBinaryoperator bop = (XplBinaryoperator)leftContent;
+                if (bop.get_op() == XplBinaryoperators_enum.M || bop.get_op() == XplBinaryoperators_enum.PM || bop.get_op() == XplBinaryoperators_enum.RM)
+                {
+                    if (bop.get_r() == null) return null;
+
+                    memberNameNode = bop.get_r().get_Content();
+                }
+            }
+            else if (leftContent.IsA(CodeDOMTypes.XplNode))
+            {
+                memberNameNode = leftContent;
+            }
+
+            if (memberNameNode == null) return null;
+            if (!memberNameNode.IsA(CodeDOMTypes.XplNode)) return null;
+
+            string memberName = memberNameNode.get_StringValue();
+            if (TypeString.IsQualifiedName(memberName)) memberName = TypeString.GetSimpleNameFromQualified(memberName);
+
+            return memberName;
+        }
+
+        public MemberInfo GetMemberInfoForBinaryOperator(XplBinaryoperator binaryOperator)
+        {
+            if (binaryOperator == null) return null;
+
+            return GetMemberInfoFromInternalMemberName(binaryOperator.get_targetClass(), binaryOperator.get_targetMember());
+        }
+
+        public MemberInfo GetMemberInfoForUnaryOperator(XplUnaryoperator unaryOperator)
+        {
+            if (unaryOperator == null) return null;
+
+            return GetMemberInfoFromInternalMemberName(unaryOperator.get_targetClass(), unaryOperator.get_targetMember());
+        }
+
+        public XplParameter GetParameterForArgument(XplExpression argumentExp)
+        {
+            if (argumentExp == null) return null;
+
+            XplNode current = argumentExp.get_Parent();
+
+            while (current != null && !current.IsA(CodeDOMTypes.XplFunctioncall))
+            {
+                current = current.get_Parent();
+            }
+
+            if(current == null) return null;
+
+            MemberInfo memberInfo = null;
+            int index = 0;
+
+            XplFunctioncall functioncall = current as XplFunctioncall;
+            if (functioncall.get_args() == null) return null;
+
+            index = functioncall.get_args().Children().IndexOf(argumentExp);
+            if (index < 0) return null;
+
+            memberInfo = GetMemberInfoForFunctionCall(functioncall);
+
+            if (memberInfo == null) return null;
+            return memberInfo.get_Parameter(index, true);
+        }
+
+        public XplExpression GetNewExpressionArgument(XplNewExpression newNode, string constructorParameterName)
+        {
+            if (newNode == null || constructorParameterName == null) return null;
+
+            MemberInfo member = GetMemberInfoForNewExpression(newNode);
+
+            if (member == null) return null;
+
+            int parameterIndex = member.get_IndexOfParameter(constructorParameterName);
+
+            if (parameterIndex < 0) return null;
+
+            if (newNode.get_init() == null ||
+                newNode.get_init().Children().FirstNode() == null ||
+                newNode.get_init().Children().FirstNode().Children() == null ||
+                newNode.get_init().Children().FirstNode().Children().GetLength() - 1 < parameterIndex)
+                return null;
+
+            return newNode.get_init().Children().FirstNode().Children().GetNodeAt(parameterIndex) as XplExpression;
+        }
+
+        public MemberInfo GetMemberInfoForNewExpression(XplNewExpression newNode)
+        {
+            XplExpression newExp = newNode.get_Parent() as XplExpression;
+
+            if (newExp == null) return null;
+
+            return GetMemberInfoFromInternalMemberName(newExp.get_targetClass(), newExp.get_targetMember());
+        }
+
         public void set_AsyncTypeRead(AsyncTypeRead asyncTypeRead)
         {
             p_asyncTypeRead = asyncTypeRead;
         }
+
         public virtual new object this[object fullName]
         {
             get
@@ -70,7 +235,7 @@ namespace LayerD.ZOECompiler{
                 }
                 else
                 {
-                    InsertType(fullName, (XplNode)node, access, null);
+                    InsertType(fullName, (XplNode)node, access, null, false);
                 }
                 p_asyncTypeRead((XplNode)node, fullName);
                 return (TypeInfo)this[fullName];
@@ -87,9 +252,9 @@ namespace LayerD.ZOECompiler{
         /// </summary>
         /// <param name="fullName">El nombre completo del tipo.</param>
         /// <param name="typeNode">El nodo XplNode que declara el tipo.</param>
-        public void InsertType(string fullName, XplNode typeNode, XplAccesstype_enum accessOfType, MemberInfo fpMember)
+        public void InsertType(string fullName, XplNode typeNode, XplAccesstype_enum accessOfType, MemberInfo fpMember, bool isCompiledClassfactory)
         {
-            TypeInfo typeInfo = new TypeInfo(fullName,typeNode, accessOfType, fpMember);
+            TypeInfo typeInfo = new TypeInfo(fullName,typeNode, accessOfType, fpMember, isCompiledClassfactory);
             this.Add(fullName, typeInfo);
         }
         /// <summary>
@@ -100,10 +265,10 @@ namespace LayerD.ZOECompiler{
         /// <param name="currentScope">El alcance actual a partir del cual se puede determinar el nombre completo usando el nombre parcial proporcionado.</param>
         /// <param name="accessOfType">El nivel de acceso del tipo.</param>
         /// <param name="fpMemberInfo">El miembro que declara el tipo puntero, para tipos puntero a funcion.</param>
-        public void InsertType(string partialName, XplNode typeNode, Scope currentScope, XplAccesstype_enum accessOfType, MemberInfo fpMemberInfo)
+        public void InsertType(string partialName, XplNode typeNode, Scope currentScope, XplAccesstype_enum accessOfType, MemberInfo fpMemberInfo, bool isCompiledClassfactory)
         {
             string fullName = currentScope.get_FullName(partialName);
-            TypeInfo typeInfo = new TypeInfo(fullName, typeNode, accessOfType, fpMemberInfo);
+            TypeInfo typeInfo = new TypeInfo(fullName, typeNode, accessOfType, fpMemberInfo, isCompiledClassfactory);
             this.Add(fullName, typeInfo);
         }
         /// <summary>
@@ -213,6 +378,7 @@ namespace LayerD.ZOECompiler{
         {
             this.Add(typeNameAlias, realTypeName);
         }
+
         /// <summary>
         /// Establece el indice de tipos en cache no procesados originalmente.
         /// 
@@ -223,6 +389,7 @@ namespace LayerD.ZOECompiler{
         {
             p_cachedTypesIndex = hashtable;
         }
+
         /// <summary>
         /// No incluye tipos en la cache en el chequeo :-P
         /// </summary>

@@ -1,12 +1,13 @@
-/*******************************************************************************
-* Copyright (c) 2007, 2008 Alexis Ferreyra.
+ï»¿/*******************************************************************************
+* Copyright (c) 2007, 2012 Alexis Ferreyra, Intel Corporation.
 * All rights reserved. This program and the accompanying materials
 * are made available under the terms of the Eclipse Public License v1.0
 * which accompanies this distribution, and is available at
 * http://www.eclipse.org/legal/epl-v10.html
 *
 * Contributors:
-*     Alexis Ferreyra - initial API and implementation
+*       Alexis Ferreyra - initial API and implementation
+*       Alexis Ferreyra (Intel Corporation)
 *******************************************************************************/
 /****************************************************************************
 * 
@@ -22,13 +23,13 @@
 
 //Archivo: lib_zoec_semantic.cs 
 //
-//Analizador semántico ZOE, realiza el analisis 
-//semántico incluyendo la construccion de las tablas
+//Analizador semÃ¡ntico ZOE, realiza el analisis 
+//semÃ¡ntico incluyendo la construccion de las tablas
 //de tipos y simbolos, establece los tipos exactos
 //de las expresiones, valida las declaraciones y mantiene
-//la información de alcance (scope).
-//Genera el Documento de Tiempo de Ejecución y los
-//Documentos de secciones de extensión dinámica del programa
+//la informaciÃ³n de alcance (scope).
+//Genera el Documento de Tiempo de EjecuciÃ³n y los
+//Documentos de secciones de extensiÃ³n dinÃ¡mica del programa
 //analizado.
 //
 
@@ -184,7 +185,7 @@ namespace LayerD.ZOECompiler
         {
             if (symTypeStr == null) return false;
             if (symTypeStr.Length == 0 || symTypeStr[0] != '$') return false;
-            if (symTypeStr.Length > 3 && symTypeStr.EndsWith("_LIT$")) return true;
+            if (symTypeStr.Length > 3 && symTypeStr.EndsWith("_LIT$",StringComparison.InvariantCulture)) return true;
             if (IsNativeSByte(symTypeStr)       ||
                 IsNativeByte(symTypeStr)        ||
                 IsNativeShort(symTypeStr)       ||
@@ -391,11 +392,11 @@ namespace LayerD.ZOECompiler
         const string OBJECT_CLASS_FULL_PATH = "zoe.lang.Object";
         const string OBJECT_CLASS_FULL_PATH2 = "zoe::lang::Object";
 
-        // Determina la representación en tiempo de ejecución de un tipo, es decir para
-        // reflexion en tiempo de ejecución.
+        // Determina la representaciÃ³n en tiempo de ejecuciÃ³n de un tipo, es decir para
+        // reflexion en tiempo de ejecuciÃ³n.
         // PENDIENTE : Por ahora se utilizara la infraestructura disponible en las plataformas
-        // de ejecución hasta que se cuente con un sistema reflectivo unificado en tiempo
-        // de ejecución.
+        // de ejecuciÃ³n hasta que se cuente con un sistema reflectivo unificado en tiempo
+        // de ejecuciÃ³n.
         string p_runtimeTypeForType = "^_DotNET.System.Type";
 
         IEZOEOutputModuleServices p_compileTimeOutputModule;
@@ -403,6 +404,8 @@ namespace LayerD.ZOECompiler
         ErrorCollection p_errorCollection;
         Hashtable p_processedImports;
         Hashtable p_nativeImplicitConversions;
+        Hashtable p_customImplicitConversions;
+        Hashtable p_customExplicitConversions;
         Hashtable p_operatorsCache;
         Hashtable p_memberAccessCache;
         XplDocument p_lastParseDTE;
@@ -459,7 +462,7 @@ namespace LayerD.ZOECompiler
             p_showInternalTimes = showInternalTimes;
         }
         /// <summary>
-        /// Establece la configuración del programa LayerD-Zoe a chequear.
+        /// Establece la configuraciÃ³n del programa LayerD-Zoe a chequear.
         /// 
         /// Si es nulo se asigna una instancia con valores por defecto.
         /// </summary>
@@ -526,13 +529,13 @@ namespace LayerD.ZOECompiler
                 throw new SemanticException("Internal Error: program documents are not set correctly.");
             
             InitializeParser();
-            // 1º)Agrego todos los Documentos Importados al listado
+            // 1Âº)Agrego todos los Documentos Importados al listado
             FillImportedDocuments();
             p_currentParseInstance = this;
 
             if (p_showInternalTimes) ZOECompilerCore.WriteDebugTextLine("FillImportedDocuments.: " + ((TimeSpan)(DateTime.Now - lastTime)).ToString());
             lastTime = DateTime.Now;
-            // 2º)Controlo la corrección de los tipos declarados
+            // 2Âº)Controlo la correcciÃ³n de los tipos declarados
             try
             {
                 CheckTypes();
@@ -547,9 +550,9 @@ namespace LayerD.ZOECompiler
 
             if (p_showInternalTimes) ZOECompilerCore.WriteDebugTextLine("Full Check Types......: " + ((TimeSpan)(DateTime.Now - lastTime)).ToString());
             lastTime = DateTime.Now;
-            // 4º)Creo el DTE
+            // 4Âº)Creo el DTE
             CreateDTE();
-            // 5º)Creo las Secciones de Extensión Dinámica
+            // 5Âº)Creo las Secciones de ExtensiÃ³n DinÃ¡mica
             CreateExtensionSections();
             if (p_showInternalTimes) ZOECompilerCore.WriteDebugTextLine("Create DTE And E.S....: " + ((TimeSpan)(DateTime.Now - lastTime)).ToString());
             if (p_showFullDebugInfo) ZOECompilerCore.WriteDebugTextLine("Types Count...........: " + p_types.Count);
@@ -592,14 +595,18 @@ namespace LayerD.ZOECompiler
                 p_typesToDelete = new ArrayList();
             }
             p_programSections = new SectionCollection();
-            p_candidateStructures = new CandidateStructuresCollection();
+            p_candidateStructures = new CandidateStructuresCollection(p_interactiveOnly);
             // Inicializo las cache de operadores y miembros
             // esto lo borro en cada ciclo para evitar considerar mal miembros
             // que se hayan corregido o agregado a miembros
-            // Además tengo que eliminar todo porque se puede haber cambiado la estructura
-            // de un tipo en tiempo de compilación
+            // AdemÃ¡s tengo que eliminar todo porque se puede haber cambiado la estructura
+            // de un tipo en tiempo de compilaciÃ³n
             p_operatorsCache = new Hashtable();
             p_memberAccessCache = new Hashtable();
+
+            // clear custom conversions table
+            p_customImplicitConversions = new Hashtable();
+            p_customExplicitConversions = new Hashtable();
 
             // Inicializo el placeHolder para la resolucion de operadores binarios
             p_dummyBinaryOperatorFunctioncall = new XplFunctioncall();
@@ -667,229 +674,229 @@ namespace LayerD.ZOECompiler
             */
             //STRING_LIT
             // PENDIENTE : Resolver que va ha pasar con el hecho de que un string literal
-            // no se pueda convertir implicitamente a un string común...
+            // no se pueda convertir implicitamente a un string comÃºn...
             // Tendre que manejar casos especiales....mmmmm
             /*
-            p_nativeImplicitConversions.Add("$STRING_LIT$" + "¿TO?" + "$STRING$", String.Empty);
+            p_nativeImplicitConversions.Add("$STRING_LIT$" + "Â¿TO?" + "$STRING$", String.Empty);
             */
-            p_nativeImplicitConversions.Add("$STRING_LIT$" + "¿TO?" + "^_$STRING$", String.Empty);
-            p_nativeImplicitConversions.Add("$STRING_LIT$" + "¿TO?" + "^_$OBJECT$", String.Empty);
+            p_nativeImplicitConversions.Add("$STRING_LIT$" + "Â¿TO?" + "^_$STRING$", String.Empty);
+            p_nativeImplicitConversions.Add("$STRING_LIT$" + "Â¿TO?" + "^_$OBJECT$", String.Empty);
             //STRING
-            p_nativeImplicitConversions.Add("$STRING$" + "¿TO?" + "^_$OBJECT$", String.Empty);
-            p_nativeImplicitConversions.Add("^_$STRING$" + "¿TO?" + "^_$OBJECT$", String.Empty);
+            p_nativeImplicitConversions.Add("$STRING$" + "Â¿TO?" + "^_$OBJECT$", String.Empty);
+            p_nativeImplicitConversions.Add("^_$STRING$" + "Â¿TO?" + "^_$OBJECT$", String.Empty);
             //ASCIISTRING_LIT
-            p_nativeImplicitConversions.Add("$ASCIISTRING_LIT$" + "¿TO?" + "$ASCIISTRING$", String.Empty);
-            p_nativeImplicitConversions.Add("$ASCIISTRING_LIT$" + "¿TO?" + "^_$ASCIISTRING$", String.Empty);
-            p_nativeImplicitConversions.Add("$ASCIISTRING_LIT$" + "¿TO?" + "$STRING$", String.Empty);
-            p_nativeImplicitConversions.Add("$ASCIISTRING_LIT$" + "¿TO?" + "^_$STRING$", String.Empty);
-            p_nativeImplicitConversions.Add("$ASCIISTRING_LIT$" + "¿TO?" + "^_$OBJECT$", String.Empty);
+            p_nativeImplicitConversions.Add("$ASCIISTRING_LIT$" + "Â¿TO?" + "$ASCIISTRING$", String.Empty);
+            p_nativeImplicitConversions.Add("$ASCIISTRING_LIT$" + "Â¿TO?" + "^_$ASCIISTRING$", String.Empty);
+            p_nativeImplicitConversions.Add("$ASCIISTRING_LIT$" + "Â¿TO?" + "$STRING$", String.Empty);
+            p_nativeImplicitConversions.Add("$ASCIISTRING_LIT$" + "Â¿TO?" + "^_$STRING$", String.Empty);
+            p_nativeImplicitConversions.Add("$ASCIISTRING_LIT$" + "Â¿TO?" + "^_$OBJECT$", String.Empty);
             //ASCIISTRING
-            p_nativeImplicitConversions.Add("$ASCIISTRING$" + "¿TO?" + "$STRING$", String.Empty);
-            p_nativeImplicitConversions.Add("$ASCIISTRING$" + "¿TO?" + "^_$STRING$", String.Empty);
-            p_nativeImplicitConversions.Add("^_$ASCIISTRING$" + "¿TO?" + "^_$STRING$", String.Empty);
-            p_nativeImplicitConversions.Add("^_$ASCIISTRING$" + "¿TO?" + "^_$OBJECT$", String.Empty);
+            p_nativeImplicitConversions.Add("$ASCIISTRING$" + "Â¿TO?" + "$STRING$", String.Empty);
+            p_nativeImplicitConversions.Add("$ASCIISTRING$" + "Â¿TO?" + "^_$STRING$", String.Empty);
+            p_nativeImplicitConversions.Add("^_$ASCIISTRING$" + "Â¿TO?" + "^_$STRING$", String.Empty);
+            p_nativeImplicitConversions.Add("^_$ASCIISTRING$" + "Â¿TO?" + "^_$OBJECT$", String.Empty);
             //BOOLEAN
-            //p_nativeImplicitConversions.Add("$BOOLEAN_LIT$" + "¿TO?" + "$BOOLEAN$", String.Empty);
-            //p_nativeImplicitConversions.Add("$BOOLEAN_LIT$" + "¿TO?" + "^_$OBJECT$", String.Empty);
-            p_nativeImplicitConversions.Add("$BOOLEAN$" + "¿TO?" + "^_$OBJECT$", String.Empty);
+            //p_nativeImplicitConversions.Add("$BOOLEAN_LIT$" + "Â¿TO?" + "$BOOLEAN$", String.Empty);
+            //p_nativeImplicitConversions.Add("$BOOLEAN_LIT$" + "Â¿TO?" + "^_$OBJECT$", String.Empty);
+            p_nativeImplicitConversions.Add("$BOOLEAN$" + "Â¿TO?" + "^_$OBJECT$", String.Empty);
             //CHAR
-            //p_nativeImplicitConversions.Add("$CHAR_LIT$" + "¿TO?" + "$CHAR$", String.Empty);
-            //p_nativeImplicitConversions.Add("$CHAR_LIT$" + "¿TO?" + "^_$OBJECT$", String.Empty);
-            p_nativeImplicitConversions.Add("$CHAR$" + "¿TO?" + "^_$OBJECT$", "BOXING");
-            p_nativeImplicitConversions.Add("$CHAR$" + "¿TO?" + "$SHORT$", String.Empty);
-            p_nativeImplicitConversions.Add("$CHAR$" + "¿TO?" + "$INTEGER$", String.Empty);
-            p_nativeImplicitConversions.Add("$CHAR$" + "¿TO?" + "$LONG$", String.Empty);
+            //p_nativeImplicitConversions.Add("$CHAR_LIT$" + "Â¿TO?" + "$CHAR$", String.Empty);
+            //p_nativeImplicitConversions.Add("$CHAR_LIT$" + "Â¿TO?" + "^_$OBJECT$", String.Empty);
+            p_nativeImplicitConversions.Add("$CHAR$" + "Â¿TO?" + "^_$OBJECT$", "BOXING");
+            p_nativeImplicitConversions.Add("$CHAR$" + "Â¿TO?" + "$SHORT$", String.Empty);
+            p_nativeImplicitConversions.Add("$CHAR$" + "Â¿TO?" + "$INTEGER$", String.Empty);
+            p_nativeImplicitConversions.Add("$CHAR$" + "Â¿TO?" + "$LONG$", String.Empty);
             //ASCIICHAR
-            p_nativeImplicitConversions.Add("$ASCIICHAR_LIT$" + "¿TO?" + "$ASCIICHAR$", String.Empty);
-            p_nativeImplicitConversions.Add("$ASCIICHAR_LIT$" + "¿TO?" + "$CHAR$", String.Empty);
-            p_nativeImplicitConversions.Add("$ASCIICHAR$" + "¿TO?" + "$CHAR$", String.Empty);
-            p_nativeImplicitConversions.Add("$ASCIICHAR_LIT$" + "¿TO?" + "^_$OBJECT$", "BOXING");
-            p_nativeImplicitConversions.Add("$ASCIICHAR$" + "¿TO?" + "^_$OBJECT$", "BOXING");
+            p_nativeImplicitConversions.Add("$ASCIICHAR_LIT$" + "Â¿TO?" + "$ASCIICHAR$", String.Empty);
+            p_nativeImplicitConversions.Add("$ASCIICHAR_LIT$" + "Â¿TO?" + "$CHAR$", String.Empty);
+            p_nativeImplicitConversions.Add("$ASCIICHAR$" + "Â¿TO?" + "$CHAR$", String.Empty);
+            p_nativeImplicitConversions.Add("$ASCIICHAR_LIT$" + "Â¿TO?" + "^_$OBJECT$", "BOXING");
+            p_nativeImplicitConversions.Add("$ASCIICHAR$" + "Â¿TO?" + "^_$OBJECT$", "BOXING");
             //SBYTE
-            //p_nativeImplicitConversions.Add("$SBYTE_LIT$" + "¿TO?" + "$SBYTE$", String.Empty);
-            //p_nativeImplicitConversions.Add("$SBYTE_LIT$" + "¿TO?" + "$SHORT$", String.Empty);
-            //p_nativeImplicitConversions.Add("$SBYTE_LIT$" + "¿TO?" + "$INTEGER$", String.Empty);
-            //p_nativeImplicitConversions.Add("$SBYTE_LIT$" + "¿TO?" + "$LONG$", String.Empty);
-            //p_nativeImplicitConversions.Add("$SBYTE_LIT$" + "¿TO?" + "$FLOAT$", String.Empty);
-            //p_nativeImplicitConversions.Add("$SBYTE_LIT$" + "¿TO?" + "$DOUBLE$", String.Empty);
-            //p_nativeImplicitConversions.Add("$SBYTE_LIT$" + "¿TO?" + "$LDOUBLE$", String.Empty);
-            //p_nativeImplicitConversions.Add("$SBYTE_LIT$" + "¿TO?" + "$DECIMAL$", String.Empty);
-            //p_nativeImplicitConversions.Add("$SBYTE_LIT$" + "¿TO?" + "^_$OBJECT$", "BOXING");
-            p_nativeImplicitConversions.Add("$SBYTE$" + "¿TO?" + "$SHORT$", String.Empty);
-            p_nativeImplicitConversions.Add("$SBYTE$" + "¿TO?" + "$INTEGER$", String.Empty);
-            p_nativeImplicitConversions.Add("$SBYTE$" + "¿TO?" + "$LONG$", String.Empty);
-            p_nativeImplicitConversions.Add("$SBYTE$" + "¿TO?" + "$FLOAT$", String.Empty);
-            p_nativeImplicitConversions.Add("$SBYTE$" + "¿TO?" + "$DOUBLE$", String.Empty);
-            p_nativeImplicitConversions.Add("$SBYTE$" + "¿TO?" + "$LDOUBLE$", String.Empty);
-            p_nativeImplicitConversions.Add("$SBYTE$" + "¿TO?" + "$DECIMAL$", String.Empty);
-            p_nativeImplicitConversions.Add("$SBYTE$" + "¿TO?" + "^_$OBJECT$", "BOXING");
+            //p_nativeImplicitConversions.Add("$SBYTE_LIT$" + "Â¿TO?" + "$SBYTE$", String.Empty);
+            //p_nativeImplicitConversions.Add("$SBYTE_LIT$" + "Â¿TO?" + "$SHORT$", String.Empty);
+            //p_nativeImplicitConversions.Add("$SBYTE_LIT$" + "Â¿TO?" + "$INTEGER$", String.Empty);
+            //p_nativeImplicitConversions.Add("$SBYTE_LIT$" + "Â¿TO?" + "$LONG$", String.Empty);
+            //p_nativeImplicitConversions.Add("$SBYTE_LIT$" + "Â¿TO?" + "$FLOAT$", String.Empty);
+            //p_nativeImplicitConversions.Add("$SBYTE_LIT$" + "Â¿TO?" + "$DOUBLE$", String.Empty);
+            //p_nativeImplicitConversions.Add("$SBYTE_LIT$" + "Â¿TO?" + "$LDOUBLE$", String.Empty);
+            //p_nativeImplicitConversions.Add("$SBYTE_LIT$" + "Â¿TO?" + "$DECIMAL$", String.Empty);
+            //p_nativeImplicitConversions.Add("$SBYTE_LIT$" + "Â¿TO?" + "^_$OBJECT$", "BOXING");
+            p_nativeImplicitConversions.Add("$SBYTE$" + "Â¿TO?" + "$SHORT$", String.Empty);
+            p_nativeImplicitConversions.Add("$SBYTE$" + "Â¿TO?" + "$INTEGER$", String.Empty);
+            p_nativeImplicitConversions.Add("$SBYTE$" + "Â¿TO?" + "$LONG$", String.Empty);
+            p_nativeImplicitConversions.Add("$SBYTE$" + "Â¿TO?" + "$FLOAT$", String.Empty);
+            p_nativeImplicitConversions.Add("$SBYTE$" + "Â¿TO?" + "$DOUBLE$", String.Empty);
+            p_nativeImplicitConversions.Add("$SBYTE$" + "Â¿TO?" + "$LDOUBLE$", String.Empty);
+            p_nativeImplicitConversions.Add("$SBYTE$" + "Â¿TO?" + "$DECIMAL$", String.Empty);
+            p_nativeImplicitConversions.Add("$SBYTE$" + "Â¿TO?" + "^_$OBJECT$", "BOXING");
             //BYTE
-            //p_nativeImplicitConversions.Add("$BYTE_LIT$" + "¿TO?" + "$BYTE$", String.Empty);
-            //p_nativeImplicitConversions.Add("$BYTE_LIT$" + "¿TO?" + "$SHORT$", String.Empty);
-            //p_nativeImplicitConversions.Add("$BYTE_LIT$" + "¿TO?" + "$INTEGER$", String.Empty);
-            //p_nativeImplicitConversions.Add("$BYTE_LIT$" + "¿TO?" + "$LONG$", String.Empty);
-            //p_nativeImplicitConversions.Add("$BYTE_LIT$" + "¿TO?" + "$USHORT$", String.Empty);
-            //p_nativeImplicitConversions.Add("$BYTE_LIT$" + "¿TO?" + "$UNSIGNED$", String.Empty);
-            //p_nativeImplicitConversions.Add("$BYTE_LIT$" + "¿TO?" + "$ULONG$", String.Empty);
-            //p_nativeImplicitConversions.Add("$BYTE_LIT$" + "¿TO?" + "$FLOAT$", String.Empty);
-            //p_nativeImplicitConversions.Add("$BYTE_LIT$" + "¿TO?" + "$DOUBLE$", String.Empty);
-            //p_nativeImplicitConversions.Add("$BYTE_LIT$" + "¿TO?" + "$LDOUBLE$", String.Empty);
-            //p_nativeImplicitConversions.Add("$BYTE_LIT$" + "¿TO?" + "$DECIMAL$", String.Empty);
-            //p_nativeImplicitConversions.Add("$BYTE_LIT$" + "¿TO?" + "^_$OBJECT$", "BOXING");
-            p_nativeImplicitConversions.Add("$BYTE$" + "¿TO?" + "$SHORT$", String.Empty);
-            p_nativeImplicitConversions.Add("$BYTE$" + "¿TO?" + "$INTEGER$", String.Empty);
-            p_nativeImplicitConversions.Add("$BYTE$" + "¿TO?" + "$LONG$", String.Empty);
-            p_nativeImplicitConversions.Add("$BYTE$" + "¿TO?" + "$USHORT$", String.Empty);
-            p_nativeImplicitConversions.Add("$BYTE$" + "¿TO?" + "$UNSIGNED$", String.Empty);
-            p_nativeImplicitConversions.Add("$BYTE$" + "¿TO?" + "$ULONG$", String.Empty);
-            p_nativeImplicitConversions.Add("$BYTE$" + "¿TO?" + "$FLOAT$", String.Empty);
-            p_nativeImplicitConversions.Add("$BYTE$" + "¿TO?" + "$DOUBLE$", String.Empty);
-            p_nativeImplicitConversions.Add("$BYTE$" + "¿TO?" + "$LDOUBLE$", String.Empty);
-            p_nativeImplicitConversions.Add("$BYTE$" + "¿TO?" + "$DECIMAL$", String.Empty);
-            p_nativeImplicitConversions.Add("$BYTE$" + "¿TO?" + "^_$OBJECT$", "BOXING");
+            //p_nativeImplicitConversions.Add("$BYTE_LIT$" + "Â¿TO?" + "$BYTE$", String.Empty);
+            //p_nativeImplicitConversions.Add("$BYTE_LIT$" + "Â¿TO?" + "$SHORT$", String.Empty);
+            //p_nativeImplicitConversions.Add("$BYTE_LIT$" + "Â¿TO?" + "$INTEGER$", String.Empty);
+            //p_nativeImplicitConversions.Add("$BYTE_LIT$" + "Â¿TO?" + "$LONG$", String.Empty);
+            //p_nativeImplicitConversions.Add("$BYTE_LIT$" + "Â¿TO?" + "$USHORT$", String.Empty);
+            //p_nativeImplicitConversions.Add("$BYTE_LIT$" + "Â¿TO?" + "$UNSIGNED$", String.Empty);
+            //p_nativeImplicitConversions.Add("$BYTE_LIT$" + "Â¿TO?" + "$ULONG$", String.Empty);
+            //p_nativeImplicitConversions.Add("$BYTE_LIT$" + "Â¿TO?" + "$FLOAT$", String.Empty);
+            //p_nativeImplicitConversions.Add("$BYTE_LIT$" + "Â¿TO?" + "$DOUBLE$", String.Empty);
+            //p_nativeImplicitConversions.Add("$BYTE_LIT$" + "Â¿TO?" + "$LDOUBLE$", String.Empty);
+            //p_nativeImplicitConversions.Add("$BYTE_LIT$" + "Â¿TO?" + "$DECIMAL$", String.Empty);
+            //p_nativeImplicitConversions.Add("$BYTE_LIT$" + "Â¿TO?" + "^_$OBJECT$", "BOXING");
+            p_nativeImplicitConversions.Add("$BYTE$" + "Â¿TO?" + "$SHORT$", String.Empty);
+            p_nativeImplicitConversions.Add("$BYTE$" + "Â¿TO?" + "$INTEGER$", String.Empty);
+            p_nativeImplicitConversions.Add("$BYTE$" + "Â¿TO?" + "$LONG$", String.Empty);
+            p_nativeImplicitConversions.Add("$BYTE$" + "Â¿TO?" + "$USHORT$", String.Empty);
+            p_nativeImplicitConversions.Add("$BYTE$" + "Â¿TO?" + "$UNSIGNED$", String.Empty);
+            p_nativeImplicitConversions.Add("$BYTE$" + "Â¿TO?" + "$ULONG$", String.Empty);
+            p_nativeImplicitConversions.Add("$BYTE$" + "Â¿TO?" + "$FLOAT$", String.Empty);
+            p_nativeImplicitConversions.Add("$BYTE$" + "Â¿TO?" + "$DOUBLE$", String.Empty);
+            p_nativeImplicitConversions.Add("$BYTE$" + "Â¿TO?" + "$LDOUBLE$", String.Empty);
+            p_nativeImplicitConversions.Add("$BYTE$" + "Â¿TO?" + "$DECIMAL$", String.Empty);
+            p_nativeImplicitConversions.Add("$BYTE$" + "Â¿TO?" + "^_$OBJECT$", "BOXING");
             //SHORT
-            //p_nativeImplicitConversions.Add("$SHORT_LIT$" + "¿TO?" + "$SHORT$", String.Empty);
-            //p_nativeImplicitConversions.Add("$SHORT_LIT$" + "¿TO?" + "$INTEGER$", String.Empty);
-            //p_nativeImplicitConversions.Add("$SHORT_LIT$" + "¿TO?" + "$LONG$", String.Empty);
-            //p_nativeImplicitConversions.Add("$SHORT_LIT$" + "¿TO?" + "$FLOAT$", String.Empty);
-            //p_nativeImplicitConversions.Add("$SHORT_LIT$" + "¿TO?" + "$DOUBLE$", String.Empty);
-            //p_nativeImplicitConversions.Add("$SHORT_LIT$" + "¿TO?" + "$LDOUBLE$", String.Empty);
-            //p_nativeImplicitConversions.Add("$SHORT_LIT$" + "¿TO?" + "$DECIMAL$", String.Empty);
-            //p_nativeImplicitConversions.Add("$SHORT_LIT$" + "¿TO?" + "^_$OBJECT$", "BOXING");
-            p_nativeImplicitConversions.Add("$SHORT$" + "¿TO?" + "$INTEGER$", String.Empty);
-            p_nativeImplicitConversions.Add("$SHORT$" + "¿TO?" + "$LONG$", String.Empty);
-            p_nativeImplicitConversions.Add("$SHORT$" + "¿TO?" + "$FLOAT$", String.Empty);
-            p_nativeImplicitConversions.Add("$SHORT$" + "¿TO?" + "$DOUBLE$", String.Empty);
-            p_nativeImplicitConversions.Add("$SHORT$" + "¿TO?" + "$LDOUBLE$", String.Empty);
-            p_nativeImplicitConversions.Add("$SHORT$" + "¿TO?" + "$DECIMAL$", String.Empty);
-            p_nativeImplicitConversions.Add("$SHORT$" + "¿TO?" + "^_$OBJECT$", "BOXING");
+            //p_nativeImplicitConversions.Add("$SHORT_LIT$" + "Â¿TO?" + "$SHORT$", String.Empty);
+            //p_nativeImplicitConversions.Add("$SHORT_LIT$" + "Â¿TO?" + "$INTEGER$", String.Empty);
+            //p_nativeImplicitConversions.Add("$SHORT_LIT$" + "Â¿TO?" + "$LONG$", String.Empty);
+            //p_nativeImplicitConversions.Add("$SHORT_LIT$" + "Â¿TO?" + "$FLOAT$", String.Empty);
+            //p_nativeImplicitConversions.Add("$SHORT_LIT$" + "Â¿TO?" + "$DOUBLE$", String.Empty);
+            //p_nativeImplicitConversions.Add("$SHORT_LIT$" + "Â¿TO?" + "$LDOUBLE$", String.Empty);
+            //p_nativeImplicitConversions.Add("$SHORT_LIT$" + "Â¿TO?" + "$DECIMAL$", String.Empty);
+            //p_nativeImplicitConversions.Add("$SHORT_LIT$" + "Â¿TO?" + "^_$OBJECT$", "BOXING");
+            p_nativeImplicitConversions.Add("$SHORT$" + "Â¿TO?" + "$INTEGER$", String.Empty);
+            p_nativeImplicitConversions.Add("$SHORT$" + "Â¿TO?" + "$LONG$", String.Empty);
+            p_nativeImplicitConversions.Add("$SHORT$" + "Â¿TO?" + "$FLOAT$", String.Empty);
+            p_nativeImplicitConversions.Add("$SHORT$" + "Â¿TO?" + "$DOUBLE$", String.Empty);
+            p_nativeImplicitConversions.Add("$SHORT$" + "Â¿TO?" + "$LDOUBLE$", String.Empty);
+            p_nativeImplicitConversions.Add("$SHORT$" + "Â¿TO?" + "$DECIMAL$", String.Empty);
+            p_nativeImplicitConversions.Add("$SHORT$" + "Â¿TO?" + "^_$OBJECT$", "BOXING");
             //USHORT
-            //p_nativeImplicitConversions.Add("$USHORT_LIT$" + "¿TO?" + "$SHORT$", String.Empty);
-            //p_nativeImplicitConversions.Add("$USHORT_LIT$" + "¿TO?" + "$INTEGER$", String.Empty);
-            //p_nativeImplicitConversions.Add("$USHORT_LIT$" + "¿TO?" + "$LONG$", String.Empty);
-            //p_nativeImplicitConversions.Add("$USHORT_LIT$" + "¿TO?" + "$UINTEGER$", String.Empty);
-            //p_nativeImplicitConversions.Add("$USHORT_LIT$" + "¿TO?" + "$ULONG$", String.Empty);
-            //p_nativeImplicitConversions.Add("$USHORT_LIT$" + "¿TO?" + "$FLOAT$", String.Empty);
-            //p_nativeImplicitConversions.Add("$USHORT_LIT$" + "¿TO?" + "$DOUBLE$", String.Empty);
-            //p_nativeImplicitConversions.Add("$USHORT_LIT$" + "¿TO?" + "$LDOUBLE$", String.Empty);
-            //p_nativeImplicitConversions.Add("$USHORT_LIT$" + "¿TO?" + "$DECIMAL$", String.Empty);
-            //p_nativeImplicitConversions.Add("$USHORT_LIT$" + "¿TO?" + "^_$OBJECT$", "BOXING");
-            p_nativeImplicitConversions.Add("$USHORT$" + "¿TO?" + "$INTEGER$", String.Empty);
-            p_nativeImplicitConversions.Add("$USHORT$" + "¿TO?" + "$LONG$", String.Empty);
-            p_nativeImplicitConversions.Add("$USHORT$" + "¿TO?" + "$UINTEGER$", String.Empty);
-            p_nativeImplicitConversions.Add("$USHORT$" + "¿TO?" + "$ULONG$", String.Empty);
-            p_nativeImplicitConversions.Add("$USHORT$" + "¿TO?" + "$FLOAT$", String.Empty);
-            p_nativeImplicitConversions.Add("$USHORT$" + "¿TO?" + "$DOUBLE$", String.Empty);
-            p_nativeImplicitConversions.Add("$USHORT$" + "¿TO?" + "$LDOUBLE$", String.Empty);
-            p_nativeImplicitConversions.Add("$USHORT$" + "¿TO?" + "$DECIMAL$", String.Empty);
-            p_nativeImplicitConversions.Add("$USHORT$" + "¿TO?" + "^_$OBJECT$", "BOXING");
+            //p_nativeImplicitConversions.Add("$USHORT_LIT$" + "Â¿TO?" + "$SHORT$", String.Empty);
+            //p_nativeImplicitConversions.Add("$USHORT_LIT$" + "Â¿TO?" + "$INTEGER$", String.Empty);
+            //p_nativeImplicitConversions.Add("$USHORT_LIT$" + "Â¿TO?" + "$LONG$", String.Empty);
+            //p_nativeImplicitConversions.Add("$USHORT_LIT$" + "Â¿TO?" + "$UINTEGER$", String.Empty);
+            //p_nativeImplicitConversions.Add("$USHORT_LIT$" + "Â¿TO?" + "$ULONG$", String.Empty);
+            //p_nativeImplicitConversions.Add("$USHORT_LIT$" + "Â¿TO?" + "$FLOAT$", String.Empty);
+            //p_nativeImplicitConversions.Add("$USHORT_LIT$" + "Â¿TO?" + "$DOUBLE$", String.Empty);
+            //p_nativeImplicitConversions.Add("$USHORT_LIT$" + "Â¿TO?" + "$LDOUBLE$", String.Empty);
+            //p_nativeImplicitConversions.Add("$USHORT_LIT$" + "Â¿TO?" + "$DECIMAL$", String.Empty);
+            //p_nativeImplicitConversions.Add("$USHORT_LIT$" + "Â¿TO?" + "^_$OBJECT$", "BOXING");
+            p_nativeImplicitConversions.Add("$USHORT$" + "Â¿TO?" + "$INTEGER$", String.Empty);
+            p_nativeImplicitConversions.Add("$USHORT$" + "Â¿TO?" + "$LONG$", String.Empty);
+            p_nativeImplicitConversions.Add("$USHORT$" + "Â¿TO?" + "$UINTEGER$", String.Empty);
+            p_nativeImplicitConversions.Add("$USHORT$" + "Â¿TO?" + "$ULONG$", String.Empty);
+            p_nativeImplicitConversions.Add("$USHORT$" + "Â¿TO?" + "$FLOAT$", String.Empty);
+            p_nativeImplicitConversions.Add("$USHORT$" + "Â¿TO?" + "$DOUBLE$", String.Empty);
+            p_nativeImplicitConversions.Add("$USHORT$" + "Â¿TO?" + "$LDOUBLE$", String.Empty);
+            p_nativeImplicitConversions.Add("$USHORT$" + "Â¿TO?" + "$DECIMAL$", String.Empty);
+            p_nativeImplicitConversions.Add("$USHORT$" + "Â¿TO?" + "^_$OBJECT$", "BOXING");
             //INTEGER
-            //p_nativeImplicitConversions.Add("$INTEGER_LIT$" + "¿TO?" + "$INTEGER$", String.Empty);
-            //p_nativeImplicitConversions.Add("$INTEGER_LIT$" + "¿TO?" + "$LONG$", String.Empty);
-            //p_nativeImplicitConversions.Add("$INTEGER_LIT$" + "¿TO?" + "$FLOAT$", String.Empty);
-            //p_nativeImplicitConversions.Add("$INTEGER_LIT$" + "¿TO?" + "$DOUBLE$", String.Empty);
-            //p_nativeImplicitConversions.Add("$INTEGER_LIT$" + "¿TO?" + "$LDOUBLE$", String.Empty);
-            //p_nativeImplicitConversions.Add("$INTEGER_LIT$" + "¿TO?" + "$DECIMAL$", String.Empty);
-            //p_nativeImplicitConversions.Add("$INTEGER_LIT$" + "¿TO?" + "^_$OBJECT$", "BOXING");
-            p_nativeImplicitConversions.Add("$INTEGER$" + "¿TO?" + "$LONG$", String.Empty);
-            p_nativeImplicitConversions.Add("$INTEGER$" + "¿TO?" + "$FLOAT$", String.Empty);
-            p_nativeImplicitConversions.Add("$INTEGER$" + "¿TO?" + "$DOUBLE$", String.Empty);
-            p_nativeImplicitConversions.Add("$INTEGER$" + "¿TO?" + "$LDOUBLE$", String.Empty);
-            p_nativeImplicitConversions.Add("$INTEGER$" + "¿TO?" + "$DECIMAL$", String.Empty);
-            p_nativeImplicitConversions.Add("$INTEGER$" + "¿TO?" + "^_$OBJECT$", "BOXING");
+            //p_nativeImplicitConversions.Add("$INTEGER_LIT$" + "Â¿TO?" + "$INTEGER$", String.Empty);
+            //p_nativeImplicitConversions.Add("$INTEGER_LIT$" + "Â¿TO?" + "$LONG$", String.Empty);
+            //p_nativeImplicitConversions.Add("$INTEGER_LIT$" + "Â¿TO?" + "$FLOAT$", String.Empty);
+            //p_nativeImplicitConversions.Add("$INTEGER_LIT$" + "Â¿TO?" + "$DOUBLE$", String.Empty);
+            //p_nativeImplicitConversions.Add("$INTEGER_LIT$" + "Â¿TO?" + "$LDOUBLE$", String.Empty);
+            //p_nativeImplicitConversions.Add("$INTEGER_LIT$" + "Â¿TO?" + "$DECIMAL$", String.Empty);
+            //p_nativeImplicitConversions.Add("$INTEGER_LIT$" + "Â¿TO?" + "^_$OBJECT$", "BOXING");
+            p_nativeImplicitConversions.Add("$INTEGER$" + "Â¿TO?" + "$LONG$", String.Empty);
+            p_nativeImplicitConversions.Add("$INTEGER$" + "Â¿TO?" + "$FLOAT$", String.Empty);
+            p_nativeImplicitConversions.Add("$INTEGER$" + "Â¿TO?" + "$DOUBLE$", String.Empty);
+            p_nativeImplicitConversions.Add("$INTEGER$" + "Â¿TO?" + "$LDOUBLE$", String.Empty);
+            p_nativeImplicitConversions.Add("$INTEGER$" + "Â¿TO?" + "$DECIMAL$", String.Empty);
+            p_nativeImplicitConversions.Add("$INTEGER$" + "Â¿TO?" + "^_$OBJECT$", "BOXING");
             //UNSIGNED
-            //p_nativeImplicitConversions.Add("$UNSIGNED_LIT$" + "¿TO?" + "$UNSIGNED$", String.Empty);
-            //p_nativeImplicitConversions.Add("$UNSIGNED_LIT$" + "¿TO?" + "$LONG$", String.Empty);
-            //p_nativeImplicitConversions.Add("$UNSIGNED_LIT$" + "¿TO?" + "$ULONG$", String.Empty);
-            //p_nativeImplicitConversions.Add("$UNSIGNED_LIT$" + "¿TO?" + "$FLOAT$", String.Empty);
-            //p_nativeImplicitConversions.Add("$UNSIGNED_LIT$" + "¿TO?" + "$DOUBLE$", String.Empty);
-            //p_nativeImplicitConversions.Add("$UNSIGNED_LIT$" + "¿TO?" + "$LDOUBLE$", String.Empty);
-            //p_nativeImplicitConversions.Add("$UNSIGNED_LIT$" + "¿TO?" + "$DECIMAL$", String.Empty);
-            //p_nativeImplicitConversions.Add("$UNSIGNED_LIT$" + "¿TO?" + "^_$OBJECT$", "BOXING");
-            p_nativeImplicitConversions.Add("$UNSIGNED$" + "¿TO?" + "$LONG$", String.Empty);
-            p_nativeImplicitConversions.Add("$UNSIGNED$" + "¿TO?" + "$ULONG$", String.Empty);
-            p_nativeImplicitConversions.Add("$UNSIGNED$" + "¿TO?" + "$FLOAT$", String.Empty);
-            p_nativeImplicitConversions.Add("$UNSIGNED$" + "¿TO?" + "$DOUBLE$", String.Empty);
-            p_nativeImplicitConversions.Add("$UNSIGNED$" + "¿TO?" + "$LDOUBLE$", String.Empty);
-            p_nativeImplicitConversions.Add("$UNSIGNED$" + "¿TO?" + "$DECIMAL$", String.Empty);
-            p_nativeImplicitConversions.Add("$UNSIGNED$" + "¿TO?" + "^_$OBJECT$", "BOXING");
+            //p_nativeImplicitConversions.Add("$UNSIGNED_LIT$" + "Â¿TO?" + "$UNSIGNED$", String.Empty);
+            //p_nativeImplicitConversions.Add("$UNSIGNED_LIT$" + "Â¿TO?" + "$LONG$", String.Empty);
+            //p_nativeImplicitConversions.Add("$UNSIGNED_LIT$" + "Â¿TO?" + "$ULONG$", String.Empty);
+            //p_nativeImplicitConversions.Add("$UNSIGNED_LIT$" + "Â¿TO?" + "$FLOAT$", String.Empty);
+            //p_nativeImplicitConversions.Add("$UNSIGNED_LIT$" + "Â¿TO?" + "$DOUBLE$", String.Empty);
+            //p_nativeImplicitConversions.Add("$UNSIGNED_LIT$" + "Â¿TO?" + "$LDOUBLE$", String.Empty);
+            //p_nativeImplicitConversions.Add("$UNSIGNED_LIT$" + "Â¿TO?" + "$DECIMAL$", String.Empty);
+            //p_nativeImplicitConversions.Add("$UNSIGNED_LIT$" + "Â¿TO?" + "^_$OBJECT$", "BOXING");
+            p_nativeImplicitConversions.Add("$UNSIGNED$" + "Â¿TO?" + "$LONG$", String.Empty);
+            p_nativeImplicitConversions.Add("$UNSIGNED$" + "Â¿TO?" + "$ULONG$", String.Empty);
+            p_nativeImplicitConversions.Add("$UNSIGNED$" + "Â¿TO?" + "$FLOAT$", String.Empty);
+            p_nativeImplicitConversions.Add("$UNSIGNED$" + "Â¿TO?" + "$DOUBLE$", String.Empty);
+            p_nativeImplicitConversions.Add("$UNSIGNED$" + "Â¿TO?" + "$LDOUBLE$", String.Empty);
+            p_nativeImplicitConversions.Add("$UNSIGNED$" + "Â¿TO?" + "$DECIMAL$", String.Empty);
+            p_nativeImplicitConversions.Add("$UNSIGNED$" + "Â¿TO?" + "^_$OBJECT$", "BOXING");
             //LONG
-            //p_nativeImplicitConversions.Add("$LONG_LIT$" + "¿TO?" + "$LONG$", String.Empty);
-            //p_nativeImplicitConversions.Add("$LONG_LIT$" + "¿TO?" + "$FLOAT$", String.Empty);
-            //p_nativeImplicitConversions.Add("$LONG_LIT$" + "¿TO?" + "$DOUBLE$", String.Empty);
-            //p_nativeImplicitConversions.Add("$LONG_LIT$" + "¿TO?" + "$LDOUBLE$", String.Empty);
-            //p_nativeImplicitConversions.Add("$LONG_LIT$" + "¿TO?" + "$DECIMAL$", String.Empty);
-            //p_nativeImplicitConversions.Add("$LONG_LIT$" + "¿TO?" + "^_$OBJECT$", "BOXING");
-            p_nativeImplicitConversions.Add("$LONG$" + "¿TO?" + "$FLOAT$", String.Empty);
-            p_nativeImplicitConversions.Add("$LONG$" + "¿TO?" + "$DOUBLE$", String.Empty);
-            p_nativeImplicitConversions.Add("$LONG$" + "¿TO?" + "$LDOUBLE$", String.Empty);
-            p_nativeImplicitConversions.Add("$LONG$" + "¿TO?" + "$DECIMAL$", String.Empty);
-            p_nativeImplicitConversions.Add("$LONG$" + "¿TO?" + "^_$OBJECT$", "BOXING");
+            //p_nativeImplicitConversions.Add("$LONG_LIT$" + "Â¿TO?" + "$LONG$", String.Empty);
+            //p_nativeImplicitConversions.Add("$LONG_LIT$" + "Â¿TO?" + "$FLOAT$", String.Empty);
+            //p_nativeImplicitConversions.Add("$LONG_LIT$" + "Â¿TO?" + "$DOUBLE$", String.Empty);
+            //p_nativeImplicitConversions.Add("$LONG_LIT$" + "Â¿TO?" + "$LDOUBLE$", String.Empty);
+            //p_nativeImplicitConversions.Add("$LONG_LIT$" + "Â¿TO?" + "$DECIMAL$", String.Empty);
+            //p_nativeImplicitConversions.Add("$LONG_LIT$" + "Â¿TO?" + "^_$OBJECT$", "BOXING");
+            p_nativeImplicitConversions.Add("$LONG$" + "Â¿TO?" + "$FLOAT$", String.Empty);
+            p_nativeImplicitConversions.Add("$LONG$" + "Â¿TO?" + "$DOUBLE$", String.Empty);
+            p_nativeImplicitConversions.Add("$LONG$" + "Â¿TO?" + "$LDOUBLE$", String.Empty);
+            p_nativeImplicitConversions.Add("$LONG$" + "Â¿TO?" + "$DECIMAL$", String.Empty);
+            p_nativeImplicitConversions.Add("$LONG$" + "Â¿TO?" + "^_$OBJECT$", "BOXING");
             //ULONG
-            //p_nativeImplicitConversions.Add("$ULONG_LIT$" + "¿TO?" + "$ULONG$", String.Empty);
-            //p_nativeImplicitConversions.Add("$ULONG_LIT$" + "¿TO?" + "$FLOAT$", String.Empty);
-            //p_nativeImplicitConversions.Add("$ULONG_LIT$" + "¿TO?" + "$DOUBLE$", String.Empty);
-            //p_nativeImplicitConversions.Add("$ULONG_LIT$" + "¿TO?" + "$LDOUBLE$", String.Empty);
-            //p_nativeImplicitConversions.Add("$ULONG_LIT$" + "¿TO?" + "$DECIMAL$", String.Empty);
-            //p_nativeImplicitConversions.Add("$ULONG_LIT$" + "¿TO?" + "^_$OBJECT$", "BOXING");
-            p_nativeImplicitConversions.Add("$ULONG$" + "¿TO?" + "$FLOAT$", String.Empty);
-            p_nativeImplicitConversions.Add("$ULONG$" + "¿TO?" + "$DOUBLE$", String.Empty);
-            p_nativeImplicitConversions.Add("$ULONG$" + "¿TO?" + "$LDOUBLE$", String.Empty);
-            p_nativeImplicitConversions.Add("$ULONG$" + "¿TO?" + "$DECIMAL$", String.Empty);
-            p_nativeImplicitConversions.Add("$ULONG$" + "¿TO?" + "^_$OBJECT$", "BOXING");
+            //p_nativeImplicitConversions.Add("$ULONG_LIT$" + "Â¿TO?" + "$ULONG$", String.Empty);
+            //p_nativeImplicitConversions.Add("$ULONG_LIT$" + "Â¿TO?" + "$FLOAT$", String.Empty);
+            //p_nativeImplicitConversions.Add("$ULONG_LIT$" + "Â¿TO?" + "$DOUBLE$", String.Empty);
+            //p_nativeImplicitConversions.Add("$ULONG_LIT$" + "Â¿TO?" + "$LDOUBLE$", String.Empty);
+            //p_nativeImplicitConversions.Add("$ULONG_LIT$" + "Â¿TO?" + "$DECIMAL$", String.Empty);
+            //p_nativeImplicitConversions.Add("$ULONG_LIT$" + "Â¿TO?" + "^_$OBJECT$", "BOXING");
+            p_nativeImplicitConversions.Add("$ULONG$" + "Â¿TO?" + "$FLOAT$", String.Empty);
+            p_nativeImplicitConversions.Add("$ULONG$" + "Â¿TO?" + "$DOUBLE$", String.Empty);
+            p_nativeImplicitConversions.Add("$ULONG$" + "Â¿TO?" + "$LDOUBLE$", String.Empty);
+            p_nativeImplicitConversions.Add("$ULONG$" + "Â¿TO?" + "$DECIMAL$", String.Empty);
+            p_nativeImplicitConversions.Add("$ULONG$" + "Â¿TO?" + "^_$OBJECT$", "BOXING");
             //FLOAT
-            //p_nativeImplicitConversions.Add("$FLOAT_LIT$" + "¿TO?" + "$FLOAT$", String.Empty);
-            //p_nativeImplicitConversions.Add("$FLOAT_LIT$" + "¿TO?" + "$DOUBLE$", String.Empty);
-            //p_nativeImplicitConversions.Add("$FLOAT_LIT$" + "¿TO?" + "$LDOUBLE$", String.Empty);
-            //p_nativeImplicitConversions.Add("$FLOAT_LIT$" + "¿TO?" + "^_$OBJECT$", "BOXING");
-            p_nativeImplicitConversions.Add("$FLOAT$" + "¿TO?" + "$DOUBLE$", String.Empty);
-            p_nativeImplicitConversions.Add("$FLOAT$" + "¿TO?" + "$LDOUBLE$", String.Empty);
-            p_nativeImplicitConversions.Add("$FLOAT$" + "¿TO?" + "^_$OBJECT$", "BOXING");
+            //p_nativeImplicitConversions.Add("$FLOAT_LIT$" + "Â¿TO?" + "$FLOAT$", String.Empty);
+            //p_nativeImplicitConversions.Add("$FLOAT_LIT$" + "Â¿TO?" + "$DOUBLE$", String.Empty);
+            //p_nativeImplicitConversions.Add("$FLOAT_LIT$" + "Â¿TO?" + "$LDOUBLE$", String.Empty);
+            //p_nativeImplicitConversions.Add("$FLOAT_LIT$" + "Â¿TO?" + "^_$OBJECT$", "BOXING");
+            p_nativeImplicitConversions.Add("$FLOAT$" + "Â¿TO?" + "$DOUBLE$", String.Empty);
+            p_nativeImplicitConversions.Add("$FLOAT$" + "Â¿TO?" + "$LDOUBLE$", String.Empty);
+            p_nativeImplicitConversions.Add("$FLOAT$" + "Â¿TO?" + "^_$OBJECT$", "BOXING");
             //DOUBLE
-            //p_nativeImplicitConversions.Add("$DOUBLE_LIT$" + "¿TO?" + "$DOUBLE$", String.Empty);
-            //p_nativeImplicitConversions.Add("$DOUBLE_LIT$" + "¿TO?" + "$LDOUBLE$", String.Empty);
-            //p_nativeImplicitConversions.Add("$DOUBLE_LIT$" + "¿TO?" + "$DECIMAL$", String.Empty);
-            //p_nativeImplicitConversions.Add("$DOUBLE_LIT$" + "¿TO?" + "^_$OBJECT$", "BOXING");
-            p_nativeImplicitConversions.Add("$DOUBLE$" + "¿TO?" + "$LDOUBLE$", String.Empty);
-            p_nativeImplicitConversions.Add("$DOUBLE$" + "¿TO?" + "$DECIMAL$", String.Empty);
-            p_nativeImplicitConversions.Add("$DOUBLE$" + "¿TO?" + "^_$OBJECT$", "BOXING");
+            //p_nativeImplicitConversions.Add("$DOUBLE_LIT$" + "Â¿TO?" + "$DOUBLE$", String.Empty);
+            //p_nativeImplicitConversions.Add("$DOUBLE_LIT$" + "Â¿TO?" + "$LDOUBLE$", String.Empty);
+            //p_nativeImplicitConversions.Add("$DOUBLE_LIT$" + "Â¿TO?" + "$DECIMAL$", String.Empty);
+            //p_nativeImplicitConversions.Add("$DOUBLE_LIT$" + "Â¿TO?" + "^_$OBJECT$", "BOXING");
+            p_nativeImplicitConversions.Add("$DOUBLE$" + "Â¿TO?" + "$LDOUBLE$", String.Empty);
+            p_nativeImplicitConversions.Add("$DOUBLE$" + "Â¿TO?" + "$DECIMAL$", String.Empty);
+            p_nativeImplicitConversions.Add("$DOUBLE$" + "Â¿TO?" + "^_$OBJECT$", "BOXING");
             //LDOUBLE
-            //p_nativeImplicitConversions.Add("$LDOUBLE_LIT$" + "¿TO?" + "$LDOUBLE$", String.Empty);
-            //p_nativeImplicitConversions.Add("$LDOUBLE_LIT$" + "¿TO?" + "$DECIMAL$", String.Empty);
-            //p_nativeImplicitConversions.Add("$LDOUBLE_LIT$" + "¿TO?" + "^_$OBJECT$", String.Empty);
-            p_nativeImplicitConversions.Add("$LDOUBLE$" + "¿TO?" + "$DECIMAL$", String.Empty);
-            p_nativeImplicitConversions.Add("$LDOUBLE$" + "¿TO?" + "^_$OBJECT$", "BOXING");
+            //p_nativeImplicitConversions.Add("$LDOUBLE_LIT$" + "Â¿TO?" + "$LDOUBLE$", String.Empty);
+            //p_nativeImplicitConversions.Add("$LDOUBLE_LIT$" + "Â¿TO?" + "$DECIMAL$", String.Empty);
+            //p_nativeImplicitConversions.Add("$LDOUBLE_LIT$" + "Â¿TO?" + "^_$OBJECT$", String.Empty);
+            p_nativeImplicitConversions.Add("$LDOUBLE$" + "Â¿TO?" + "$DECIMAL$", String.Empty);
+            p_nativeImplicitConversions.Add("$LDOUBLE$" + "Â¿TO?" + "^_$OBJECT$", "BOXING");
             //DECIMAL
-            //p_nativeImplicitConversions.Add("$DECIMAL_LIT$" + "¿TO?" + "^_$DECIMAL$", String.Empty);
-            //p_nativeImplicitConversions.Add("$DECIMAL_LIT$" + "¿TO?" + "^_$OBJECT$", "BOXING");
-            p_nativeImplicitConversions.Add("$DECIMAL$" + "¿TO?" + "^_$OBJECT$", "BOXING");
+            //p_nativeImplicitConversions.Add("$DECIMAL_LIT$" + "Â¿TO?" + "^_$DECIMAL$", String.Empty);
+            //p_nativeImplicitConversions.Add("$DECIMAL_LIT$" + "Â¿TO?" + "^_$OBJECT$", "BOXING");
+            p_nativeImplicitConversions.Add("$DECIMAL$" + "Â¿TO?" + "^_$OBJECT$", "BOXING");
 
             // PENDIENTE : esta converison debe depender del modulo de salida utilizado,
             // es decir de acuerdo al tipo utilizado para implemenar Date.
-            p_nativeImplicitConversions.Add(NativeTypes.Date + "¿TO?DotNET.System.DateTime", String.Empty);
-            p_nativeImplicitConversions.Add("DotNET.System.DateTime¿TO?" + NativeTypes.Date, String.Empty);
-            p_nativeImplicitConversions.Add("DotNET.System.DateTime" + "¿TO?" + "zoe.lang.DateTime", String.Empty);
-            p_nativeImplicitConversions.Add("zoe.lang.DateTime" + "¿TO?" + "DotNET.System.DateTime", String.Empty);
+            p_nativeImplicitConversions.Add(NativeTypes.Date + "Â¿TO?DotNET.System.DateTime", String.Empty);
+            p_nativeImplicitConversions.Add("DotNET.System.DateTimeÂ¿TO?" + NativeTypes.Date, String.Empty);
+            p_nativeImplicitConversions.Add("DotNET.System.DateTime" + "Â¿TO?" + "zoe.lang.DateTime", String.Empty);
+            p_nativeImplicitConversions.Add("zoe.lang.DateTime" + "Â¿TO?" + "DotNET.System.DateTime", String.Empty);
 
-            p_nativeImplicitConversions.Add(NativeTypes.Date + "¿TO?zoe.lang.DateTime", String.Empty);
-            p_nativeImplicitConversions.Add("zoe.lang.DateTime¿TO?" + NativeTypes.Date, String.Empty);
+            p_nativeImplicitConversions.Add(NativeTypes.Date + "Â¿TO?zoe.lang.DateTime", String.Empty);
+            p_nativeImplicitConversions.Add("zoe.lang.DateTimeÂ¿TO?" + NativeTypes.Date, String.Empty);
 
-            p_nativeImplicitConversions.Add(NativeTypes.Date + "¿TO?" + "^_$OBJECT$", "BOXING");
+            p_nativeImplicitConversions.Add(NativeTypes.Date + "Â¿TO?" + "^_$OBJECT$", "BOXING");
 
-            p_nativeImplicitConversions.Add(NativeTypes.Type + "¿TO?^_$OBJECT$", String.Empty);
-            p_nativeImplicitConversions.Add(NativeTypes.Type + "¿TO?^_" + CODEDOM_NAMESPACE + ".XplNode", String.Empty);
-            p_nativeImplicitConversions.Add(NativeTypes.Type + "¿TO?^_" + CODEDOM_NAMESPACE + ".XplType", String.Empty);
+            p_nativeImplicitConversions.Add(NativeTypes.Type + "Â¿TO?^_$OBJECT$", String.Empty);
+            p_nativeImplicitConversions.Add(NativeTypes.Type + "Â¿TO?^_" + CODEDOM_NAMESPACE + ".XplNode", String.Empty);
+            p_nativeImplicitConversions.Add(NativeTypes.Type + "Â¿TO?^_" + CODEDOM_NAMESPACE + ".XplType", String.Empty);
 
-            p_nativeImplicitConversions.Add(NativeTypes.Block + "¿TO?^_$OBJECT$", String.Empty);
-            p_nativeImplicitConversions.Add(NativeTypes.Block + "¿TO?^_" + CODEDOM_NAMESPACE + ".XplNode", String.Empty);
-            p_nativeImplicitConversions.Add(NativeTypes.Block + "¿TO?^_" + CODEDOM_NAMESPACE + ".XplFunctionBody", String.Empty);
+            p_nativeImplicitConversions.Add(NativeTypes.Block + "Â¿TO?^_$OBJECT$", String.Empty);
+            p_nativeImplicitConversions.Add(NativeTypes.Block + "Â¿TO?^_" + CODEDOM_NAMESPACE + ".XplNode", String.Empty);
+            p_nativeImplicitConversions.Add(NativeTypes.Block + "Â¿TO?^_" + CODEDOM_NAMESPACE + ".XplFunctionBody", String.Empty);
 
         }
         #endregion
 
         #region Agregado de Errores
         /// <summary>
-        /// Agrega un error a la colección de errores.
+        /// Agrega un error a la colecciÃ³n de errores.
         /// </summary>
         private void AddNewError(Error error)
         {
@@ -922,13 +929,13 @@ namespace LayerD.ZOECompiler
 
             if (p_showInternalTimes) ZOECompilerCore.WriteDebugTextLine("Initial Types Check...: " + ((TimeSpan)(DateTime.Now - lastTime)).ToString());
             lastTime = DateTime.Now;
-            // 3 - Controlo la herencia e implementación de interfaces
+            // 3 - Controlo la herencia e implementaciÃ³n de interfaces
             IterateDocuments(currentScope, SemanticAction.CheckInheritance);
 
             if (p_showInternalTimes) ZOECompilerCore.WriteDebugTextLine("Check Inheritance.....: " + ((TimeSpan)(DateTime.Now - lastTime)).ToString());
             lastTime = DateTime.Now;
             p_enableDeferedTypeCheck = true;
-            // 4 - Controlo la implementación - expresiones y cuerpos de funciones
+            // 4 - Controlo la implementaciÃ³n - expresiones y cuerpos de funciones
             IterateDocuments(currentScope, SemanticAction.CheckImplementation);
             p_enableDeferedTypeCheck = false;
 
@@ -946,22 +953,20 @@ namespace LayerD.ZOECompiler
                 currentScope.ClearUsingDirectives();
             }
             p_currentDocumentIsImport = true;
-            if (semanticAction != SemanticAction.CheckImplementation && 
-                semanticAction != SemanticAction.CheckInheritance && 
-                semanticAction != SemanticAction.CheckTypes)
+            if (semanticAction != SemanticAction.CheckImplementation)
             {
                 p_isClassfactorysDoc = true;
                 ProcessDocument(p_classfactorysDocument, currentScope, semanticAction);
                 currentScope.ClearUsingDirectives();
                 p_isClassfactorysDoc = false;
             }
-            // PENDIENTE : ¡Ojo con esta optimización!, puedo tener cuerpo de funciones
+
+            // PENDIENTE : Â¡Ojo con esta optimizaciÃ³n!, puedo tener cuerpo de funciones
             // en los tipos importados desde un modulo de salida, por tanto esto no
-            // deberia obviar asi como asi el control de la implementación.
+            // deberia obviar asi como asi el control de la implementaciÃ³n.
             if (p_importedDocuments != null && 
                 semanticAction != SemanticAction.CheckImplementation && 
-                semanticAction != SemanticAction.CheckInheritance && 
-                semanticAction != SemanticAction.CheckTypes)
+                semanticAction != SemanticAction.CheckInheritance)
             {
                 foreach (XplDocument doc in p_importedDocuments)
                 {
@@ -979,7 +984,7 @@ namespace LayerD.ZOECompiler
             // Estableco secciones implicitas por defecto            
             if (semanticAction == SemanticAction.ReadTypes)
             {
-                Section tempSection = new Section(xplDocument.get_DocumentBody(), p_currentDocumentIsImport, false);
+                Section tempSection = new Section(xplDocument.get_DocumentBody(), p_currentDocumentIsImport, false, !p_isExtensionModule);
                 if (!p_isClassfactorysDoc) p_programSections.Insert(tempSection);
                 p_currentSection = tempSection;
                 if(!p_isExtensionModule)
@@ -1060,10 +1065,10 @@ namespace LayerD.ZOECompiler
                     // Chequeo el nombre
                     if (xplNamespace.get_name() != "ordinary" && xplNamespace.get_name() != "extension")
                     { 
-                        // Error en el nombre de la sección
+                        // Error en el nombre de la secciÃ³n
                         AddNewError(SemanticError.New(SemanticErrorCode.InvalidSectionName,
                             xplNamespace, xplNamespace.get_name()));
-                        // intento corregir el error tratando la sección como ordinaria
+                        // intento corregir el error tratando la secciÃ³n como ordinaria
                         xplNamespace.set_name("ordinary");
                         newSection.set_IsBadSection(true);
                     }                    
@@ -1073,12 +1078,12 @@ namespace LayerD.ZOECompiler
             }
             ProcessNamespaceInnerNodes(xplNamespace, currentScope, semanticAction);
             // Luego de procesar los nodos internos establezco a null el puntero de seccion
-            // para controlar secciones anidadas y falta de declaración explicita de secciones.
+            // para controlar secciones anidadas y falta de declaraciÃ³n explicita de secciones.
             if (semanticAction == SemanticAction.ReadTypes)
                 p_currentSection = null;
         }
         /// <summary>
-        /// Utilidad para sobreponerse a una sección faltante.
+        /// Utilidad para sobreponerse a una secciÃ³n faltante.
         /// </summary>
         private void CorrectMissingSection()
         {
@@ -1097,7 +1102,7 @@ namespace LayerD.ZOECompiler
         {
             int scopeLevels = 0;
             string nsName = xplNamespace.get_name();
-            if (IsQualifiedName(nsName))
+            if (TypeString.IsQualifiedName(nsName))
             {
                 string[] nsNames = GetNamesFromQualified(nsName);
                 if (nsNames != null)
@@ -1215,14 +1220,22 @@ namespace LayerD.ZOECompiler
         private void ProcessClass(XplClass xplClass, Scope currentScope, SemanticAction semanticAction)
         {
             bool result = false;
-            // Si las clase es una classfactory no chequeo la implementación,
-            // ya que las classfactorys solo me interesa chequear la implementación
-            // cuando las compile en una extensión
-            if (semanticAction == SemanticAction.CheckImplementation && !p_interactiveOnly && (xplClass.get_isfactory() || xplClass.get_isinteractive()))
+            // Si las clase es una classfactory y no estoy compilando un modulo de extension no chequeo la implementaciÃ³n,
+            // ya que las classfactorys solo me interesa chequear la implementaciÃ³n
+            // cuando las compile en una extensiÃ³n
+            if (semanticAction == SemanticAction.CheckImplementation && (!p_isExtensionModule || p_isClassfactorysDoc) && !p_interactiveOnly && (xplClass.get_isfactory() || xplClass.get_isinteractive()))
                 return;
-            string className = xplClass.get_name();
 
-            if (IsQualifiedName(className))
+            string className = xplClass.get_name();
+            
+            if (String.IsNullOrEmpty(className))
+            {
+                AddNewError(SyntaxError.New(SyntaxErrorCode.UnspecifiedSyntaxError, xplClass, " Class name expected."));
+                xplClass.set_name(new XplIName().Identifier);
+                className = xplClass.get_name();
+            }
+
+            if (TypeString.IsQualifiedName(className))
             {
                 if (semanticAction == SemanticAction.ReadTypes)
                 {
@@ -1244,8 +1257,10 @@ namespace LayerD.ZOECompiler
             }
             else
             {
-                if (semanticAction == SemanticAction.ReadTypes) result = InsertType(currentScope.get_FullName(className), xplClass, null);
-                else result = true;
+                if (semanticAction == SemanticAction.ReadTypes) 
+                    result = InsertType(currentScope.get_FullName(className), xplClass, null);
+                else 
+                    result = true;
                 if (result) currentScope.EnterScope(ScopeType.Class, className);
             }
             // Si no se pudo agregar el tipo regreso sin procesar el contenido
@@ -1267,7 +1282,7 @@ namespace LayerD.ZOECompiler
                         SemanticError.New(SemanticErrorCode.TypeAlreadyExist,
                         xplClass, className.Substring(0, className.IndexOf('\''))));
                 }
-                // Si es una enumeración debo agregar los operadores
+                // Si es una enumeraciÃ³n debo agregar los operadores
                 if (classType.get_IsEnum() && !xplClass.get_lddata().Contains("$opsadded$"))
                 {
                     // UNDONE : this is ugly find another way to flag that operators where added to enums
@@ -1280,7 +1295,7 @@ namespace LayerD.ZOECompiler
                 classType.set_IsOnDeferedTypeCheck(true);
 
                 #region Control de Seccion
-                // Debo controlar que la sección sea valida y que exista
+                // Debo controlar que la secciÃ³n sea valida y que exista
                 // -Primero controlo que exista una seccion, sino lo corrijo
                 if (p_currentSection == null)
                 {
@@ -1346,27 +1361,32 @@ namespace LayerD.ZOECompiler
                 EnterCandidateStructuresScope(xplClass);
             // Proceso los tipos anidados al Tipo y sus miembros
             XplNodeList classChildren = xplClass.Children();
-            if(classChildren!=null)
-            for (int n = 0; n < classChildren.GetLength() ; n++)
+            if (classChildren != null)
             {
-                XplNode node = classChildren.GetNodeAt(n);
-                int backErrorsCount = 0;
-                MemberInfo memberInfo = null;
-                if (semanticAction == SemanticAction.CheckTypes)
+                for (int n = 0; n < classChildren.GetLength(); n++)
                 {
-                    classType.set_TypeChequed(true);
-                    backErrorsCount = p_errorCollection.Count;
+                    XplNode node = classChildren.GetNodeAt(n);
+                    int backErrorsCount = 0;
+                    MemberInfo memberInfo = null;
+                    if (semanticAction == SemanticAction.CheckTypes)
+                    {
+                        classType.set_TypeChequed(true);
+                        backErrorsCount = p_errorCollection.Count;
+                    }
+                    if (semanticAction == SemanticAction.CheckTypes || semanticAction == SemanticAction.CheckImplementation)
+                    {
+                        memberInfo = classType.get_MemberInfoCollection().get_MemberFromNode(node);
+                    }
+
+                    ProcessClassMember(xplClass, currentScope, semanticAction, classType, node, memberInfo);
+
+                    if (semanticAction == SemanticAction.CheckTypes && backErrorsCount < p_errorCollection.Count && memberInfo != null)
+                    {
+                        memberInfo.set_IsBadMember(true);
+                    }
                 }
-                if (semanticAction == SemanticAction.CheckTypes || semanticAction == SemanticAction.CheckImplementation)
-                    memberInfo = classType.get_MemberInfoCollection().get_MemberFromNode(node);
-
-                ProcessClassMember(xplClass, currentScope, semanticAction, classType, node, memberInfo);
-
-                if (semanticAction == SemanticAction.CheckTypes && backErrorsCount < p_errorCollection.Count && memberInfo!=null)
-                    memberInfo.set_IsBadMember(true);
-
             }
-            // Una vez listo los miembros controlo la herencia e implementación
+            // Una vez listo los miembros controlo la herencia e implementaciÃ³n
             if (semanticAction == SemanticAction.CheckInheritance) 
                 CheckBasesAndInterfaces(classType, currentScope);
             // Retorno al alcance antes de procesar el Tipo
@@ -1431,9 +1451,9 @@ namespace LayerD.ZOECompiler
                         function = (XplFunction)node;
                         if (function.get_fp())
                         {
-                            // Si es una declaración de puntero a función agrego el tipo.
+                            // Si es una declaraciÃ³n de puntero a funciÃ³n agrego el tipo.
                             typeName = function.get_name();
-                            if (IsQualifiedName(typeName))
+                            if (TypeString.IsQualifiedName(typeName))
                                 typeName = GetSimpleNameFromQualified(typeName);
                             MemberInfo fpMember = new MemberInfo(classType, classType, function);
                             classType.get_MemberInfoCollection().InsertMemberInfo(fpMember);
@@ -1468,7 +1488,7 @@ namespace LayerD.ZOECompiler
                     if (semanticAction == SemanticAction.ReadTypes)
                         classType.get_MemberInfoCollection().InsertMemberInfo(
                             new MemberInfo(classType, classType, node));
-                    // PENDIENTE : chequear, si en la accion "ReadTypes" sólo se controla
+                    // PENDIENTE : chequear, si en la accion "ReadTypes" sÃ³lo se controla
                     // que las expresiones no se encuentren fuera de secciones esta llamada
                     // no hace falta, es una perdida de tiempo.
                     if (semanticAction != SemanticAction.CheckInheritance)
@@ -1687,7 +1707,7 @@ namespace LayerD.ZOECompiler
                 //se fuerzan a publicos
                 if (classType.get_IsEnum())
                 {
-                    //Si no es el campo "_value$" es un campo común y debo
+                    //Si no es el campo "_value$" es un campo comÃºn y debo
                     //establecer el tipo del campo al tipo de la enumeracion
                     if (xplField.get_name() != "_value$")
                     {
@@ -1809,7 +1829,7 @@ namespace LayerD.ZOECompiler
             decl.set_name("value");
             XplType type = (XplType)xplType.Clone();            
             decl.set_type(type);
-            CheckType(type, body, currentScope, false, null);
+            CheckType(type, body, currentScope, memberInfo.IsFactory() || memberInfo.get_ClassType().get_IsFactory() , null);
             currentScope.InsertSymbol(new Symbol(decl, decl.get_name()));
         }
         /// <summary>
@@ -1919,7 +1939,7 @@ namespace LayerD.ZOECompiler
             }
             else if (semanticAction == SemanticAction.CheckTypes)
             {
-                //Los operadores deben ser estáticos
+                //Los operadores deben ser estÃ¡ticos
                 if(!memberInfo.IsStatic())
                     AddNewError(
                         SemanticError.New(SemanticErrorCode.InvalidNonStaticOperatorDeclaration, xplFunction,
@@ -1941,6 +1961,13 @@ namespace LayerD.ZOECompiler
                         SemanticError.New(SemanticErrorCode.InvalidNumberOfParameters, xplFunction,
                         errorStr, "On type '" + classType.get_FullName() + "'."));
 
+                if (!classType.get_IsFactory() || !p_isExtensionModule || classType.get_IsCompiledClassfactory())
+                {
+                    // if it's a conversion operator add to conversion tables
+                    if (IsImplicitConversionOperator(xplFunction.get_name())) AddCustomImplicitConversion(xplFunction, memberInfo, currentScope);
+                    if (IsExplicitConversionOperator(xplFunction.get_name())) AddCustomExplicitConversion(xplFunction, memberInfo, currentScope);
+                }
+
                 //Chequeo los modificadores de declaracion del miembro.
                 CheckCommonMemberModifiers(xplFunction, xplFunction.get_abstract(), xplFunction.get_final(), xplFunction.get_virtual(), xplFunction.get_nonvirtual(), xplFunction.get_override(), errorStr, classType);
             }
@@ -1960,6 +1987,54 @@ namespace LayerD.ZOECompiler
             }
         }
 
+        private bool IsExplicitConversionOperator(string operatorName)
+        {
+            return operatorName.EndsWith("_explicit%");
+        }
+
+        private void AddCustomExplicitConversion(XplFunction xplFunction, MemberInfo memberInfo, Scope currentScope)
+        {
+            string returnType = xplFunction.get_ReturnType().get_typeStr();
+            string parameterType = ((XplParameter)xplFunction.get_Parameters().Children().FirstNode()).get_type().get_typeStr();
+            
+            if (String.IsNullOrEmpty(returnType) || String.IsNullOrEmpty(parameterType)) return;
+
+            string conversionKey = parameterType + "Â¿TO?" + returnType;
+            if (p_customExplicitConversions.ContainsKey(conversionKey))
+            {
+                AddNewError(SemanticError.New(SemanticErrorCode.CustomExplicitConversionOperationAlreadyDefined,
+                    xplFunction, parameterType, returnType, ((MemberInfo)p_customExplicitConversions[conversionKey]).get_ClassTypeFullName()));
+                return;
+            }
+
+            // add to conversion table
+            p_customExplicitConversions.Add(conversionKey, memberInfo);
+        }
+
+        private bool IsImplicitConversionOperator(string operatorName)
+        {
+            return operatorName.EndsWith("_implicit%");
+        }
+
+        private void AddCustomImplicitConversion(XplFunction xplFunction, MemberInfo memberInfo, Scope currentScope)
+        {
+            string returnType = xplFunction.get_ReturnType().get_typeStr();
+            string parameterType = ((XplParameter)xplFunction.get_Parameters().Children().FirstNode()).get_type().get_typeStr();
+            
+            if (String.IsNullOrEmpty(returnType) || String.IsNullOrEmpty(parameterType)) return;
+
+            string conversionKey = parameterType + "Â¿TO?" + returnType;
+            if (p_customImplicitConversions.ContainsKey(conversionKey))
+            {
+                AddNewError(SemanticError.New(SemanticErrorCode.CustomImplicitConversionOperationAlreadyDefined,
+                    xplFunction, parameterType, returnType, ((MemberInfo)p_customImplicitConversions[conversionKey]).get_ClassTypeFullName()));
+                return;
+            }
+
+            // add to conversion table
+            p_customImplicitConversions.Add(conversionKey, memberInfo);
+        }
+
         private void ProcessFunction(XplFunction xplFunction, TypeInfo classType, Scope currentScope, SemanticAction semanticAction, MemberInfo memberInfo)
         {
             string errorStr = "On declaration of \"" + xplFunction.get_name() + "\" function.";
@@ -1973,6 +2048,10 @@ namespace LayerD.ZOECompiler
             {
                 //Chequeo el tipo de retorno
                 CheckType(xplFunction.get_ReturnType(), xplFunction, currentScope, xplFunction.get_isfactory() || classType.get_IsFactory(), errorStr);
+                if (xplFunction.get_ReturnType() == null)
+                {
+                    xplFunction.set_ReturnType(new XplType());
+                }
 
                 //Chequeo los tipos de los parametros
                 CheckParameters(xplFunction, classType, currentScope, xplFunction.get_access(), errorStr);
@@ -1986,7 +2065,7 @@ namespace LayerD.ZOECompiler
                 //Controlo Constructores Validos.
                 if (xplFunction.get_name() == classType.get_Name())
                 {
-
+                    // TODO add checks for constructors
                 }
             }
             else if (semanticAction == SemanticAction.CheckImplementation)
@@ -2080,16 +2159,16 @@ namespace LayerD.ZOECompiler
             }
         }
         /// <summary>
-        /// Chequea si la utilización de xplType define la utilización de un
+        /// Chequea si la utilizaciÃ³n de xplType define la utilizaciÃ³n de un
         /// constructor de tipo. En cuyo caso carga la estructura candidata
-        /// para el proceso de separación.
+        /// para el proceso de separaciÃ³n.
         /// 
         /// Asume que el xplType es correcto.
         /// No llamar con xplType null o con un xplType incorrecto.
         /// </summary>
         private void CheckForTypeConstructorCallOrSymbol(XplType xplType, Scope currentScope, string symbolName)
         {
-            if (p_interactiveOnly) return;
+            if (p_interactiveOnly || xplType == null) return;
             //Primero debo obtener el TypeName del xplType
             //PENDIENTE : Controlar esto que me parece esta pesimamente lento ahora!
             //
@@ -2101,9 +2180,9 @@ namespace LayerD.ZOECompiler
             string typenameStr = p_types.get_ExistingTypeName(GetInternalQualifiedName(walker.get_typename()), currentScope);
             if (typenameStr == null) return;
             TypeInfo ctype = (TypeInfo)p_types[typenameStr];
-            if (ctype.get_IsFactory())
+            if (ctype.get_IsFactory() && ctype.get_IsCompiledClassfactory())
             {
-                if (ctype.get_HaveDefaultTypeConstructor())
+                if (ctype.get_HasDefaultTypeConstructor())
                 {
                     //Agrego la estructura candidata
                     CandidateStructure cs = new CandidateStructure(TypeNameContext.LocalVarDecl, walker, ctype);
@@ -2133,9 +2212,9 @@ namespace LayerD.ZOECompiler
                 // this must not happend
                 return;
             }
-            if (ctype.get_IsFactory())
+            if (ctype.get_IsFactory() && ctype.get_IsCompiledClassfactory())
             {
-                if (ctype.get_HaveDefaultTypeConstructor())
+                if (ctype.get_HasDefaultTypeConstructor())
                 {
                     //Agrego la estructura candidata
                     CandidateStructure cs = new CandidateStructure(TypeNameContext.BaseOrInterface, node, ctype);
@@ -2150,10 +2229,14 @@ namespace LayerD.ZOECompiler
             if (parameters == null || parameters.Children().GetLength() == 0) return;
             foreach (XplParameter parameter in parameters.Children())
             {
-                XplType paramterType = parameter.get_type();
+                XplType parameterType = parameter.get_type();
                 string parameterErrorStr = " On parameter \"" + parameter.get_name() + "\" declaration.";
                 //Calculo la cadena del tipo y que el tipo exista.
-                CheckType(paramterType, xplFunction, currentScope, xplFunction.get_isfactory() || classType.get_IsFactory(), errorStr + parameterErrorStr);
+                CheckType(parameterType, xplFunction, currentScope, xplFunction.get_isfactory() || classType.get_IsFactory(), errorStr + parameterErrorStr);
+                if (parameterType == null)
+                {
+                    parameter.set_type(new XplType());
+                }
                 //PENDIENTE : Chequeo que los modificadores de parametro sean correctos
                 //Los modificadores son: "in", "inout", "out", "params"
             }
@@ -2311,7 +2394,6 @@ namespace LayerD.ZOECompiler
         }
         #endregion
 
-        #region Procesamiento de Cadena Identificadora de Tipos "TypeStr"
         /// <summary>
         /// Crea una cadena de tipos de puntero a miembro con firma "memberInfo".
         /// 
@@ -2328,214 +2410,16 @@ namespace LayerD.ZOECompiler
             //Es decir utilizo el "/" para indicar q nos referimos a un miembro.
             //Luego debo definir las conversiones.
             //
-            return MakePointerTypeTo(memberInfo.get_ClassTypeFullName() + "/" + memberInfo.get_MemberInternalName());
+            return TypeString.MakePointerTypeTo(memberInfo.get_ClassTypeFullName() + "/" + memberInfo.get_MemberInternalName());
         }
-        /// <summary>
-        /// Convierte una referencia a un tipo puntero.
-        /// 
-        /// No llamar con tipos no referencia o valores nulos o vacios.
-        /// </summary>
-        private string ChangeReferenceToPointer(string typeStr)
-        {
-            return '*' + typeStr.Substring(1);
-        }
-        /// <summary>
-        /// Crea una referencia al tipo 'typeStr'.
-        /// 
-        /// No llamar con valores nulos o vacios.
-        /// </summary>
-        private string MakeReferenceTypeTo(string typeStr)
-        {
-            return "^_" + typeStr;
-        }
-        /// <summary>
-        /// Devuelve la cantidad de dimensiones de un tipo Array.
-        /// 
-        /// Indeterminado si no se llama con un tipo matriz.
-        /// </summary>
-        private int GetArrayDimensions(string arrayTypeStr)
-        {
-            int count = 0, pos = 0;
-            while (arrayTypeStr[pos] == '[')
-            {
-                //PENDIENTE : Considerar cuando se tiene dimensiones fijas como
-                //en "[2][3][5]MiTipo"
-                count++; pos += 2;
-            }
-            return count;
-        }
-        /// <summary>
-        /// Determina si el tipo es un puntero de un nivel a un Array.
-        /// O una referencia de un nivel a un Array.
-        /// 
-        /// Si el tipo no es un puntero el resultado es indeterminado.
-        /// </summary>
-        private bool IsPointerToArrayType(string typeStr)
-        {
-            //Para ser un puntero a un Array debe tener la forma:
-            //     *_[]tipoElemento
-            //     ^_[]tipoElemento
-            return typeStr[2] == '[';
-        }
-        /// <summary>
-        /// Elimina todas las dimensiones de un tipo y retorna el tipo
-        /// de elementos del array más interno.
-        /// 
-        /// Ej: [][][]$CHAR$ --> $CHAR$
-        /// 
-        /// Indeterminado si no se llama con una cadena que no sea un array.
-        /// </summary>
-        private string RemoveAllDimensionsFromArrayType(string typeStr)
-        {
-            do
-                typeStr = RemoveArrayTypeFromType(typeStr);
-            while (IsArrayType(typeStr));
-            return typeStr;
-        }
-        /// <summary>
-        /// Crea una cadena designando un "Puntero al tipo typeStr".
-        /// Admite punteros con semantica de referencia.
-        /// 
-        /// NO LLAMAR CON NULL
-        /// </summary>
-        private string MakePointerTypeTo(string typeStr)
-        {
-            //PENDIENTE : revisar cuando se tenga en cuenta los modificadores
-            //const y volatile.
-            //Revisar punteros a miembro de clases.
-            //
-            if (typeStr[0] == '^') typeStr = '*' + typeStr.Substring(1);
-            return "*_" + typeStr;
-        }
-        /// <summary>
-        /// Indica si el tipo identificado por "typeStr" es un tipo puntero o no.
-        /// También devuelve verdadero si es un puntero con semántica de referencia.
-        /// 
-        /// NO LLAMAR CON NULL
-        /// </summary>
-        private bool IsPointerType(string typeStr)
-        {
-            return typeStr[0] == '*' || typeStr[0] == '^';
-        }
-        /// <summary>
-        /// Indica si el tipo identificado por "typeStr" es un tipo puntero
-        /// con semantica de referencia o no.
-        /// 
-        /// NO LLAMAR CON NULL
-        /// </summary>
-        private bool IsReferencePointerType(string typeStr)
-        {
-            if (typeStr[0] == '^') return true;
-            else if(typeStr[0] == '*')
-            {
-                if (typeStr[2] == ':')
-                {
-                    int endIndex = typeStr.IndexOf(':', 3);
-                    return IsReferencePointerType(typeStr.Substring(endIndex + 1));
-                }
-                else
-                {
-                    return IsReferencePointerType(typeStr.Substring(2));
-                }
-            }
-            else return false;
-        }
-        /// <summary>
-        /// Indica si el tipo identificado por "typeStr" es un tipo
-        /// matriz o no.
-        /// 
-        /// NO LLAMAR CON NULL
-        /// </summary>
-        private bool IsArrayType(string typeStr)
-        {
-            return typeStr[0] == '[';
-        }
-        private enum RemoveReferenciesType
-        {
-            ExtractType,
-            SimpleExpression,
-            MemberAccess,
-            ArrayAccess,
-            IndirectionOperator
-        }
-        /// <summary>
-        /// Calcula el tipo obtenido a partir de "typeStr" luego
-        /// de aplicar las indirecciones automaticas en un tipo puntero
-        /// con semantica de referencia.
-        /// 
-        /// NO LLAMAR CON NULL
-        /// "TYPESTR" DEBE SER UN TIPO DE REFERENCIA; DE LO CONTRARIO
-        /// EL RESULTADO ES INDETERMINADO.
-        /// </summary>
-        private string RemoveReferencesFromType(string typeStr, RemoveReferenciesType type)
-        {
-            switch (type)
-            {
-                case RemoveReferenciesType.SimpleExpression:
-                    while (IsPointerType(RemovePointerIndirectionsFromType(typeStr, 1))) typeStr = RemovePointerIndirectionsFromType(typeStr, 1);
-                    Debug.Assert(typeStr[0] == '^' || typeStr[0] == '*', "Internal error while dereferencing.");
-                    typeStr = '^' + typeStr.Substring(1);
-                    break;
-                case RemoveReferenciesType.ExtractType:
-                    while (IsPointerType(typeStr)) typeStr = RemovePointerIndirectionsFromType(typeStr, 1);
-                    break;
-                case RemoveReferenciesType.ArrayAccess:
-                case RemoveReferenciesType.MemberAccess:
-                    typeStr = RemovePointerIndirectionsFromType(typeStr, 1);
-                    break;
-                case RemoveReferenciesType.IndirectionOperator:
-                    typeStr = RemovePointerIndirectionsFromType(typeStr, 1);
-                    break;
-                default:
-                    break;
-            }
-            return typeStr;
-        }
-        /// <summary>
-        /// Realiza "count" indirecciones en "typeStr" y retorna la 
-        /// cadena de tipo obtenida.
-        /// Se puede utilizar con referencias en dicho caso elimina la referencia.
-        /// 
-        /// Si la cantidad de indirecciones es mayor a la indirección del tipo
-        /// puntero el resultado es indeterminado.
-        /// Si el tipo no es un tipo puntero el resultado es indeterminado.
-        /// Si se llama con "count" menor a "1" el resultado es indeterminado.
-        /// </summary>
-        private string RemovePointerIndirectionsFromType(string typeStr, int count)
-        {
-            if (typeStr[2] != ':')
-            {
-                typeStr = typeStr.Substring(2);
-            }
-            else
-            {
-                int index = typeStr.IndexOf(':', 3);
-                typeStr = typeStr.Substring(index + 1);
-            }
-            //typeStr = typeStr.Remove(0, 2);
-            if (count <= 1) return typeStr;
-            else return RemovePointerIndirectionsFromType(typeStr, count - 1);
-        }
-        /// <summary>
-        /// Elmina el tipo Array de una cadena de identificadora de tipo y devuelve
-        /// el tipo de los elementos.
-        /// 
-        /// No llamar con una cadena que no sea un tipo matriz, nula o vacia.
-        /// </summary>
-        private string RemoveArrayTypeFromType(string paramTypeStr)
-        {
-            if (paramTypeStr[1] == ']') return paramTypeStr.Substring(2);
-            else return paramTypeStr.Substring(paramTypeStr.IndexOf(']') + 1);
-        }
-        #endregion
 
-        #region Calculo y Control de Herencia e Implementación de Interfaces
+        #region Calculo y Control de Herencia e ImplementaciÃ³n de Interfaces
         private void CheckBasesAndInterfaces(TypeInfo classType, Scope currentScope)
         {
             /* Para la herencia:
              * - inicio con cada clase base directa agregando los miembros.
-             * - chequeando con los miembros actuales por ocultación y alli controlo el new.
-             * - hago el proceso recursivo para las bases indirectas agregando sólo los miembros directos.
+             * - chequeando con los miembros actuales por ocultaciÃ³n y alli controlo el new.
+             * - hago el proceso recursivo para las bases indirectas agregando sÃ³lo los miembros directos.
              * 
              * Para las interfaces:
              * - chequeo cada miembro, primero debo poblar la herencia de la interfaz, uso el 
@@ -2551,7 +2435,7 @@ namespace LayerD.ZOECompiler
 
             foreach (BaseInfo baseInfo in baseCollection.get_BaseInfoList())
             {
-                //Primero obtengo el tipo base si aún no fue encontrado
+                //Primero obtengo el tipo base si aÃºn no fue encontrado
                 ResolveBase(baseInfo, currentScope,false);
                 //Si el tipo base si existia agrego sus miembros
                 if (baseInfo.get_BaseTypeInfo() != null)
@@ -2567,10 +2451,10 @@ namespace LayerD.ZOECompiler
                     );
                 }
             }
-            // Cuando salgo de aquí seteo la bandera de herencia calculada
+            // Cuando salgo de aquÃ­ seteo la bandera de herencia calculada
             classType.set_InheritanceCalculated(true);
             
-            // Controlo la implementación de interfaces
+            // Controlo la implementaciÃ³n de interfaces
             foreach (BaseInfo baseInfo in baseCollection.get_BaseInfoList())
             {
                 if (!baseInfo.get_IsBadBase() && baseInfo.get_BaseTypeInfo().get_IsInterface())
@@ -2710,18 +2594,7 @@ namespace LayerD.ZOECompiler
                 XplInherit inhNode = XplInherits.new_c();
                 inhNode.set_type(new XplType());
                 inhNode.set_access(XplAccesstype_enum.PUBLIC);
-                /*
-                if (classType.get_IsInteractive())
-                {
-                    if (classType.get_FullName() == CLASSFACTORYINTERACTIVEBASE) return;
-                    inhNode.set_name(CLASSFACTORYINTERACTIVEBASE);
-                }
-                else if (classType.get_IsFactory())
-                {
-                    if (classType.get_FullName() == CLASSFACTORYBASE) return;
-                    inhNode.set_name(CLASSFACTORYBASE);
-                }*/
-                //else
+
                 if (p_programRequirements.get_UseUniversalObjectBase())
                 {
                     if (p_programRequirements.get_SetUniversalObjectBase() == "")
@@ -2758,33 +2631,22 @@ namespace LayerD.ZOECompiler
                 XplInherit inhNode = XplInherits.new_c();
                 inhNode.set_type(new XplType());
                 inhNode.set_access(XplAccesstype_enum.PUBLIC);
-                /*
-                if (classType.get_IsInteractive())
+
+                if (p_programRequirements.get_UseUniversalObjectBase())
                 {
-                    if (classType.get_FullName() == CLASSFACTORYINTERACTIVEBASE) return;
-                    inhNode.set_name(CLASSFACTORYINTERACTIVEBASE);
-                }
-                else if (classType.get_IsFactory())
-                {
-                    if (classType.get_FullName() == CLASSFACTORYBASE) return;
-                    inhNode.set_name(CLASSFACTORYBASE);
-                }*/
-                //else
-                    if (p_programRequirements.get_UseUniversalObjectBase())
+                    if (p_programRequirements.get_SetUniversalObjectBase() == "")
                     {
-                        if (p_programRequirements.get_SetUniversalObjectBase() == "")
-                        {
-                            if (classType.get_FullName() == OBJECT_CLASS_FULL_PATH) return;
-                            //Clase base universal comun OBJECT_CLASS_FULL_PATH
-                            inhNode.get_type().set_typename(OBJECT_CLASS_FULL_PATH2);
-                        }
-                        else
-                        {
-                            if (classType.get_FullName() == GetInternalQualifiedName(p_programRequirements.get_SetUniversalObjectBase())) return;
-                            //Clase universal base propia
-                            inhNode.get_type().set_typename(p_programRequirements.get_SetUniversalObjectBase());
-                        }
+                        if (classType.get_FullName() == OBJECT_CLASS_FULL_PATH) return;
+                        //Clase base universal comun OBJECT_CLASS_FULL_PATH
+                        inhNode.get_type().set_typename(OBJECT_CLASS_FULL_PATH2);
                     }
+                    else
+                    {
+                        if (classType.get_FullName() == GetInternalQualifiedName(p_programRequirements.get_SetUniversalObjectBase())) return;
+                        //Clase universal base propia
+                        inhNode.get_type().set_typename(p_programRequirements.get_SetUniversalObjectBase());
+                    }
+                }
 
                 XplInherits inhNodes = XplClass.new_Inherits();
                 inhNodes.Children().InsertAtEnd(inhNode);
@@ -2805,18 +2667,7 @@ namespace LayerD.ZOECompiler
                 XplInherit inhNode = XplInherits.new_c();
                 inhNode.set_type(new XplType());
                 inhNode.set_access(XplAccesstype_enum.PUBLIC);
-                /*
-                if (classType.get_IsInteractive())
-                {
-                    if (classType.get_FullName() == CLASSFACTORYINTERACTIVEBASE) return;
-                    inhNode.set_name(CLASSFACTORYINTERACTIVEBASE);
-                }
-                else if (classType.get_IsFactory())
-                {
-                    if (classType.get_FullName() == CLASSFACTORYBASE) return;
-                    inhNode.set_name(CLASSFACTORYBASE);
-                }*/
-                //else
+
                 if (p_programRequirements.get_UseUniversalObjectBase())
                 {
                     if (p_programRequirements.get_SetUniversalObjectBase() == "")
@@ -2974,15 +2825,17 @@ namespace LayerD.ZOECompiler
                     { 
                         //Es una clase, o estructura la clase base!
                         if (derivedType.get_BaseInfoCollection().Contains(typeName, baseInfo))
+                        {
                             AddNewError(
                                 SemanticError.New(SemanticErrorCode.DuplicatedBaseType, baseInfo.get_DeclarationNode(),
                                 typeName, derivedType.get_FullName())
                             );
+                        }
                         else
                         {
-                            if (!baseTypeNode.get_isfactory() && derivedTypeNode.get_isfactory())
+                            if (!p_isExtensionModule && !baseTypeNode.get_isfactory() && derivedTypeNode.get_isfactory())
                             {
-                                if(!CheckValidBaseForClassfactory(baseTypeNode))
+                                if (!CheckValidBaseForClassfactory(baseTypeNode))
                                     AddNewError(
                                         SemanticError.New(SemanticErrorCode.InvalidBaseClassForClassfactory, baseInfo.get_DeclarationNode(),
                                         typeName, derivedType.get_FullName())
@@ -2993,6 +2846,7 @@ namespace LayerD.ZOECompiler
                                     SemanticError.New(SemanticErrorCode.ClassfactoryCanNotInheritFromInteractive, baseInfo.get_DeclarationNode(),
                                     derivedType.get_FullName(), typeName)
                                 );
+
                             //if (!derivedTypeNode.get_isfactory() && baseTypeNode.get_isfactory())
                             //    AddNewError(
                             //        SemanticError.New(SemanticErrorCode.InvalidClassfactoryAsBaseClass, baseInfo.get_DeclarationNode(),
@@ -3023,7 +2877,7 @@ namespace LayerD.ZOECompiler
         /// </summary>
         private bool CheckValidBaseForClassfactory(XplClass baseTypeNode)
         {
-            //PENDIENTE : Controlar esto!!, uno podria engañarlo
+            //PENDIENTE : Controlar esto!!, uno podria engaÃ±arlo
             //haciendo clases con el mismo nombre en otro espacio de nombres
             //diferente a "zoe::lang".
             if ((baseTypeNode.get_name() == "ClassfactoryBase" ||
@@ -3041,7 +2895,7 @@ namespace LayerD.ZOECompiler
             return true;
         }
         /// <summary>
-        /// Controla si "baseInfo" es una clase base valida para una enumeración.
+        /// Controla si "baseInfo" es una clase base valida para una enumeraciÃ³n.
         /// 
         /// Las clases bases para enumeraciones las determinan los Modulos de Salida.
         /// </summary>
@@ -3052,7 +2906,7 @@ namespace LayerD.ZOECompiler
         }
         /// <summary>
         /// Agrega a "classType" los miembros heredados de "baseInfo", chequea
-        /// por la ocultación en "classType" y emite las advertencias si el miembro
+        /// por la ocultaciÃ³n en "classType" y emite las advertencias si el miembro
         /// no fue declarado como "new".
         /// 
         /// Procesa todas las sub-bases de baseInfo si aun no fue procesado previamente.
@@ -3089,7 +2943,7 @@ namespace LayerD.ZOECompiler
                     AddInheritedMember(classType, baseType, baseMember, classType.get_MemberInfoCollection(), baseInfo.get_Access(), currentScope);
                 }
             }
-            //Calculo la recursión de las sub-bases
+            //Calculo la recursiÃ³n de las sub-bases
             if (!inhCalc)
             {
                 BaseInfoCollection baseCollection = baseType.get_BaseInfoCollection();
@@ -3123,13 +2977,13 @@ namespace LayerD.ZOECompiler
         {
             //El proceso para agregar un miembro heredado debe ser:
             //- Si es una Expresion, un Permiso de Classfactory, Destructor o Finalizador o un Constructor no se hereda.
-            //- Si es estático, si se hereda menos el constructor estático.
+            //- Si es estÃ¡tico, si se hereda menos el constructor estÃ¡tico.
             //- De lo contrario si se hereda.
             //- Para chequear si el miembro heredado es ocultado por un miembro de la clase
             //se procede como sigue:
             //     - Se verifica que existan miembro originales de la clase con el mismo nombre que el miembro heredado.
             //     - Si el miembro heredado es un campo es ocultado.
-            //     - Si el miembro heredado es un método y existe un método con la misma firma es ocultado.
+            //     - Si el miembro heredado es un mÃ©todo y existe un mÃ©todo con la misma firma es ocultado.
             //     - Si el miembro heredado es una propiedad es ocultado.
             //     - Si el miembro heredado es un indexador y la firma conincide con un indexador en la clase es ocultado.
             //     - Si el miembro heredado es un operador nunca es ocultado ya que la firma de un operador valido nunca puede coincidir.
@@ -3152,22 +3006,24 @@ namespace LayerD.ZOECompiler
             string baseMemberName = baseMember.get_MemberName();
             MemberInfo[] newMembers = null;
             newMembers = classMembers.get_MembersInfo(baseMemberName);
-            //Si el miembro que estoy heredando ya esta marcado como oculto no debo chequear por ocultación
+            //Si el miembro que estoy heredando ya esta marcado como oculto no debo chequear por ocultaciÃ³n
             //O si el miembro que estoy heredando es override tampoco debo chequear
             if (baseMember.get_Hidden())
+            {
                 isHiddenMember = true;
+            }
             else
             {
                 //PENDIENTE : Revisar si utilizo "ExistAnyMemberInfoName" o
-                //"ExistMemberInfoName" para controlar la ocultación de miembros,
+                //"ExistMemberInfoName" para controlar la ocultaciÃ³n de miembros,
                 //el primero me busca en todos los miembros heredados o no,
                 //el segundo me busca solo en los miembros declarados en la clase
                 //actual.
                 //para campos y propiedades es facil!
                 if (baseMember.IsField() || baseMember.IsProperty())
                 {
-                    //Si el campo es estatico ó estatico externo no se hereda
-                    if (!isHiddenMember && classMembers.ExistAnyMemberInfoName(baseMemberName)) 
+                    //Si el campo es estatico Ã³ estatico externo no se hereda
+                    if (!isHiddenMember && classMembers.ExistAnyMemberInfoName(baseMemberName))
                         isHiddenMember = true;
                 }
                 //para metodos e indexadores
@@ -3181,8 +3037,10 @@ namespace LayerD.ZOECompiler
                         n = 0;
                         foreach (MemberInfo member in newMembers)
                         {
-                            //Si el miembro de la clase no es un metodo no requiere new
-                            if (!(member.IsMethod() || member.IsIndexer())) newMembers[n] = null;
+                            if (!(member.IsMethod() || member.IsIndexer()))
+                            {
+                                isHiddenMember = true;
+                            }
                             else
                             { //Es un metodo tengo que chequear la firma
                                 if (!isHiddenMember && IsSameSignature(member, baseMember, currentScope))
@@ -3228,7 +3086,7 @@ namespace LayerD.ZOECompiler
         /// Se aplica a metodos, indexadores, constructores y operadores
         /// chequeandose la lista de parametros.
         /// 
-        /// Sólo chequea la igualdad de tipos con "IsSameType", no importan los
+        /// SÃ³lo chequea la igualdad de tipos con "IsSameType", no importan los
         /// modificadores de declaracion del parametro.
         /// </summary>
         /// <returns>'true' si tienen la misma firma 'false' de lo contrario incluyendo cuando hay un miembro de tipo no valido como un campo.</returns>
@@ -3275,7 +3133,7 @@ namespace LayerD.ZOECompiler
         /// punteros pero no el modificador "ref" de puntero.
         /// 
         /// Se asume que los tipos deben ser correctos y validos. Por ejemplo,
-        /// si el tipo es un puntero a matriz y define una dimensión constante,
+        /// si el tipo es un puntero a matriz y define una dimensiÃ³n constante,
         /// que es un tipo no valido, el resultado es indeterminado.
         /// </summary>
         /// <returns>'true' si los tipos son identicos, 'false' de lo contrario.</returns>
@@ -3367,6 +3225,15 @@ namespace LayerD.ZOECompiler
         /// <returns>Una descriptiva cadena equivalente al xplType.</returns>
         private string CalculeTypeString(XplType xplType, string typeStr, string extraErrorInfo, bool checkForExistingType, Scope currentScope)
         {
+            if (this.p_isExtensionModule && !this.p_isClassfactorysDoc && (
+                xplType.get_ftype()!= XplFactorytype_enum.NONE || 
+                NativeTypes.IsNativeBlock(xplType.get_typename()) ||
+                NativeTypes.IsNativeType(xplType.get_typename()) )
+                )
+            {
+                return CalculeTypeStringForFactoryType(xplType);
+            }
+
             if (xplType.get_ispointer() && xplType.get_isarray())
             {
                 AddNewError(
@@ -3401,7 +3268,7 @@ namespace LayerD.ZOECompiler
                         pointerStr = "^";
                     else
                         pointerStr = "*";
-                    //Para el modificador de puntero se usara el siguiente código:
+                    //Para el modificador de puntero se usara el siguiente cÃ³digo:
                     //- "v" indicando volatil
                     //- "c" indicando constante
                     //- "w" indicando volatil y constante
@@ -3493,16 +3360,46 @@ namespace LayerD.ZOECompiler
             return typeStr;
         }
 
+        /// <summary>
+        /// Returns type string for provided XplType that is some kind of factory type
+        /// (iname, exp, block)
+        /// </summary>
+        /// <param name="xplType">Type to calculate type string</param>
+        /// <returns>Type string of xplType pointing to related CodeDOM class for factory class</returns>
+        private string CalculeTypeStringForFactoryType(XplType xplType)
+        {
+            switch (xplType.get_ftype())
+            {
+                case XplFactorytype_enum.NONE:
+                    if(NativeTypes.IsNativeBlock(xplType.get_typename()))
+                        return "^_" + SemanticAnalizer.CODEDOM_NAMESPACE + ".XplFunctionBody";
+                    else if (NativeTypes.IsNativeType(xplType.get_typename()))
+                        return "^_" + SemanticAnalizer.CODEDOM_NAMESPACE + ".XplType";
+                    else
+                        return String.Empty;
+                case XplFactorytype_enum.INAME:
+                    return "^_" + SemanticAnalizer.CODEDOM_NAMESPACE + ".XplIName";
+                case XplFactorytype_enum.EXPRESSION:
+                    return "^_" + SemanticAnalizer.CODEDOM_NAMESPACE + ".XplExpression";
+                case XplFactorytype_enum.EXPRESSIONLIST:
+                    return "^_" + SemanticAnalizer.CODEDOM_NAMESPACE + ".XplNodeList";
+                case XplFactorytype_enum.STATEMENT:
+                    return "^_" + SemanticAnalizer.CODEDOM_NAMESPACE + ".XplNode";
+                default:
+                    return String.Empty;
+            }
+        }
+
         private string GetStringOfExpressionForArrayType(XplExpression xplExpression)
         {
-            //PENDIENTE : devolver correctamente la cadena representando un array de dimensión estática.
+            //PENDIENTE : devolver correctamente la cadena representando un array de dimensiÃ³n estÃ¡tica.
             //-debo procesar la expresion, y si no retorna un valor constante entero es un error
             //en la declaracion del tipo.
             return "";
         }
         #endregion
        
-        #region Procesamiento de Nombres Calificados e inserción de tipos en la tabla, Validacion de Identificadores
+        #region Procesamiento de Nombres Calificados e inserciÃ³n de tipos en la tabla, Validacion de Identificadores
         /// <summary>
         /// Chequea si la cadena "identifierName" es un identificador valido, si no lo 
         /// es emite el error y agrega "errorStr" al error.
@@ -3512,6 +3409,7 @@ namespace LayerD.ZOECompiler
         /// <param name="errorStr">La cadena adicional de error.</param>
         private bool CheckValidIdentifier(string identifierName, XplNode errorNode, string errorStr)
         {
+            // TODO correctly define valid identifiers and check
             if (String.IsNullOrEmpty(identifierName) || 
                !IsValidFirstIdentifierLetter(identifierName[0]) ||
                identifierName.LastIndexOfAny(new char[] { ' ' }) > -1)
@@ -3537,7 +3435,7 @@ namespace LayerD.ZOECompiler
         /// Descompone el nombre calificado en una matriz
         /// de nombres simples ordenada comenzando por el nombre
         /// mas externo.
-        /// No analiza semántica.
+        /// No analiza semÃ¡ntica.
         /// Valida la correccion sintactica del nombre intentando procesarlo igual
         /// como correcto cuando es posible, pero emitiendo un error sintactico / lexico.
         /// </summary>
@@ -3639,31 +3537,17 @@ namespace LayerD.ZOECompiler
             return retArray;
         }
         /// <summary>
-        /// Determina si el nombre proporcionado es un nombre calificado.
-        /// No analiza semántica. No valida la corrección sintactica del nombre.
-        /// 
-        /// Busca ":" o "."
-        /// </summary>
-        public static bool IsQualifiedName(string name)
-        {
-            for(int n=0;n<name.Length;n++)
-            {
-                if (name[n] == ':' || name[n] == '.') return true;
-            }
-            return false;
-        }
-        /// <summary>
         /// Extrae el nombre simple de un nombre calificado.
         /// Ej: "Ns1::Ns2::SimpleName" devuelve "SimpleName".
-        /// No analiza semántica ni correccion sintáctica o léxica.
+        /// No analiza semÃ¡ntica ni correccion sintÃ¡ctica o lÃ©xica.
         /// Si "fullName" no es un nombre calificado el resultado es indeterminado.
-        /// Usar sólo con nombres calificados.
+        /// Usar sÃ³lo con nombres calificados.
         /// </summary>
         private string GetSimpleNameFromQualified(string fullName)
         {
             Debug.Assert(
-                IsQualifiedName(fullName), 
-                "Error de Diseño: funcion 'GetSimpleNameFromQualified' llamada con un nombre no calificado como argumento, resultado incorrecto."
+                TypeString.IsQualifiedName(fullName), 
+                "Error de DiseÃ±o: funcion 'GetSimpleNameFromQualified' llamada con un nombre no calificado como argumento, resultado incorrecto. " + fullName
                 );
             int index1 = fullName.LastIndexOf('.'),
                 index2 = fullName.LastIndexOf(':');
@@ -3673,15 +3557,15 @@ namespace LayerD.ZOECompiler
         /// <summary>
         /// Elimina el nombre simple de un nombre calificado.
         /// Ej: "Ns1::Ns2::SimpleName" devuelve "Ns1::Ns2".
-        /// No analiza semántica ni correccion sintáctica o léxica.
+        /// No analiza semÃ¡ntica ni correccion sintÃ¡ctica o lÃ©xica.
         /// Si "fullName" no es un nombre calificado el resultado es indeterminado.
-        /// Usar sólo con nombres calificados.
+        /// Usar sÃ³lo con nombres calificados.
         /// </summary>
         private string RemoveSimpleNameFromQualified(string fullName)
         {
             Debug.Assert(
-                IsQualifiedName(fullName),
-                "Error de Diseño: funcion 'RemoveSimpleNameFromQualified' llamada con un nombre no calificado como argumento, resultado incorrecto."
+                TypeString.IsQualifiedName(fullName),
+                "Error de DiseÃ±o: funcion 'RemoveSimpleNameFromQualified' llamada con un nombre no calificado como argumento, resultado incorrecto."
                 );
             int index1 = fullName.LastIndexOf('.'),
                 index2 = fullName.LastIndexOf(':');
@@ -3695,15 +3579,15 @@ namespace LayerD.ZOECompiler
         private void InsertNamespaceType(string fullName, XplNamespace xplNamespace)
         {
             if(!p_types.Exists(fullName))
-                p_types.InsertType(fullName, xplNamespace, XplAccesstype_enum.PUBLIC, null);
+                p_types.InsertType(fullName, xplNamespace, XplAccesstype_enum.PUBLIC, null, false);
         }
         /// <summary>
         /// Si no existe el tipo en la tabla de tipos lo inserta,
-        /// de lo contrario añade un error de compilación.
+        /// de lo contrario aÃ±ade un error de compilaciÃ³n.
         /// 
-        /// "fpMember" se utiliza solo al insertar un tipo de puntero a función.
+        /// "fpMember" se utiliza solo al insertar un tipo de puntero a funciÃ³n.
         /// </summary>
-        /// <param name="xplNode">El nodo que declara el tipo. Debe ser de tipos XplClass o XplFunction. Si el tipo no es correcto se lanza una excepción.</param>
+        /// <param name="xplNode">El nodo que declara el tipo. Debe ser de tipos XplClass o XplFunction. Si el tipo no es correcto se lanza una excepciÃ³n.</param>
         private bool InsertType(string fullName, XplNode xplNode, MemberInfo fpMember)
         {
             if (!(xplNode.get_TypeName()==CodeDOMTypes.XplClass || xplNode.get_TypeName()==CodeDOMTypes.XplFunction))
@@ -3715,7 +3599,7 @@ namespace LayerD.ZOECompiler
                 accessOfType = ((XplFunction)xplNode).get_access();
             if (!p_types.ExistsTypeInfo(fullName))
             {
-                p_types.InsertType(fullName, xplNode, accessOfType, fpMember);
+                p_types.InsertType(fullName, xplNode, accessOfType, fpMember, p_isClassfactorysDoc);
             }
             else
             {
@@ -3723,39 +3607,42 @@ namespace LayerD.ZOECompiler
                 node = ((TypeInfo)p_types[fullName]).get_TypeNode();
                 if (node == xplNode) return true;
                 int n = 0;
-                while (p_types[fullName + "'" + n.ToString()] != null) n++;
+                while (p_types[fullName + "'" + n.ToString(CultureInfo.InvariantCulture)] != null) n++;
 
                 if (xplNode.get_TypeName() == CodeDOMTypes.XplNamespace)
-                    ((XplNamespace)xplNode).set_name(((XplNamespace)xplNode).get_name()+"'" + n.ToString());
+                    ((XplNamespace)xplNode).set_name(((XplNamespace)xplNode).get_name()+"'" + n.ToString(CultureInfo.InvariantCulture));
                 else if (xplNode.get_TypeName() == CodeDOMTypes.XplClass)
-                    ((XplClass)xplNode).set_name(((XplClass)xplNode).get_name() + "'" + n.ToString());
+                    ((XplClass)xplNode).set_name(((XplClass)xplNode).get_name() + "'" + n.ToString(CultureInfo.InvariantCulture));
                 else
-                    ((XplFunction)xplNode).set_name(((XplFunction)xplNode).get_name() + "'" + n.ToString());
-                fullName = fullName + "'" + n.ToString();
+                    ((XplFunction)xplNode).set_name(((XplFunction)xplNode).get_name() + "'" + n.ToString(CultureInfo.InvariantCulture));
+
+                fullName = fullName + "'" + n.ToString(CultureInfo.InvariantCulture);
                 p_types.InsertType(fullName,
-                    xplNode, accessOfType, fpMember);
+                    xplNode, accessOfType, fpMember, p_isClassfactorysDoc);
 
                 AddNewError(
                     SemanticError.New(SemanticErrorCode.TypeAlreadyExist, xplNode, GetSimpleNameFromQualified(fullName))
                 );
                 if (p_persistentStructures && (!p_currentDocumentIsImport || p_isClassfactorysDoc))
                     p_typesToDelete.Add(fullName);
+
                 return false;
             }
             if (p_persistentStructures && (!p_currentDocumentIsImport || p_isClassfactorysDoc))
                 p_typesToDelete.Add(fullName);
+
             return true;
         }
         /// <summary>
-        /// Obtiene un nombre calificado con un formato adecuado para su utilización
+        /// Obtiene un nombre calificado con un formato adecuado para su utilizaciÃ³n
         /// interna en la tabla de simbolos.
         /// </summary>
         /// <param name="qualifiedName">Un nombre calificado como ocurre en un documento Zoe.</param>
         /// <returns>El mismo nombre calificado con formato adecuado para su uso interno.</returns>
         private string GetInternalQualifiedName(string qualifiedName)
         {
-            //Aquí debería chequear si el fuente utiliza como separador ".", "::" o ":.",
-            //controlando en la información del lenguaje LayerD, que por ahora no tengo.
+            //AquÃ­ deberÃ­a chequear si el fuente utiliza como separador ".", "::" o ":.",
+            //controlando en la informaciÃ³n del lenguaje LayerD, que por ahora no tengo.
             //-
             //Por lo que simplemente, por ahora reemplazare "::" por "." :) .
             //
@@ -3798,15 +3685,15 @@ namespace LayerD.ZOECompiler
                     }
                 }
             }
-            //PENDIENTE : ¿que pasa cuando los programas importados
+            //PENDIENTE : Â¿que pasa cuando los programas importados
             //importan a su vez otros programas?, en realidad no los estoy
-            //importando. Una opción sería realizar la importación directamente
+            //importando. Una opciÃ³n serÃ­a realizar la importaciÃ³n directamente
             //en el ProgramLoader (o el InternalZOEImporter), y desligar al 
             //analizador semantico de dicha responsabilidad, por ahora lo 
-            //vamos a dejar así :-).            
+            //vamos a dejar asÃ­ :-).            
             //PENDIENTE : hacer q esto sea opcional :-P
             
-            //El orden de esta importación debe conservarse de lo contrario revisar los metodos
+            //El orden de esta importaciÃ³n debe conservarse de lo contrario revisar los metodos
             ProcessZoeImports(zoeImportDirectives);
 
             ProcessSupportImports();
@@ -3814,7 +3701,7 @@ namespace LayerD.ZOECompiler
             ProcessImports(neededImportDirectives, importCache, currentScope);
         }
         /// <summary>
-        /// Importa los modulos de soporte de tiempo de compilación y classfactorysbase.
+        /// Importa los modulos de soporte de tiempo de compilaciÃ³n y classfactorysbase.
         /// </summary>
         private void ProcessSupportImports()
         {
@@ -3889,7 +3776,7 @@ namespace LayerD.ZOECompiler
                 else
                 {
                 }
-                // Debo agregar los errores y advertencias del proceso de importación.
+                // Debo agregar los errores y advertencias del proceso de importaciÃ³n.
                 IErrorCollection importerErrors = importerProcessor.GetLastImportErrors();
                 if (importerErrors != null)
                     p_errorCollection.Merge(importerErrors);
@@ -3912,7 +3799,7 @@ namespace LayerD.ZOECompiler
                 string importString = import.Children().FirstNode().get_StringValue();
                 XplLayerDZoeProgramConfig config = (XplLayerDZoeProgramConfig)p_programDocuments[0].get_DocumentData().get_Config().get_Content();
                 // PENDIENTE : Que soporte importar programas extendidos,
-                // que proporcione correctamente la plataforma de tiempo de ejecución,
+                // que proporcione correctamente la plataforma de tiempo de ejecuciÃ³n,
                 // etc. Que tenga en cuenta cuando el programa importado no debe 
                 // formar parte del DTE, etc.
                 result = importer.ImportZOEProgram(importString, config, "", importer.GetDirectoryFromSourceInfo(import.FullSourceFileInfo, p_currentClientCore.WorkingPath) );
@@ -3965,7 +3852,7 @@ namespace LayerD.ZOECompiler
             // sobre todo chequear que posea los parametros de espacio de nombre base
             // para los tipos, de igual forma considerar que si no se especifica una
             // plataforma la directiva debe procesarse en todas las plataformas,
-            // aunque esto sera muy raro que ocurra asi dice la especificación que
+            // aunque esto sera muy raro que ocurra asi dice la especificaciÃ³n que
             // debe funcionar!
             IZOEImportsDirectiveProcessor importerProcessor = p_runtimeOutputModule.GetZOEImportsDirectiveProcessorModuleInstance();
             XplName[] imports = (XplName[])neededImportDirectives.ToArray( typeof(XplName) );
@@ -3991,7 +3878,7 @@ namespace LayerD.ZOECompiler
                             importedDocs.CopyTo(p_importedDocuments, backImportedDocs.Length);
                         }
                     }
-                    //Debo agregar los errores y advertencias del proceso de importación.
+                    //Debo agregar los errores y advertencias del proceso de importaciÃ³n.
                     IErrorCollection importedErrors = importerProcessor.GetLastImportErrors();
                     if (importedErrors != null)
                         p_errorCollection.Merge(importedErrors);
@@ -4010,12 +3897,13 @@ namespace LayerD.ZOECompiler
                 );
             }
             p_types.set_AsyncTypeRead(new TypesTable.AsyncTypeRead(AsyncTypeReader));
-            p_types.set_CachedTypesIndex(importerProcessor.GetCachedTypesIndex());
+            Hashtable importProcessorCachedTypes = importerProcessor.GetCachedTypesIndex();
+            if (importProcessorCachedTypes != null) p_types.set_CachedTypesIndex(importProcessorCachedTypes);
         }
         /// <summary>
         /// Determina si una directiva import necesita ser procesada para la 
-        /// plataforma de compilación actual o no y determina si una directiva
-        /// import puede ser ignorada por tratarse de una duplicación.
+        /// plataforma de compilaciÃ³n actual o no y determina si una directiva
+        /// import puede ser ignorada por tratarse de una duplicaciÃ³n.
         /// </summary>
         private bool NeedImportDirective(XplName xplImport)
         {
@@ -4036,11 +3924,11 @@ namespace LayerD.ZOECompiler
                 {
                     //Si es el elemento principal armo una cadena para identificarla
                     foreach (string cad in args)
-                        lastImport += cad.ToLower().Trim();
+                        lastImport += cad.ToLower(CultureInfo.InvariantCulture).Trim();
                 }
                 else
                 {
-                    param = arg.Substring(0, lastIndex).ToLower();
+                    param = arg.Substring(0, lastIndex).ToLower(CultureInfo.InvariantCulture);
                     if (param == "platform")
                     {
                         platformCount++;
@@ -4063,13 +3951,13 @@ namespace LayerD.ZOECompiler
         }
         /// <summary>
         /// Determina si la plataforma "platformName" debe procesarse
-        /// para la plataforma de tiempo de ejecución actual, utilizar solo
+        /// para la plataforma de tiempo de ejecuciÃ³n actual, utilizar solo
         /// para directivas Import.
         /// </summary>
         private bool IsNeededImportPlatform(string platformName)
         {
             // PENDIENTE : hacerlo funcionar de verdad.
-            return p_currentClientCore.get_OutputPlatform().ToLower().Contains(platformName.ToLower());
+            return p_currentClientCore.get_OutputPlatform().ToLower(CultureInfo.InvariantCulture).Contains(platformName.ToLower(CultureInfo.InvariantCulture));
         }
         /// <summary>
         /// Ejecuta el ciclo ReadType para un tipo importado de forma asincrona.
@@ -4121,7 +4009,7 @@ namespace LayerD.ZOECompiler
         /// 
         /// No llamar con nulo.
         /// 
-        /// Este método sólo debe ser llamado por la clase TypeInfo.
+        /// Este mÃ©todo sÃ³lo debe ser llamado por la clase TypeInfo.
         /// </summary>
         internal static void DeferedTypeCheck(TypeInfo typeInfo)
         {
@@ -4150,7 +4038,7 @@ namespace LayerD.ZOECompiler
             //Ejecuto el chequeo del tipo
             bool backState = p_currentParseInstance.p_currentDocumentIsImport;
             p_currentParseInstance.p_currentDocumentIsImport = true;
-            p_currentParseInstance.ProcessClass((XplClass)typeInfo.get_TypeNode(), typeScope, SemanticAction.CheckTypes);            
+            p_currentParseInstance.ProcessClass((XplClass)typeInfo.get_TypeNode(), typeScope, SemanticAction.CheckTypes);
             p_currentParseInstance.ProcessClass((XplClass)typeInfo.get_TypeNode(), typeScope, SemanticAction.CheckInheritance);            
             p_currentParseInstance.p_currentDocumentIsImport = backState;
             typeInfo.set_IsOnDeferedTypeCheck(false);
@@ -4166,7 +4054,7 @@ namespace LayerD.ZOECompiler
             tempDTE.set_ElementName("ZOEDocument");
             tempDTE.set_DocumentData(XplDocument.new_DocumentData());
             tempDTE.set_DocumentBody(bodyDTE);
-            //Copio la configuración del programa fuente al EZOE
+            //Copio la configuraciÃ³n del programa fuente al EZOE
             //ATENCION el primer documento debe ser el archivo de programa!!
             tempDTE.get_DocumentData().set_Config((XplConfig)p_programDocuments[0].get_DocumentData().get_Config().Clone());
 
@@ -4212,8 +4100,11 @@ namespace LayerD.ZOECompiler
         }
         private void CreateExtensionSections()
         {
+            // if this is a compilation of an extension module ignore the call
+            if (p_isExtensionModule) return;
+
             int count = 0;
-            //Si es la compilación interactiva no creo secciones de extensión
+            //Si es la compilaciÃ³n interactiva no creo secciones de extensiÃ³n
             if(!p_interactiveOnly)
                 foreach (Section section in p_programSections.get_IList())
                     if (section.IsExtension() && !section.IsBadSection()) count++;
@@ -4278,7 +4169,7 @@ namespace LayerD.ZOECompiler
 
         #region Varios Depuracion
         /// <summary>
-        /// Para depuración!
+        /// Para depuraciÃ³n!
         /// </summary>
         public static string ViewNode(XplNode node)
         {
@@ -4319,6 +4210,16 @@ namespace LayerD.ZOECompiler
         {
             p_currentClientCore = compilerCore;
         }
+
+        internal void UnregisterClassfactoryToIgnore(string fullClassfactoryNameToIngnore)
+        {
+            p_candidateStructures.UnregisterClassfactoryToIgnore(fullClassfactoryNameToIngnore);
+        }
+
+        internal void RegisterClassfactoryToIgnore(string fullClassfactoryNameToIngnore)
+        {
+            p_candidateStructures.RegisterClassfactoryToIgnore(fullClassfactoryNameToIngnore);
+        }
     }
 
     #region ExtensionData
@@ -4356,7 +4257,7 @@ namespace LayerD.ZOECompiler
     }
     #endregion
 
-    #region Tipos para Representación de Secciones
+    #region Tipos para RepresentaciÃ³n de Secciones
     public class Section
     {
         XplNode p_section;
@@ -4374,8 +4275,8 @@ namespace LayerD.ZOECompiler
         }
         /// <summary>
         /// Crea una Seccion a partir de un elemento "Section" de declaracion
-        /// de seccion, controla por el nombre de la sección pero no emite errores,
-        /// si el nombre es impropio lanza una Aserción.
+        /// de seccion, controla por el nombre de la secciÃ³n pero no emite errores,
+        /// si el nombre es impropio lanza una AserciÃ³n.
         /// </summary>
         public Section(XplNamespace section, bool isExternalImportedSection, bool isInternalImportedSection, string namespaceName)
         {
@@ -4384,22 +4285,22 @@ namespace LayerD.ZOECompiler
             p_isNamespace = true;
             p_isExternalImportedSection = isExternalImportedSection;
             p_isInternalImportedSection = isInternalImportedSection;
-            Debug.Assert(section.get_ElementName() == "Section", "El nombre del elemento de una sección debe ser 'Section'.");
+            Debug.Assert(section.get_ElementName() == "Section", "El nombre del elemento de una secciÃ³n debe ser 'Section'.");
             if (section.get_name() == "ordinary")
                 p_isExtension = false;
             else if (section.get_name() == "extension")
                 p_isExtension = true;
             else
-                Debug.Assert(false, "El nombre de sección no es valido en el nodo.");
+                Debug.Assert(false, "El nombre de secciÃ³n no es valido en el nodo.");
 
         }
         /// <summary>
-        /// Construye una sección a partir de un DocumentBody, asume que el 
+        /// Construye una secciÃ³n a partir de un DocumentBody, asume que el 
         /// documentbody no utiliza declaraciones explicitas de secciones sino
-        /// implicitas, identifica el tipo de sección implicita buscando la primera 
-        /// clase, si no hay clases definidas supone una sección ordinaria.
+        /// implicitas, identifica el tipo de secciÃ³n implicita buscando la primera 
+        /// clase, si no hay clases definidas supone una secciÃ³n ordinaria.
         /// </summary>
-        public Section(XplDocumentBody section, bool isExternalImportedSection, bool isInternalImportedSection)
+        public Section(XplDocumentBody section, bool isExternalImportedSection, bool isInternalImportedSection, bool searchForClassfactorys)
         {
             p_section = section;
             p_isNamespace = false;
@@ -4408,20 +4309,24 @@ namespace LayerD.ZOECompiler
             XplNodeList p_list = section.get_NamespaceNodeList();
             XplNodeList p_list2;
             p_isExtension = false;
-            foreach (XplNamespace ns in p_list)
+
+            if (searchForClassfactorys)
             {
-                p_list2 = ns.get_ClassNodeList();
-                if (p_list2.GetLength() > 0)
+                foreach (XplNamespace ns in p_list)
                 {
-                    if (((XplClass)p_list2.FirstNode()).get_isfactory()
-                        || ((XplClass)p_list2.FirstNode()).get_isinteractive()) p_isExtension = true;
-                    break;
+                    p_list2 = ns.get_ClassNodeList();
+                    if (p_list2.GetLength() > 0)
+                    {
+                        if (((XplClass)p_list2.FirstNode()).get_isfactory()
+                            || ((XplClass)p_list2.FirstNode()).get_isinteractive()) p_isExtension = true;
+                        break;
+                    }
                 }
             }
         }
         /// <summary>
-        /// Obtiene el XplNamespace de la sección siempre
-        /// que sea una sección explicita, de lo contrario 
+        /// Obtiene el XplNamespace de la secciÃ³n siempre
+        /// que sea una secciÃ³n explicita, de lo contrario 
         /// retorna null.
         /// </summary>
         public XplNamespace get_SectionNamespace()
@@ -4430,8 +4335,8 @@ namespace LayerD.ZOECompiler
             else return null;
         }
         /// <summary>
-        /// Obtiene el XplDocumentBody de la sección siempre
-        /// que sea una sección implicita, de lo contrario 
+        /// Obtiene el XplDocumentBody de la secciÃ³n siempre
+        /// que sea una secciÃ³n implicita, de lo contrario 
         /// retorna null.
         /// </summary>
         public XplDocumentBody get_SectionDocumentBody()
@@ -4440,9 +4345,9 @@ namespace LayerD.ZOECompiler
             else return null;
         }
         /// <summary>
-        /// Indica si la sección es una declaración explicita con un
-        /// espacio de nombres o sólo es un DocumentBody con
-        /// un tipo de sección implicita.
+        /// Indica si la secciÃ³n es una declaraciÃ³n explicita con un
+        /// espacio de nombres o sÃ³lo es un DocumentBody con
+        /// un tipo de secciÃ³n implicita.
         /// </summary>
         public bool IsExplicitSection()
         {
@@ -4459,22 +4364,22 @@ namespace LayerD.ZOECompiler
         /// <summary>
         /// Indica si la seccion es "mala", es decir si 
         /// contiene errores y no debe considerarse en la
-        /// composición del DTE o como una extensión valida.
+        /// composiciÃ³n del DTE o como una extensiÃ³n valida.
         /// </summary>
         public bool IsBadSection()
         {
             return p_badSection;
         }
         /// <summary>
-        /// Permite marcar la sección como "mala" cuando no 
-        /// es una sección valida.
+        /// Permite marcar la secciÃ³n como "mala" cuando no 
+        /// es una secciÃ³n valida.
         /// </summary>
         public void set_IsBadSection(bool isBadSection)
         {
             p_badSection = isBadSection;
         }
         /// <summary>
-        /// Indica si la sección actual corresponde a una sección importada desde
+        /// Indica si la secciÃ³n actual corresponde a una secciÃ³n importada desde
         /// un modulo de salida, es decir obtenida de un documento importado con 
         /// una directiva import procesada por un modulo de salida.
         /// </summary>

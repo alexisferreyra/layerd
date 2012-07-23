@@ -28,6 +28,8 @@ using LayerD.OutputModules;
 using System.IO;
 using System.Collections;
 using System.Threading;
+using System.Globalization;
+
 
 namespace LayerD.ZOECompiler
 {
@@ -52,7 +54,6 @@ namespace LayerD.ZOECompiler
         string p_tempFileName;
         string p_tempFindFileName;
         private FlowLayoutPanel flowLayoutPanel1;
-        private Button buttonUpdate;
         private Button buttonContinue;
         private FlowLayoutPanel flowLayoutPanel2;
         private ComboBox listFind;
@@ -136,7 +137,6 @@ namespace LayerD.ZOECompiler
             this.label1 = new System.Windows.Forms.Label();
             this.textFindZoe = new System.Windows.Forms.ComboBox();
             this.flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
-            this.buttonUpdate = new System.Windows.Forms.Button();
             this.buttonContinue = new System.Windows.Forms.Button();
             this.flowLayoutPanel2 = new System.Windows.Forms.FlowLayoutPanel();
             this.listFind = new System.Windows.Forms.ComboBox();
@@ -419,7 +419,6 @@ namespace LayerD.ZOECompiler
             // 
             // flowLayoutPanel1
             // 
-            this.flowLayoutPanel1.Controls.Add(this.buttonUpdate);
             this.flowLayoutPanel1.Controls.Add(this.buttonContinue);
             this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flowLayoutPanel1.Location = new System.Drawing.Point(3, 519);
@@ -427,18 +426,9 @@ namespace LayerD.ZOECompiler
             this.flowLayoutPanel1.Size = new System.Drawing.Size(759, 40);
             this.flowLayoutPanel1.TabIndex = 5;
             // 
-            // buttonUpdate
-            // 
-            this.buttonUpdate.Location = new System.Drawing.Point(3, 3);
-            this.buttonUpdate.Name = "buttonUpdate";
-            this.buttonUpdate.Size = new System.Drawing.Size(100, 26);
-            this.buttonUpdate.TabIndex = 4;
-            this.buttonUpdate.Text = "&Update";
-            this.buttonUpdate.UseVisualStyleBackColor = true;
-            // 
             // buttonContinue
             // 
-            this.buttonContinue.Location = new System.Drawing.Point(109, 3);
+            this.buttonContinue.Location = new System.Drawing.Point(3, 3);
             this.buttonContinue.Name = "buttonContinue";
             this.buttonContinue.Size = new System.Drawing.Size(113, 26);
             this.buttonContinue.TabIndex = 5;
@@ -492,7 +482,7 @@ namespace LayerD.ZOECompiler
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "DTEDebugWindow";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Zoe Internal Debuger";
+            this.Text = "Zoe Internal Debugger";
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.DTEDebugWindow_FormClosed);
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tabDocuments.ResumeLayout(false);
@@ -571,8 +561,8 @@ namespace LayerD.ZOECompiler
             {
                 p_coreThread.Suspend();
             }
-            tabCurrentDTE.Text = "DTE - Compile Cicle " + p_currentCore.CurrentCompileCicle.ToString();
-            tabCurrentDTEZoe.Text = "DTE Zoe - Compile Cicle " + p_currentCore.CurrentCompileCicle.ToString();
+            tabCurrentDTE.Text = "DTE - Compile Cycle " + p_currentCore.CurrentCompileCycle.ToString(CultureInfo.InvariantCulture);
+            tabCurrentDTEZoe.Text = "DTE Zoe - Compile Cycle " + p_currentCore.CurrentCompileCycle.ToString(CultureInfo.InvariantCulture);
 
             textDTE.Text = text;
             string buffer = textDTE.Rtf;
@@ -714,6 +704,7 @@ namespace LayerD.ZOECompiler
                 browserDTE.Navigate(p_tempFileName);
             }
         }
+
 
     }
 }

@@ -1,14 +1,15 @@
-﻿/****************************************************************************
- 
-  C++ Output Module for Zoe compiler
-  
-  Original Author: Mateo Bengualid
-  Contact: apoteoticos@gmail.com
-  
-  Please visit http://layerd.net to get the last version
-  of the software and information about LayerD technology.
-
-****************************************************************************/
+﻿/*******************************************************************************
+* Copyright (c) 2009, 2012 Mateo Bengualid, Intel Corporation.
+* All rights reserved. This program and the accompanying materials
+* are made available under the terms of the Eclipse Public License v1.0
+* which accompanies this distribution, and is available at
+* http://www.eclipse.org/legal/epl-v10.html
+*
+* Contributors:
+*       Mateo Bengualid - initial API and implementation
+*       Julieta Alvarez (Intel Corporation)
+*       Alexis Ferreyra (Intel Corporation)
+*******************************************************************************/
 /*-
  * Copyright (c) 2009 Mateo Bengualid
  * All rights reserved.
@@ -59,7 +60,6 @@ namespace LayerD.OutputModules
     /// </summary>
     public class CPPZOERenderModule : ExtendedZOEProcessor, IEZOERender
     {
-        #region Tipos privados
         private enum FunctionType
         {
             Method,
@@ -79,143 +79,61 @@ namespace LayerD.OutputModules
             ConditionalExp = -13,
             AssingExp = -14
         }
-        private struct ClassInfo
+
+        internal enum UseofType
         {
-            public string ClassName;
-            public string Namespace;
-            public int FirstLine;
-            public int LastLine;
-            public XplNode ClassNode;
-            // A list of usings used in the class
-            // builded while processing user types names
-            public System.Collections.Specialized.ListDictionary Usings;
-
-            internal static ClassInfo New()
-            {
-                ClassInfo retInfo = new ClassInfo();
-                retInfo.Usings = new System.Collections.Specialized.ListDictionary();
-                return retInfo;
-            }
+            InHeader, InSource, Both
         }
-        #endregion
-
-        #region Datos Protegidos para Palabras Claves
-        const string InitializerMethodName = "__layerd_init_fields__";
-        const string IncludePC = "#include ";
-        const string NamespacePC = "namespace ";
-        const string ClassPC = "class ";
-        const string StructPC = "struct ";
-        const string UnionPC = "struct ";
-        const string EnumPC = "enum ";
-        const string InterfacePC = "interface ";// <-- Use a .h file or a class with abstract methods.
-        const string AbstractPC = "abstract ";// <-- Use a .h file or a class with abstract methods.
-        const string FinalPC = "sealed ";// <-- Simulated with a private constructor.
-        const string NewPC = "new ";
-        const string VolatilePC = "volatile ";
-        const string ConstPC = "const ";
-        const string PrivatePC = "private: "; // The ":" serves to emulate other language definitions.
-        const string ProtectedPC = "protected: "; // The ":" serves to emulate other language definitions.
-        const string PublicPC = "public: "; // The ":" serves to emulate other language definitions.
-        const string InternalPC = "";// <-- Non C++ related.
-        const string DelegatePC = "";// <-- Simulated with member function pointers or templatized functors.
-        const string ExplicitPC = "";// <-- Simulated with old C-style cast definition with Y(const X& x)
-        const string ImplicitPC = "implicit ";// <-- Simulated with old C-style cast definition with Y(const X& x)
-        const string OperatorPC = "operator ";
-        const string VirtualPC = "virtual ";
-        const string OverridePC = "override ";
-        const string IndexerPC = "this ";
-        const string ParamsPC = "... ";// <-- Used in a different position.
-        const string InPC = "in ";
-        const string InoutPC = "&";// <-- In fact, it  is just the use of a pointer.
-        const string OutPC = "&";// <-- In fact, it  is just the use of a pointer.
-        const string ReturnPC = "return";
-        const string ThrowPC = "throw ";
-        const string SwitchPC = "switch ";
-        const string BreakPC = "break";
-        const string CatchPC = "catch ";
-        const string ContinuePC = "continue";
-        const string FinallyPC = "finally ";
-        const string GotoPC = "goto ";
-        const string TryPC = "try ";
-        const string DoPC = "do ";
-        const string WhilePC = "while ";
-        const string CasePC = "case ";
-        const string DeletePC = "delete ";
-        const string ElsePC = "else ";
-        const string ForPC = "for ";
-        const string IfPC = "if ";
-        const string ExternPC = "extern ";
-        const string StaticPC = "static ";
-        const string DefaultPC = "default ";
-        const string PartialPC = "";// <-- Glue the whole bunch at the end.
-        const string UniversalMockClassName = "MockClass";
-        const string UniversalMockNamespaceName = "MockNS";
-        //TODO: Add here the rest of the C++ dependant reserved words.
-        const string FriendPC = "friend ";// Not yet supported.
-        const string ScopePC = "::";
-
-        const string PARTIAL_CLASS_FLAG = "$DOTNET_MARK_PARTIAL$";//Assume that this will only mean to join classes.
-        #endregion
+     
+        //Class added for support multiple files output - Julieta Alvarez
+        public List<string> p_globalImportDirectives = new List<string>();
 
         #region Datos Privados o Protegidos
 
-        string p_outputFileName = "";
+        string p_outputFileName = String.Empty;
         bool p_dontWriteCopyrightComment = true;
-        bool p_newFilePerClass = false;
         bool p_writeDetailedComments = false;
-        bool p_isUnsafeContext = false;
         bool p_applyFormat = true;
         bool p_checkTypes = true;
-        bool p_newLineFlag = true;
         bool p_OptimiseParenthesis = true;
         bool p_buildFullType = false;
         bool p_prettyOutput = false;
+        bool p_multipleFiles = false;
         bool p_isDebugMode;
-        string p_namespaceToRemove = "";
+        string p_currentFirstBase = "object";
+        bool p_generateFieldInitialization = false;
 
-        bool aStaticMainMethodExists = false;
-        bool aStaticMainMethodWithArgumentsExists = false;
-        string mainMethodSignature = "";
         bool atLeastOneConstructor;
-        List<string> mockClasses = new List<string>();
         List<string> currentClassConstructorInitializers = new List<string>();
-        TextWriter currentCodeWriter = null;
-        TextWriter currentHeaderWriter = null;
+        List<string> p_classNamesToRemove = new List<string>();
 
-        // Linux has issues with UTF8 encoding, so ASCII will be fine.
-        System.Text.Encoding p_outputEncoding = System.Text.Encoding.ASCII;//System.Text.Encoding.UTF8;
-        int p_nestingLevel = 0;
-        int p_maxParameter = 0;
-        string p_tabString = "";
-        FunctionType currentFunctionType = FunctionType.Method;
-        // Variables para el seguimiento de archivo y linea
-        string p_CurrentCodeFile = "";
-        int p_currentCodeRealLine = 0;
+        int p_maxParameter;
         int p_lastCodeStatementLine;
 
-        string p_CurrentHeaderFile = "";
-        int p_currentHeaderRealLine = 0;
-        int p_lastHeaderStatementLine;
-        // Cadena para trabajo temporario
-        string tempStr = "";
+        FunctionType p_currentFunctionType = FunctionType.Method;
 
         string p_outputPath = null;
-        bool p_dontWriteLineDirecties;
-        XplLayerDZoeProgramModuletype_enum p_outputModuleType = XplLayerDZoeProgramModuletype_enum.EXECUTABLE;
-        string p_intermediateFile = "";
-        string p_currentLine = "";
-        ArrayList p_currentCodeFileLines;
-        ArrayList p_currentHeaderFileLines;
-        ErrorCollection p_errors = new ErrorCollection();
-        ArrayList p_assemblyList = new ArrayList();
-        int p_isExternalClass;
-        Hashtable p_usedTemplateInstances = new Hashtable();
-        SortedList p_includes = new SortedList();
-        ClassInfo p_currentClassInfo = ClassInfo.New();
-        ArrayList p_classInfos = new ArrayList();
 
-        string p_currentPackage = "";
-        string p_currentClass = "";
+        bool p_dontWriteLineDirecties;
+        bool p_newFilePerClass;
+
+        XplLayerDZoeProgramModuletype_enum p_outputModuleType = XplLayerDZoeProgramModuletype_enum.EXECUTABLE;
+        RenderBuffer p_buffer;
+
+        ErrorCollection p_errors = new ErrorCollection();
+        int p_isExternalClass;
+
+        /// <summary>
+        /// Key is the name of ObjC anonymous struct/enum like "__apt_anonymous_decl__" or the name of ObjC global dummy class that contain the field declaration
+        /// Value is the list of rendered fields (global vars) associated
+        /// </summary>
+        Dictionary<string, List<XplField>> _anonymousGlobalVars = new Dictionary<string,List<XplField>>();
+
+
+        string p_globalSourceFile = "main.h";
+        static string p_globalClassName = "_global_";
+		internal const string CPP_HEADER_METADATA_BEGIN = "%CPP_H[";
+		internal const string CPP_HEADER_METADATA_END = "]%";
 
         #endregion
 
@@ -261,181 +179,84 @@ namespace LayerD.OutputModules
         #region Miembros Privados Utilitarios
 
         #region PrepareOutput, CloseOutput, writeOut, writeNewLine, incNlevel, decNlevel, writeLineDirective
+
         private string getHeaderFileVersion(string currentFile)
         {
-            // Remove any extension of three or less letters that the file may have.
-            int lastDot = currentFile.LastIndexOf(".");
-            if (currentFile.Length - lastDot <= 4)
-            {
-                return currentFile.Substring(0, lastDot) + ".h";
-            }
-            else
-            {
-                return currentFile + ".h";
-            }
+            return Path.GetFileNameWithoutExtension(currentFile) + ".h";
         }
 
         private string getCodeFileVersion(string currentFile)
         {
             // Remove any extension of three or less letters that the file may have.
-            int lastDot = currentFile.LastIndexOf(".");
-            if (currentFile.Length - lastDot <= 4)
-            {
-                return currentFile.Substring(0, lastDot) + ".cpp";
-            }
-            else
-            {
-                return currentFile + ".cpp";
-            }
+            return Path.GetFileNameWithoutExtension(currentFile) + ".cpp";
         }
 
         private void writeLineDirective(string ldsrc, bool isMaxLine)
         {
-            if (p_dontWriteLineDirecties) return;
-            if (ldsrc == null) return;
-            //Debo parsear ldsrc para obtener las lineas y los archivos origen
-            int minLine = 0, maxLine = 0;
-            string currentFile = "";
-            parseLDSRC(ldsrc, ref minLine, ref  maxLine, ref currentFile);
-            if (currentFile != "") currentFile = getCodeFileVersion(GetRelativeToOutputSourceFileName(currentFile));
-
-            if (isMaxLine)
+            if (!p_dontWriteLineDirecties)
             {
-                if (currentFile != "" && currentFile != p_CurrentCodeFile)
-                {
-                    p_CurrentCodeFile = currentFile;
-                    if (maxLine != p_currentCodeRealLine && maxLine > 0) { writeLineDirectiveText("#line " + maxLine + " \"" + p_CurrentCodeFile + "\""); p_currentCodeRealLine = maxLine; }
-                }
-                else
-                    if (maxLine != p_currentCodeRealLine && maxLine > 0) { writeLineDirectiveText("#line " + maxLine); p_currentCodeRealLine = maxLine; }
-            }
-            else
-            {
-                if (currentFile != "" && currentFile != p_CurrentCodeFile)
-                {
-                    p_CurrentCodeFile = currentFile;
-                    if (minLine != p_currentCodeRealLine && minLine > 0) { writeLineDirectiveText("#line " + minLine + " \"" + p_CurrentCodeFile + "\""); p_currentCodeRealLine = minLine; }
-                }
-                else
-                    if (minLine != p_currentCodeRealLine && minLine > 0) { writeLineDirectiveText("#line " + minLine); p_currentCodeRealLine = minLine; }
+                // TODO : implement
             }
         }
 
-        private void writeLineDirectiveText(string p)
+        internal static void ParseZoeSourceInfo(string zoeSourceInfoStr, ref int minLine, ref int maxLine, ref string currentFile)
         {
-            if (p_dontWriteLineDirecties) return;
-            if (!p_newLineFlag)
-            {
-                writeNewLineOfCode();
-            }
-            writeOut(p);
-            writeNewLineOfCode();
-        }
-
-        private string GetRelativeToOutputSourceFileName(string currentFile)
-        {
-            //Se lo deberia mejorar para calcular un path relativo
-            //al archivo de entrada.
-            return Path.GetFullPath(currentFile);
-        }
-        private void parseLDSRC(string ldsrc, ref int minLine, ref int maxLine, ref string currentFile)
-        {
-            string[] data = ldsrc.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] data = zoeSourceInfoStr.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
             switch (data.Length)
             {
                 case 1:
-                    minLine = maxLine = Int32.Parse(data[0]);
+                    minLine = maxLine = Int32.Parse(data[0], CultureInfo.InvariantCulture);
                     break;
                 case 2:
-                    minLine = Int32.Parse(data[0]);
-                    maxLine = Int32.Parse(data[1]);
+                    minLine = Int32.Parse(data[0], CultureInfo.InvariantCulture);
+                    maxLine = Int32.Parse(data[1], CultureInfo.InvariantCulture);
                     break;
                 case 3:
-                    minLine = Int32.Parse(data[0]);
-                    maxLine = Int32.Parse(data[1]);
+                    minLine = Int32.Parse(data[0], CultureInfo.InvariantCulture);
+                    maxLine = Int32.Parse(data[1], CultureInfo.InvariantCulture);
                     currentFile = data[2];
                     break;
                 case 5:
                     // Parser dpp no te da info de la columna.
-                    minLine = Int32.Parse(data[0]);
-                    maxLine = Int32.Parse(data[2]);
+                    minLine = Int32.Parse(data[0], CultureInfo.InvariantCulture);
+                    maxLine = Int32.Parse(data[2], CultureInfo.InvariantCulture);
                     currentFile = data[4];
                     break;
             }
         }
-        private void PrepareOutput()
-        {
-            if (!p_newFilePerClass)
-            {
-                p_currentCodeFileLines = new ArrayList();
-                p_currentHeaderFileLines = new ArrayList();
-            }
-            else
-            {
-                throw new NotImplementedException("La capacidad para generar un archivo por clase no esta implementada.");
-            }
-        }
-        private void CloseOutput()
-        {
-            if (!p_newFilePerClass)
-            {
-            }
-            else
-            {
-                throw new NotImplementedException("La capacidad para generar un archivo por clase no esta implementada.");
-            }
-        }
-        private void writeOut(string str)
-        {
-            //Super simple!!
-            if (p_newLineFlag)
-            {
-                p_currentLine += p_tabString;
-                p_newLineFlag = false;
-            }
-            p_currentLine += str;
-        }
-        private void writeNewLineOfCode()
-        {
-            // trick to remove additional tab from .cpp
-            if(p_currentLine.Length>0 && p_currentLine[0]=='\t') 
-                p_currentCodeFileLines.Add(p_currentLine.Substring(1));
-            else
-                p_currentCodeFileLines.Add(p_currentLine);
 
-            p_currentLine = "";
-            p_newLineFlag = true;
-            p_currentCodeRealLine++;
-        }
-        private void writeNewLineOfHeader()
+        private void Write(string str)
         {
-            p_currentHeaderFileLines.Add(p_currentLine);
-            p_currentLine = "";
-            p_newLineFlag = true;
-            p_currentHeaderRealLine++;
+            p_buffer.Write(str);
         }
-        private void writeNewLineOfBothFiles()
+        private void WriteNewLineOfCode()
         {
-            string previousLine = p_currentLine;
-            bool previousLineFlag = p_newLineFlag;
+            p_buffer.WriteNewLineOfCode();
+        }
+        private void WriteNewLineOfHeader()
+        {
+            p_buffer.WriteNewLineOfHeader();
+        }
+        private void WriteNewLineOfBothFiles()
+        {
+            p_buffer.WriteNewLine();
+        }
+        private void IncreaseTabulationHeader()
+        {
+            p_buffer.IncreaseTabulationHeader();
+        }
+        private void DecreaseTabulationHeader()
+        {
+            p_buffer.DecreaseTabulationHeader();
+        }
+        private void DecreaseTabulationSource()
+        {
+            p_buffer.DecreaseTabulationSource();
+        }
 
-            writeNewLineOfCode();
-            p_currentLine = previousLine;
-            p_newLineFlag = previousLineFlag;
-            writeNewLineOfHeader();
-        }
-        private void incNLevel()
+        private void IncreaseTabulationSource()
         {
-            p_nestingLevel++;
-            p_tabString += "\t";
-        }
-        private void decNLevel()
-        {
-            if (p_nestingLevel != 0)
-            {
-                p_nestingLevel--;
-                p_tabString = p_tabString.Remove(p_tabString.Length - 1, 1);
-            }
+            p_buffer.IncreaseTabulationSource();
         }
 
         #endregion
@@ -443,17 +264,17 @@ namespace LayerD.OutputModules
         #region AddError,Warning,Comments
         private void writeComment(string comment)
         {
-            writeOut("/*" + comment + "*/");
+            Write("/*" + comment + "*/");
         }
         private void writeLineComment(string comment)
         {
-            writeOut("/*" + comment + "*/");
-            writeNewLineOfBothFiles();
+            Write("/*" + comment + "*/");
+            WriteNewLineOfBothFiles();
         }
         private void writeLineCommentHeader(string comment)
         {
-            writeOut("/*" + comment + "*/");
-            writeNewLineOfHeader();
+            Write("/*" + comment + "*/");
+            WriteNewLineOfHeader();
         }
         void AddWarning(string message)
         {
@@ -476,78 +297,96 @@ namespace LayerD.OutputModules
         #region getAccess, Storage y BaseInitializers
         string getStorage(XplVarstorage_enum storage, EZOEContext context)
         {
-            tempStr = "";
+            string tempStr = String.Empty;
             switch (storage)
             {
                 case XplVarstorage_enum.AUTO:
                     break;
                 case XplVarstorage_enum.EXTERN:
-                    tempStr = ExternPC; break;
+                    tempStr = CppKeywords.ExternPC; break;
                 case XplVarstorage_enum.STATIC:
-                    tempStr = StaticPC; break;
+                    tempStr = CppKeywords.StaticPC; break;
                 case XplVarstorage_enum.STATIC_EXTERN:
-                    tempStr = ExternPC + StaticPC; break;
+                    tempStr = CppKeywords.ExternPC + CppKeywords.StaticPC; break;
                 default:
                     AddWarning("Constante de almacenamiento desconocida '" + storage.ToString() + "'.");
                     break;
             }
             return tempStr;
         }
-        string getAccess(XplAccesstype_enum access, EZOEContext context)
+
+        string getAccess(XplAccesstype_enum access, EZOEContext context, bool bIsMethod)
         {
-            string retStr = "";
+            return getAccess(access, context, bIsMethod, false);
+        }
+
+        string getAccess(XplAccesstype_enum access, EZOEContext context, bool bIsMethod, bool isConstructorOrInterface)
+        {
+            string retStr = String.Empty;
             switch (access)
             {
                 case XplAccesstype_enum.PRIVATE:
-                    if (context == EZOEContext.NamespaceBody) retStr = InternalPC;
-                    else retStr = PrivatePC;
+                    if (context == EZOEContext.NamespaceBody) retStr = CppKeywords.InternalPC;
+                    else retStr = CppKeywords.PrivatePC;
                     break;
                 case XplAccesstype_enum.PROTECTED:
-                    if (context == EZOEContext.NamespaceBody) retStr = ProtectedPC + InternalPC;
-                    else retStr = ProtectedPC;
+                    if (context == EZOEContext.NamespaceBody) retStr = CppKeywords.ProtectedPC + CppKeywords.InternalPC;
+                    else retStr = CppKeywords.ProtectedPC;
                     break;
                 case XplAccesstype_enum.PUBLIC:
-                    retStr = PublicPC; break;
+                    {
+                        // TODO : change this, slot qt keyword must be rendered taking into account additional meta info and not 
+                        // only because we have a method that is not a constructor
+                        if (bIsMethod && !isConstructorOrInterface)
+                        {
+                            retStr = CppKeywords.PublicSlotsPC;
+                        }
+                        else
+                        {
+                            retStr = CppKeywords.PublicPC;
+                        }
+                        break;
+                    }
+
                 // Estas son protectores para código inyectado.
                 case XplAccesstype_enum.IPRIVATE:
                     AddWarning("Modificador de accesso 'iprivate' inesperado en código EZOE. Usando 'private' en su lugar.");
-                    if (context == EZOEContext.NamespaceBody) retStr = InternalPC;
-                    else retStr = PrivatePC;
+                    if (context == EZOEContext.NamespaceBody) retStr = CppKeywords.InternalPC;
+                    else retStr = CppKeywords.PrivatePC;
                     break;
                 case XplAccesstype_enum.IPROTECTED:
                     AddWarning("Modificador de accesso 'iprotected' inesperado en código EZOE. Usando 'private' en su lugar.");
-                    if (context == EZOEContext.NamespaceBody) retStr = InternalPC;
-                    else retStr = PrivatePC;
+                    if (context == EZOEContext.NamespaceBody) retStr = CppKeywords.InternalPC;
+                    else retStr = CppKeywords.PrivatePC;
                     break;
                 case XplAccesstype_enum.IPUBLIC:
                     AddWarning("Modificador de accesso 'ipublic' inesperado en código EZOE. Usando 'private' en su lugar.");
-                    if (context == EZOEContext.NamespaceBody) retStr = InternalPC;
-                    else retStr = PrivatePC;
+                    if (context == EZOEContext.NamespaceBody) retStr = CppKeywords.InternalPC;
+                    else retStr = CppKeywords.PrivatePC;
                     break;
                 default:
                     AddWarning("Modificador de accesso 'desconocido' inesperado en código EZOE. Usando 'private' en su lugar.");
-                    if (context == EZOEContext.NamespaceBody) retStr = InternalPC;
-                    else retStr = PrivatePC;
+                    if (context == EZOEContext.NamespaceBody) retStr = CppKeywords.InternalPC;
+                    else retStr = CppKeywords.PrivatePC;
                     break;
             }
             return retStr;
         }
         private string renderBaseInitializers(XplBaseInitializers initializers)
         {
-            tempStr = "";
-            if (initializers == null) return "";
+            string tempStr = String.Empty;
+            if (initializers == null) return String.Empty;
             foreach (XplBaseInitializer initializer in initializers.Children())
             {
-                //tempStr+=processUserTypeName(initializer.get_className());
-                // TODO: Verificar que no rompe algo la simple concatenación en lugar de procesarlo.
+                // TODO : Verificar que no rompe algo la simple concatenación en lugar de procesarlo.
                 tempStr += initializer.get_className();
                 tempStr += "(" + processExpressionList(initializer.get_params(), EZOEContext.FunctionDecl) + ") : ";
-                //Sera un error cuando se posea mas de un inicializador de clase base
+                // TODO : Sera un error cuando se posea mas de un inicializador de clase base
             }
-            if (tempStr != "")
+            if (tempStr != String.Empty)
                 return tempStr.Substring(0, tempStr.Length - 2);
             else
-                return "";
+                return String.Empty;
         }
         #endregion
 
@@ -555,83 +394,99 @@ namespace LayerD.OutputModules
 
         string processUserTypeName(string typeName)
         {
-            if (p_namespaceToRemove != "" && typeName.StartsWith(p_namespaceToRemove))
-                typeName = typeName.Remove(0, p_namespaceToRemove.Length + 2);
+            typeName = typeName.Replace(".", CppKeywords.ScopePC);
 
-            // If it contains the mock class name, just cut the name and scope operator.
-            foreach (string mockClass in mockClasses)
+            foreach (string classNameToRemove in p_classNamesToRemove)
             {
-                int lastIndex = typeName.LastIndexOf(mockClass);
-                if (lastIndex >= 0)
+                if (typeName.StartsWith(classNameToRemove, StringComparison.InvariantCulture) && typeName.Length > classNameToRemove.Length)
                 {
-                    typeName = typeName.Remove(lastIndex, mockClass.Length + 2);
+                    typeName = typeName.Substring(classNameToRemove.Length);
                 }
             }
-
-            // TODO : warning!! this is for .NET templates
-            //if (p_usedTemplateInstances.ContainsKey(typeName))
-            //{
-            //    typeName = (string)p_usedTemplateInstances[typeName];
-            //    if (p_prettyOutput)
-            //    {
-            //        for (int n = p_includes.Count - 1; n >= 0; n--)
-            //        {
-            //            string usingStr = (string)p_includes.GetByIndex(n) + ".";
-            //            if (typeName.Contains(usingStr))
-            //            {
-            //                typeName = typeName.Replace(usingStr, String.Empty);
-            //                if (p_currentClassInfo.Usings[usingStr.Substring(0, usingStr.Length - 1)] == null)
-            //                    p_currentClassInfo.Usings.Add(usingStr.Substring(0, usingStr.Length - 1), usingStr.Substring(0, usingStr.Length - 1));
-            //                //break;
-            //            }
-            //        }
-            //    }
-            //}
-
-            //if (p_prettyOutput)
-            //{
-            //    for (int n = p_includes.Count - 1; n >= 0; n--)
-            //    {
-            //        string usingStr = (string)p_includes.GetByIndex(n);
-            //        if (typeName.StartsWith(usingStr))
-            //        {
-            //            typeName = typeName.Substring(usingStr.Length + 1);
-            //            if (p_currentClassInfo.Usings[usingStr] == null)
-            //                p_currentClassInfo.Usings.Add(usingStr, usingStr);
-            //            break;
-            //        }
-            //    }
-            //}
-
-            // TODO: Agregar referencia a time.h
-            if (typeName.StartsWith("zoe.lang.DateTime")) typeName = typeName.Replace("zoe.lang.DateTime", "time_t");
-
-            typeName = typeName.Replace(".", ScopePC);
-
-            if (typeName.StartsWith(UniversalMockNamespaceName))
-                typeName = typeName.Substring(UniversalMockNamespaceName.Length + 2);
-            if (typeName.StartsWith(UniversalMockClassName))
-                typeName = typeName.Substring(UniversalMockClassName.Length + 2);
-            // if (typeName.StartsWith("zoe::lang::Object")) typeName = typeName.Replace("zoe::lang::Object", "zoe.lang.Object");
-
-            return typeName;
-        }
-        /// <summary>
-        /// A usar por declaracion de namespaces
-        /// </summary>
-        /// <param name="typeName"></param>
-        /// <returns></returns>
-        string processUserTypeName2(string typeName)
-        {
-            if (p_namespaceToRemove != "" && typeName.StartsWith(p_namespaceToRemove))
-                typeName = typeName.Remove(0, p_namespaceToRemove.Length + 1);
 
             return typeName;
         }
 
         string processSimpleTypeName(string nt, ref bool isValueType)
         {
-            string retStr = "";
+            return  processSimpleTypeName(nt, ref isValueType, string.Empty);
+        }
+
+        private void AddTypeUsage(string typeStr, bool requiredInHeader, bool requiredInSource, UseofType use)
+        {
+            if (String.IsNullOrEmpty(typeStr)) return;
+
+            p_buffer.AddRequiredTypeUsage(typeStr, requiredInHeader, requiredInSource, use);
+        }
+
+        private bool IsDerivedType(string typeStr)
+        {
+            return typeStr.Contains("*") || typeStr.Contains("^") || typeStr.Contains("[");
+        }
+
+        #endregion
+
+        #region Ayudas para Procesar Tipos
+        string getTypeName(XplType type, EZOETypeContext typeContext, ref bool isValueType)
+        {
+            if (type == null)
+            {
+                if (typeContext == EZOETypeContext.ReturnTypeDecl)
+                    return String.Empty;
+                else
+                {
+                    AddError("Se ha omitido el tipo cuando es requerido. Sólo es posible omitir el tipo en en la declaracion de tipos de retorno de constructores o destructores.");
+                    return "__error";
+                }
+            }
+            if (!p_buildFullType)
+            {
+                string typeStr = type.get_typeStr();
+                if (typeStr == String.Empty) return "__error";
+                if (typeStr.LastIndexOf(']') >= 0 || typeStr.LastIndexOf('*') >= 0 || typeStr.LastIndexOf('^') >= 0)
+                {
+                    //remuevo los array
+                    if (typeStr.LastIndexOf(']') >= 0)
+                        typeStr = typeStr.Substring(typeStr.LastIndexOf(']') + 1);
+                    if (typeStr.LastIndexOf('*') >= 0)
+                        typeStr = typeStr.Substring(typeStr.LastIndexOf('*') + 2);
+                    if (typeStr.LastIndexOf('^') >= 0)
+                        typeStr = typeStr.Substring(typeStr.LastIndexOf('^') + 2);
+                }
+                if (typeStr[0] == '$') return processSimpleTypeName(typeStr, ref isValueType, type.get_lddata());
+                else if (typeStr == "zoe.lang.DateTime") return "time_t";
+                else return processUserTypeName(typeStr);
+            }
+            else
+            {
+                string retStr = String.Empty;
+                if (!type.get_ispointer() && !type.get_isarray())
+                {
+                    retStr = type.get_typename();
+                    if (retStr == null || retStr == String.Empty)
+                        return String.Empty;
+                    else
+                    {
+                        if (retStr[0] == '$')
+                        {
+                            return processSimpleTypeName(retStr, ref isValueType);
+                        }
+                        else return processUserTypeName(retStr);
+                    }
+                }
+                else
+                {
+                    if (type.get_dt() == null)
+                        return String.Empty;
+                    else
+                        return getTypeName(type.get_dt(), typeContext, ref isValueType);
+                }
+            }
+        }
+
+        private string processSimpleTypeName(string nt, ref bool isValueType, string strLddata)
+        {
+            string retStr = String.Empty;
             #region switch simple type name
             switch (nt)
             {
@@ -644,13 +499,22 @@ namespace LayerD.OutputModules
                     isValueType = true;
                     break;
                 case "$LONG$":
-                    retStr = "long";
-                    isValueType = true;
-                    break;
+                    {
+                        retStr = "long";
+                        if (strLddata.Equals("long long"))
+                            retStr += " long";
+                        isValueType = true;
+                        break;
+                    }
                 case "$ULONG$":
-                    retStr = "unsigned long";
-                    isValueType = true;
-                    break;
+                    {
+                        retStr = "unsigned long";
+                        if (strLddata.Equals("unsigned long long"))
+                            retStr += " long";
+
+                        isValueType = true;
+                        break;
+                    }
                 case "$SHORT$":
                     retStr = "short";
                     isValueType = true;
@@ -691,9 +555,14 @@ namespace LayerD.OutputModules
                     retStr = "bool";
                     break;
                 case "$CHAR$":
-                    retStr = "char";
-                    isValueType = true;
-                    break;
+                    {
+                        if (strLddata == string.Empty)
+                            retStr = "char";
+                        else
+                            retStr = "signed char";
+                        isValueType = true;
+                        break;
+                    }
                 case "$STRING$":
                     retStr = "string";
                     break;
@@ -714,7 +583,7 @@ namespace LayerD.OutputModules
                     retStr = "object";
                     break;
                 case "$NONE$":
-                    retStr = "";
+                    retStr = String.Empty;
                     break;
                 case "$TYPE$":
                     AddError("No es posible procesar tipo 'type'. Usando tipo 'object'.");
@@ -730,68 +599,10 @@ namespace LayerD.OutputModules
                     break;
             }
             #endregion
+
             return retStr;
         }
 
-        #endregion
-
-        #region Ayudas para Procesar Tipos
-        string getTypeName(XplType type, EZOETypeContext typeContext, ref bool isValueType)
-        {
-            if (type == null)
-            {
-                if (typeContext == EZOETypeContext.ReturnTypeDecl)
-                    return "";
-                else
-                {
-                    AddError("Se ha omitido el tipo cuando es requerido. Sólo es posible omitir el tipo en en la declaracion de tipos de retorno de constructores o destructores.");
-                    return "";
-                }
-            }
-            if (!p_buildFullType)
-            {
-                string typeStr = type.get_typeStr();
-                if (typeStr == "") return "__error";
-                if (typeStr.LastIndexOf(']') >= 0 || typeStr.LastIndexOf('*') >= 0 || typeStr.LastIndexOf('^') >= 0)
-                {
-                    //remuevo los array
-                    if (typeStr.LastIndexOf(']') >= 0)
-                        typeStr = typeStr.Substring(typeStr.LastIndexOf(']') + 1);
-                    if (typeStr.LastIndexOf('*') >= 0)
-                        typeStr = typeStr.Substring(typeStr.LastIndexOf('*') + 2);
-                    if (typeStr.LastIndexOf('^') >= 0)
-                        typeStr = typeStr.Substring(typeStr.LastIndexOf('^') + 2);
-                }
-                if (typeStr[0] == '$') return processSimpleTypeName(typeStr, ref isValueType);
-                else if (typeStr == "zoe.lang.DateTime") return "time_t";
-                else return processUserTypeName(typeStr);
-            }
-            else
-            {
-                string retStr = String.Empty;
-                if (!type.get_ispointer() && !type.get_isarray())
-                {
-                    retStr = type.get_typename();
-                    if (retStr == null || retStr == String.Empty)
-                        return String.Empty;
-                    else
-                    {
-                        if (retStr[0] == '$')
-                        {
-                            return processSimpleTypeName(retStr, ref isValueType);
-                        }
-                        else return processUserTypeName(retStr);
-                    }
-                }
-                else
-                {
-                    if (type.get_dt() == null)
-                        return String.Empty;
-                    else
-                        return getTypeName(type.get_dt(), typeContext, ref isValueType);
-                }
-            }
-        }
         bool checkPointerType(XplType type, EZOETypeContext context)
         {
             // PENDIENTE : hacer que funcione en modo depuracion,
@@ -834,7 +645,7 @@ namespace LayerD.OutputModules
             if (isInArray) retStr += "]";
             return retStr;
         }
-        string getPointerStr(XplType type, EZOETypeContext context, bool isValueType)
+        static string getPointerStr(XplType type, EZOETypeContext context, bool isValueType)
         {
             //NET Permite punteros a cualquier tipo de valor,
             //ya sea tipos nativos int, long, etc. o tipos enumeracion
@@ -864,8 +675,8 @@ namespace LayerD.OutputModules
                         && !isRef)
                     {
                         retStr += "*";
-                        if (currentType.get_pi().get_const()) retStr += " const";
-                        if (currentType.get_pi().get_volatile()) retStr += " volatile";
+                        if (currentType.get_pi().get_const()) retStr += CppKeywords.ConstPC;
+                        if (currentType.get_pi().get_volatile()) retStr += CppKeywords.VolatilePC;                        
                     }
                 }
                 else if (currentType.get_isarray()) isRef = false;
@@ -913,6 +724,16 @@ namespace LayerD.OutputModules
             {
                 //Si el parent no es nulo y es otra expresion
                 if (getExpressionPrecedence((XplExpression)parent) > (int)Precedences.CastExp) return true;
+            }
+            return false;
+        }
+        private bool requireParenthesis(XplAssing xAssign)
+        {
+            XplNode parent = xAssign.get_Parent().get_Parent().get_Parent();
+            if (parent != null && parent.get_TypeName() == CodeDOMTypes.XplExpression)
+            {
+                //Si el parent no es nulo y es otra expresion
+                if (getExpressionPrecedence((XplExpression)parent) > (int)Precedences.AssingExp) return true; 
             }
             return false;
         }
@@ -974,7 +795,7 @@ namespace LayerD.OutputModules
         #endregion
 
         #region Precedencia de operadores binarios y unarios
-        int getOperatorPrecedence(XplBinaryoperators_enum op)
+        static int getOperatorPrecedence(XplBinaryoperators_enum op)
         {
             int retVal = 0;
             #region Switch Binary Operators
@@ -1018,13 +839,16 @@ namespace LayerD.OutputModules
                     retVal = -11; break;
                 case XplBinaryoperators_enum.OR: //O Logico
                     retVal = -12; break;
+                case XplBinaryoperators_enum.COMMA:// Comma Operator
+                    retVal = -15; break;
+                
                 //Condicional retVal=13
                 //Asignacion retVal=14
             }
             #endregion
             return retVal;
         }
-        int getOperatorPrecedence(XplUnaryoperators_enum op)
+        static int getOperatorPrecedence(XplUnaryoperators_enum op)
         {
             int retVal = 0;
             switch (op)
@@ -1051,18 +875,24 @@ namespace LayerD.OutputModules
 
         #endregion
 
-        #region Ayudas varias
-        private void renderEnumType(XplClass classDecl)
+        private bool FieldIsFromEnum(XplField fieldDecl, out bool bIsTheLastField)
         {
-            AddWarning("Utilizando siempre 'int' para tipo base de enumeraciones.");
-            return;
-        }
-        private bool FieldIsFromEnum(XplField fieldDecl)
-        {
+            bIsTheLastField = false; //Is this the last field of enum?
+
             XplClass classNode = (XplClass)fieldDecl.get_Parent();
+            if (classNode.get_isenum())
+            {
+                int iCount = 0;
+                foreach (XplField field in classNode.get_FieldNodeList())
+                {
+                    iCount++;
+                    if (fieldDecl.get_name() == field.get_name())
+                        break;
+                }
+                bIsTheLastField = iCount == classNode.get_FieldNodeList().GetLength();
+            }
             return classNode.get_isenum();
         }
-        #endregion
 
         #endregion
 
@@ -1091,40 +921,26 @@ namespace LayerD.OutputModules
             + " This file was autogenerated.\n"
             + " DO NOT MODIFY THIS FILE MANUALLY.\n"
             + " Date: " + DateTime.Now.ToString() + ".\n\n"
-            + " Generated by: Cpp LayerD Generator - ZOE Output Module to C++\n"
-            + " 2009(R)Mateo Bengualid, Alexis Ferreyra\n\n"
+            + " Generated by: C++ LayerD Generator - ZOE Output Module to C++\n"
             + " Please visit http://layerd.net to get last version of LayerD tools.\n"
             + "---------------------------------------------------------------------";
+
             if (!p_dontWriteCopyrightComment)
             {
                 writeLineComment(temp);
-                writeNewLineOfBothFiles();
+                WriteNewLineOfBothFiles();
             }
-
-            // Print the import of the header file, in the code file.
-            writeOut(IncludePC + " \"" + getHeaderFileVersion(p_outputFileName) + "\"");
-            writeNewLineOfCode();
 
             writeLineDirective(documentBody.get_ldsrc(), false);
         }
+
         /// <summary>
         /// Renders the end document body.
         /// </summary>
         /// <param name="documentBody">The document body.</param>
         protected override void renderEndDocumentBody(XplDocumentBody documentBody)
-        {
-            // If a static main function was provided in at least
-            // one class, call it at the end.
-            if (aStaticMainMethodWithArgumentsExists)
-            {
-                renderIntMainFunctionWithParameters(mainMethodSignature);
-            }
-            else if (aStaticMainMethodExists)
-            {
-                renderIntMainFunction(mainMethodSignature);
-            }
-            
-            writeNewLineOfBothFiles();
+        {            
+            WriteNewLineOfBothFiles();
         }
         #endregion
 
@@ -1139,64 +955,48 @@ namespace LayerD.OutputModules
             // solo debo procesar los que correspondan a este modulo de salida.
             writeLineDirective(importDirective.get_ldsrc(), false);
             string usingString = null;
-            bool flag = false;
-            bool externC = false;
+            bool flag = false;            
             foreach (XplNode node in importDirective.Children())
             {
-                tempStr = node.get_StringValue();
-                // Ignore the namespace inclusion. Only do the #include and assume inlining.
-                /*
-                if (tempStr.IndexOf('=') == -1)
-                {
-                    usingString = IncludePC + tempStr + ";";
-                    //break;
-                }
-                else */
+                string tempStr = node.get_StringValue();
+
                 if (tempStr.IndexOf('=') != -1)
                 {
                     flag = true;
-                    string parameterName = tempStr.Substring(0, tempStr.IndexOf('=')).ToLower();
+                    string parameterName = tempStr.Substring(0, tempStr.IndexOf('=')).ToLower(CultureInfo.InvariantCulture);
                     string parameterValue = tempStr.Substring(tempStr.IndexOf('=') + 1);
                     switch (parameterName)
                     {
                         case "header":
                             if(parameterValue[0]=='<')
-                                usingString = IncludePC + parameterValue;
+                                usingString = CppKeywords.IncludePC + parameterValue;
                             else
-                                usingString = IncludePC + "\"" + parameterValue + "\"";
+                                usingString = CppKeywords.IncludePC + "\"" + parameterValue + "\"";
                             break;
                         case "mockclass":
-                            mockClasses.Add(parameterValue);
+                            p_classNamesToRemove.Add(parameterValue.Replace(".", CppKeywords.ScopePC) + CppKeywords.ScopePC);
                             break;
                         case "externc":
-                            externC = true;
+                            // TODO: complete
                             break;
                         case "ns":
-                            if (p_namespaceToRemove == "")
-                                p_namespaceToRemove = parameterValue;
+                            parameterValue = parameterValue.Replace(".", CppKeywords.ScopePC) + CppKeywords.ScopePC;
+                            if (!p_classNamesToRemove.Contains(parameterValue))
+                                p_classNamesToRemove.Add(parameterValue);
                             break;
                     }
                 }
             }
-            if (flag)
+            if (flag && usingString != null)
             {
-                if (externC)
-                {
-                    writeOut("extern \"C\" {");
-                    writeNewLineOfHeader();
-                    writeOut(usingString);
-                    writeNewLineOfHeader();
-                    writeOut("}");
-                    writeNewLineOfHeader();
-                    writeNewLineOfHeader();
-                }
-                else
-                {
-                    writeOut(usingString);
-                    writeNewLineOfHeader();
-                    writeNewLineOfHeader();
-                }
+                AddNewImportDirective(usingString);
             }
+        }
+
+        private void AddNewImportDirective(string strImportDirective)
+        {
+            if (!p_globalImportDirectives.Contains(strImportDirective))
+                p_globalImportDirectives.Add(strImportDirective);
         }
         /// <summary>
         /// Renders the begin namespace.
@@ -1206,42 +1006,9 @@ namespace LayerD.OutputModules
         /// <param name="context">The context.</param>
         protected override void renderBeginNamespace(string namespaceName, XplNamespace namespaceDecl, EZOEContext context)
         {
-            // If the class name is the universal mock class, then ignore further processing.
-            if (namespaceName == UniversalMockNamespaceName)
-            {
-                return;
-            }
 
-            // If the namespace is the namespace of an import, and its parent is
-            // the document body, then don't render it.
-            if( namespaceDecl.get_Parent().get_TypeName() == CodeDOMTypes.XplDocumentBody
-                && namespaceName == p_namespaceToRemove)
-            {
-                p_isExternalClass++;
-                return;
-            }
-
-            string directorio = processUserTypeName2(namespaceName);
-            if (p_currentPackage == "")
-                p_currentPackage += directorio;
-            else
-                p_currentPackage += ScopePC + directorio;
-
-            p_currentClass = p_currentPackage;
-
-            if (namespaceDecl.Children().GetLength() == 0) return;
-            writeNewLineOfBothFiles();
-            writeLineDirective(namespaceDecl.get_ldsrc(), false);
-            writeOut(NamespacePC + processUserTypeName2(namespaceName));
-            writeNewLineOfBothFiles();
-            writeOut("{");
-            incNLevel();
-            writeNewLineOfBothFiles();
-
-            // init new class info
-            p_currentClassInfo = ClassInfo.New();
-            p_currentClassInfo.FirstLine = p_currentCodeFileLines.Count;
         }
+
         /// <summary>
         /// Renders the end namespace.
         /// </summary>
@@ -1250,33 +1017,7 @@ namespace LayerD.OutputModules
         /// <param name="context">The context.</param>
         protected override void renderEndNamespace(string namespaceName, XplNamespace namespaceDecl, EZOEContext context)
         {
-            // If the class name is the universal mock class, then ignore further processing.
-            if (namespaceName == UniversalMockNamespaceName)
-            {
-                return;
-            }
 
-            // If the namespace was the namespace of an import, and its parent is
-            // the document body, then don't render it.
-            if (namespaceDecl.get_Parent().get_TypeName() == CodeDOMTypes.XplDocumentBody
-                && namespaceName == p_namespaceToRemove)
-            {
-                p_isExternalClass--;
-                return;
-            }
-
-            p_currentPackage = p_currentPackage.Substring(0, p_currentPackage.Length - processUserTypeName2(namespaceName).Length);
-            p_currentClass = p_currentPackage;
-
-            if (p_currentPackage != "") p_currentPackage = p_currentPackage.Substring(0, p_currentPackage.Length - 1);
-
-            if (namespaceDecl.Children().GetLength() == 0) return;
-
-            writeLineDirective(namespaceDecl.get_ldsrc(), true);
-            decNLevel();
-            writeOut("} ");
-            if (p_writeDetailedComments) writeComment("Fin Espacio de Nombres '" + namespaceName + "'");
-            writeNewLineOfBothFiles();
         }
 
         /// <summary>
@@ -1301,95 +1042,260 @@ namespace LayerD.OutputModules
             // Clean up the constructor presence flag.
             atLeastOneConstructor = false;
 
-            p_currentClass += ScopePC + className;
-
-            if (classDecl.get_externalname() != "")
+            if (classDecl.get_externalname() != String.Empty)
                 className = classDecl.get_externalname();
 
-            {
-                //Para clases que simulan instancias de genericos
-                //asumo el formato $TEMPLATE[ZoeClassName|NetGenericName<With,Generic,Params>]$
-                string lddata = classDecl.get_lddata();
-                int index = lddata.IndexOf("$TEMPLATE"), index2;
-                if (index >= 0)
-                {
-                    string netGenericName;
-                    index = lddata.IndexOf('[', index);
-                    index2 = lddata.IndexOf(']', index);
-                    netGenericName = lddata.Substring(index + 1, index2 - index - 1);
-                    p_usedTemplateInstances.Add(p_currentClass, netGenericName);
-                }
-            }
             //Si la clase es externa levanto la bandera y retorno
             if (classDecl.get_external())
             {
+                if (IsObjCDummyGlobalClass(classDecl))
+                {
+                    CheckBuffer(classDecl);
+                }
+                if (classDecl.get_lddata().Contains(CPP_HEADER_METADATA_BEGIN))
+                {
+                    RegisterExternClassMetadata(classDecl);
+                }
                 p_isExternalClass++;
                 return;
             }
-            else
-            {
-                // If the class name is the universal mock class, then ignore further processing.
-                if (className == UniversalMockClassName)
-                {
-                    return;
-                }
 
-                RenderComments(classDecl);
-                // If it is a first level class add CurrentClassInfo data
-                if (classDecl.get_Parent().get_TypeName() == CodeDOMTypes.XplNamespace)
-                {
-                    p_currentClassInfo.ClassName = className;
-                    p_currentClassInfo.Namespace = p_currentPackage;
-                    p_currentClassInfo.ClassNode = classDecl;
-                }
+            // check for new buffer
+            CheckBuffer(classDecl);
+
+            // register user type in buffer
+            p_buffer.RegisterUserDefinedType(classDecl);
+
+            // If the class name is the universal mock class, then ignore further processing.
+            if (className == CppKeywords.UniversalMockClassName)
+            {
+                return;
+            }
+
+            WriteNewBlankLineOfHeader();
+
+            RenderComments(classDecl);
+
+            // If the className is the name of the global class, It is ignored for the output
+            if(IsObjCDummyGlobalClass(classDecl))
+            {	
+                return; 
             }
 
             writeLineDirective(classDecl.get_ldsrc(), false);
-            //Primero los modificadores
-            if (isNew) writeOut(NewPC);
-            if (isAbstract) writeOut(AbstractPC);
-            if (isFinal) writeOut(FinalPC);
-            if (classDecl.get_lddata().Contains(PARTIAL_CLASS_FLAG)) writeOut(PartialPC);
 
-            //La declaracion del nombre
+            // Modifiers
+            if (isNew) Write(CppKeywords.NewPC);
+            if (isAbstract) Write(CppKeywords.AbstractPC);
+
+            //name declaration
             switch (classType)
             {
                 case EZOEClassType.Class:
-                    writeOut(ClassPC + className);
+                    Write(CppKeywords.ClassPC + className);
                     break;
                 case EZOEClassType.Interface:
-                    writeOut(ClassPC + className);
-                    break;
-                case EZOEClassType.Struct:
-                    writeOut(StructPC + className);
-                    break;
-                case EZOEClassType.Union:
-                    writeOut(UnionPC + className);
+                    Write(CppKeywords.ClassPC + className);
                     break;
                 case EZOEClassType.Enum:
-                    writeOut(EnumPC + className);
-                    renderEnumType(classDecl);
+                case EZOEClassType.Union:
+                case EZOEClassType.Struct:
+                    string keyword = classType == EZOEClassType.Struct ? CppKeywords.StructPC : (classType == EZOEClassType.Union ? CppKeywords.UnionPC : CppKeywords.EnumPC);
+                    if (CanRemoveClassNameFromDeclaration(classDecl))
+                    {
+                        RegisterAnonymousType(classDecl);
+                        className = String.Empty;
+                    }
+                    if (classDecl.get_access() == XplAccesstype_enum.PRIVATE)
+                    {
+                        Write(CppKeywords.PrivatePC + keyword + className);
+                    }
+                    else
+                    {
+                        Write(keyword + className);
+                    }
                     break;
                 default:
-                    throw new Exception("Valor interno inesperado renderizando clase.");
+                    throw new Exception("unexpected internal value rendering a class node.");
             }
-            if (inheritsStr != "" || implementsStr != "") writeOut(": " + inheritsStr);
-            if (implementsStr != "")
+
+            //Inherits
+            if (inheritsStr != String.Empty || implementsStr != String.Empty)
             {
-                if (inheritsStr != "") writeOut(", " + implementsStr);
-                else writeOut(implementsStr);
+                Write(": " + inheritsStr);
+                RegisterInheritsTypes(classDecl.get_InheritsNodeList());
             }
-            writeNewLineOfHeader();
-            writeOut("{");
-            incNLevel();
-            writeNewLineOfHeader();
+            if (implementsStr != String.Empty)
+            {
+                if (inheritsStr != String.Empty) Write(", " + implementsStr);
+                else Write(implementsStr);
+                RegisterInheritsTypes(classDecl.get_ImplementsNodeList());
+            }
+            WriteNewLineOfHeader();
+            Write("{");
+            WriteNewLineOfHeader();
+            IncreaseTabulationHeader();
+
+            // if it´s originally an ObjC interface we want to implement Q_OBJECT
+            // and default constructor
+            if (classDecl.get_lddata().Contains("%OBJC_INTERFACE_DECL%"))
+            {
+                Write("Q_OBJECT");
+                WriteNewLineOfHeader();
+                WriteNewLineOfHeader();
+                XplNodeList fields = classDecl.get_FieldNodeList();
+                if (fields.GetLength() > 0)
+                {
+                    writeDefaultConstructorForObjC(className, fields);
+                }
+            }
 
             if (p_prettyOutput)
             {
                 p_lastCodeStatementLine = 0;
-                p_lastHeaderStatementLine = 0;
             }
         }
+
+        private void RegisterExternClassMetadata(XplClass classDecl)
+        {
+            p_buffer.RegisterExternType(classDecl);
+        }
+
+        private void WriteNewBlankLineOfHeader()
+        {
+            p_buffer.WriteNewBlankLineOfHeader();
+        }
+
+        private void RegisterAnonymousType(XplClass classDecl)
+        {
+            p_buffer.RegisterAnonymousType(classDecl);
+        }
+
+        private bool CanRemoveClassNameFromDeclaration(XplClass classDecl)
+        {
+            // needs to be anonymn and not moved from original context
+            if (IsObjCAnonymousType(classDecl) && MantainOriginalObjCDeclarationContext(classDecl))
+            {
+                return true;
+            }
+            return false;
+        }
+
+        private static bool IsObjCAnonymousType(XplClass classDecl)
+        {
+            return classDecl.get_name().Contains(ObjectiveCFlags.ANONYMOUS_DECL);
+        }
+
+        private void RegisterInheritsTypes(XplNodeList list)
+        {
+            foreach (XplInherits inhs in list)
+            {
+                var typeList = inhs.FindNodes("@XplType");
+                foreach (XplType type in typeList)
+                {
+                    //The user type is added to a buffer of UserTypes
+                    AddTypeUsage(type.get_typename(), true, false, UseofType.InHeader);
+                }
+            }
+        }
+
+        private void writeDefaultConstructorForObjC(string className, XplNodeList fields)
+        {
+            // header
+            Write(CppKeywords.PublicPC + className + "();");
+            WriteNewLineOfHeader();
+
+            // implementation
+            Write(className + "::" + className + "()");
+            WriteNewLineOfCode();
+            Write("{");
+            WriteNewLineOfCode();
+            IncreaseTabulationSource();
+
+            foreach (XplField field in fields)
+            {
+                XplType fieldType = field.get_type();
+                string fieldName = field.get_name();
+
+                // do not initialize if its const, static or extern
+                if (fieldType.get_const() || field.get_storage() != XplVarstorage_enum.AUTO) continue;
+
+                if (fieldType.get_ispointer())
+                {
+                    Write("this->" + fieldName + " = NULL;");
+                    WriteNewLineOfCode();
+                }
+                else if (fieldType.get_isarray())
+                {
+                    // do not initialize...
+                }
+                else if(fieldType.get_typename().StartsWith("$", StringComparison.InvariantCulture))
+                {
+                    switch (fieldType.get_typename())
+                    {
+                        case "$INTEGER$":
+                        case "$UNSIGNED$":
+                        case "$LONG$":
+                        case "$ULONG$":
+                        case "$SHORT$":
+                        case "$USHORT$":
+                        case "$SBYTE$":
+                        case "$BYTE$":
+                        case "$FLOAT$":
+                        case "$DOUBLE$":
+                        case "$LDOUBLE$":
+                        case "$DECIMAL$":
+                        case "$FIXED$":
+                        case "$CHAR$":
+                            Write("this->" + fieldName + " = 0;");
+                            break;
+                        case "$BOOLEAN$":
+                            Write("this->" + fieldName + " = false;");
+                            break;
+                        default:
+                            // do nothing for other types
+                            break;
+                    }
+                    WriteNewLineOfCode();
+                }
+            }
+
+            DecreaseTabulationSource();
+            Write("}");
+            WriteNewLineOfCode();
+            WriteNewLineOfCode();
+        }
+
+        private void CheckBuffer(XplNode node)
+        {
+            p_buffer.ChangeBufferIfNeeded(node);
+        }
+
+        private int getFirstLineOfBuffer(ArrayList bufferList)
+        {
+			for (int n = bufferList.Count - 1; n >= 0; n--)
+            {
+                var line = (string)(bufferList[n]);
+                line = line.Trim('\t', ' '); 
+                if (! (line.StartsWith("//", StringComparison.CurrentCulture) || line.Equals(string.Empty)) )
+				return n+1;
+			}
+			
+			return 0;
+        }
+
+        private string FixFileName(string strSourceFile)
+        {
+            if (Path.DirectorySeparatorChar == '/')
+            {
+                return strSourceFile.Replace('\\', '/');
+            }
+            else
+            {
+                return strSourceFile.Replace('/', '\\');
+            }
+        }
+
         /// <summary>
         /// Renders the end class.
         /// </summary>
@@ -1399,9 +1305,6 @@ namespace LayerD.OutputModules
         /// <param name="context">The context.</param>
         protected override void renderEndClass(EZOEClassType classType, string className, XplClass classDecl, EZOEContext context)
         {
-            p_currentClass = p_currentClass.Substring(0, p_currentClass.Length - className.Length);
-            if (p_currentClass.Length > 1) p_currentClass = p_currentClass.Substring(0, p_currentClass.Length - 1);
-
             // Si la clase actual es externa retorno
             if (p_isExternalClass > 0)
             {
@@ -1409,73 +1312,114 @@ namespace LayerD.OutputModules
                 return;
             }
 
-            // If the class name is the universal mock class, then ignore further processing.
-            if (className == UniversalMockClassName)
+            // I remove the class creation for the global class because is an artificial class used by zoe - Commented by Julieta Alvarez
+            if (!IsObjCDummyGlobalClass(classDecl))
             {
+                // If the class name is the universal mock class, then ignore further processing.
+                if (className == CppKeywords.UniversalMockClassName)
+                {
+                    return;
+                }
+
+                // render initializer of fields and default constructor if not provided
+                if (!classDecl.get_isenum() && !classDecl.get_isstruct() && !classDecl.get_isinteractive() && !classDecl.get_isunion())
+                {
+                    //With the comment added in renderField method, currentClassConstructorInitializers should not have initializations - Julieta Alvarez 
+                    // Render the initializer method in the header.
+                    if (currentClassConstructorInitializers.Count > 0)
+                    {
+                        writeLineComment("This method is provided to initialize all variables.");
+                        Write(CppKeywords.PrivatePC + "inline void " + CppKeywords.InitializerMethodName + "();");
+                        WriteNewLineOfHeader();
+
+                        // Render the initializer method in the code.
+
+                        if (className != CppKeywords.UniversalMockClassName
+                            && !p_classNamesToRemove.Contains(className))
+                        {
+                            Write("inline void " + className + CppKeywords.ScopePC + CppKeywords.InitializerMethodName + "() {");
+                        }
+                        else
+                        {
+                            Write("inline void " + CppKeywords.InitializerMethodName + "() {");
+                        }
+                        IncreaseTabulationHeader();
+                        foreach (string initialization in currentClassConstructorInitializers)
+                        {
+                            Write(initialization);
+                        }
+                        DecreaseTabulationHeader();
+                        Write("}");
+                        WriteNewLineOfCode();
+
+                        // If a constructor was not included, provide a default one.
+                        if (!atLeastOneConstructor && !classDecl.get_isinterface())
+                        {
+                            // Define in the header file.
+                            writeLineCommentHeader("This default constructor is provided to initialize all variables.");
+                            Write(CppKeywords.PublicPC + className + "();");
+                            WriteNewLineOfHeader();
+
+                            // Implement in the code file.
+                            Write(className + CppKeywords.ScopePC + className + "() { " + CppKeywords.InitializerMethodName + "(); }");
+                            WriteNewLineOfCode();
+                        }
+                    }
+                }
+
+                writeLineDirective(classDecl.get_ldsrc(), true);
+                DecreaseTabulationHeader();
+                if (IsObjCAnonymousType(classDecl))
+                {
+                    Write("}");
+                    renderObjCGlobalVarsForAnonymousType(classDecl, className);
+                }
+                else
+                {
+                    Write("};");
+                }
+                WriteNewLineOfHeader();
+                WriteNewLineOfHeader();
+            }
+        }
+
+        private void renderObjCGlobalVarsForAnonymousType(XplClass classDecl, string className)
+        {
+            var list = _anonymousGlobalVars.ContainsKey(className) ? _anonymousGlobalVars[className] : null;
+            if (list == null)
+            {
+                Write(";");
                 return;
             }
 
-            // render initializer of fields and default constructor if not provided
-            if (!classDecl.get_isenum() && !classDecl.get_isstruct() && !classDecl.get_isinteractive() && !classDecl.get_isunion())
+            int count = 0;
+            foreach (var field in list)
             {
-
-                // Render the initializer method in the header.
-                if (currentClassConstructorInitializers.Count > 0)
+                if (count > 0) Write(", ");
+                else Write(" ");
+                Write(field.get_name());
+                string initializerStr = processInitializer(field.get_i(), EZOEContext.ClassBody);
+                // Check if an initializer string is employed.                
+                if (initializerStr != String.Empty)
                 {
-                    writeLineComment("This method is provided to initialize all variables.");
-                    writeOut(PrivatePC + "inline void " + InitializerMethodName + "();");
-                    writeNewLineOfHeader();
-
-                    // Render the initializer method in the code.
-
-                    if (className != UniversalMockClassName
-                        && !mockClasses.Contains(className))
+                    if (initializerStr[0] != '(')
                     {
-                        writeOut("inline void " + className + ScopePC + InitializerMethodName + "() {");
+                        Write(" = " + initializerStr);
                     }
                     else
                     {
-                        writeOut("inline void " + InitializerMethodName + "() {");
-                    }
-                    incNLevel();
-                    foreach (string initialization in currentClassConstructorInitializers)
-                    {
-                        writeOut(initialization);
-                    }
-                    decNLevel();
-                    writeOut("}");
-                    writeNewLineOfCode();
-
-                    // If a constructor was not included, provide a default one.
-                    if (!atLeastOneConstructor && !classDecl.get_isinterface())
-                    {
-                        // Define in the header file.
-                        writeLineCommentHeader("This default constructor is provided to initialize all variables.");
-                        writeOut(PublicPC + className + "();");
-                        writeNewLineOfHeader();
-
-                        // Implement in the code file.
-                        writeOut(className + ScopePC + className + "() { " + InitializerMethodName + "(); }");
-                        writeNewLineOfCode();
+                        Write(initializerStr);
                     }
                 }
+                count++;
             }
+            Write(";");
+        }
 
-            writeLineDirective(classDecl.get_ldsrc(), true);
-            decNLevel();
-            writeOut("}; ");
-            if (p_writeDetailedComments) writeComment("End of class '" + className + "'");
-            writeNewLineOfHeader();
-
-            // If it is a first level class add CurrentClassInfo data
-            if (classDecl.get_Parent().get_TypeName() == CodeDOMTypes.XplNamespace)
-            {
-                p_currentClassInfo.LastLine = p_currentCodeFileLines.Count;
-                p_classInfos.Add(p_currentClassInfo);
-                // Create a new ClassInfo
-                p_currentClassInfo = ClassInfo.New();
-                p_currentClassInfo.FirstLine = p_currentCodeFileLines.Count;
-            }
+        internal static bool IsObjCDummyGlobalClass(XplClass classDecl)
+        {
+            return (classDecl.get_name().StartsWith(p_globalClassName, StringComparison.InvariantCulture) &&
+                    classDecl.get_lddata().Equals(ObjectiveCFlags.OBJC_GLOBAL_CLASS_TAG));
         }
         /// <summary>
         /// Render a implements.
@@ -1486,7 +1430,7 @@ namespace LayerD.OutputModules
         /// <returns>A string with the rendered item.</returns>
         protected override string renderImplements(XplClass classDecl, XplNodeList implements, EZOEContext context)
         {
-            string temp = "";
+            string temp = String.Empty;
             XplInherit imp = null;
             XplInherits imps = null;
             foreach (XplInherits node in implements)
@@ -1495,10 +1439,11 @@ namespace LayerD.OutputModules
                 foreach (XplInherit node2 in imps.Children())
                 {
                     imp = node2;
-                    temp += "public " + processUserTypeName(imp.get_type().get_typename()) + ", ";
+                    string typeNameStr = imp.get_type().get_typename();
+                    temp += "public " + (node2.get_virtual() ? CppKeywords.VirtualPC : String.Empty) + processUserTypeName(typeNameStr) + ", ";
                 }
             }
-            if (temp != "") temp = temp.Substring(0, temp.Length - 2);
+            if (!String.IsNullOrEmpty(temp)) temp = temp.Substring(0, temp.Length - 2);
             return temp;
         }
         /// <summary>
@@ -1510,17 +1455,20 @@ namespace LayerD.OutputModules
         /// <returns>A string with the rendered item.</returns>
         protected override string renderInherits(XplClass classDecl, XplNodeList inherits, EZOEContext context)
         {
-            string temp = "";
-            XplInherit inh = null;
-            XplInherits inhs = null;
-            foreach (XplNode node in inherits)
+            string temp = String.Empty;
+            bool isFirstBase = true;
+
+            // The enumerations and structures don't have inheritance 
+            if (!classDecl.get_isenum() && !classDecl.get_isstruct() && !classDecl.get_isunion())
             {
-                inhs = (XplInherits)node;
-                foreach (XplNode node2 in inhs.Children())
+                XplInherit inh = null;
+                XplInherits inhs = null;
+                foreach (XplNode node in inherits)
                 {
-                    inh = (XplInherit)node2;
-                    if (processUserTypeName(inh.get_type().get_typename()) != "zoe.lang.Object")
+                    inhs = (XplInherits)node;
+                    foreach (XplNode node2 in inhs.Children())
                     {
+                        inh = (XplInherit)node2;
                         string accessStr = "public ";
                         switch (inh.get_access())
                         {
@@ -1528,10 +1476,10 @@ namespace LayerD.OutputModules
                             case XplAccesstype_enum.PUBLIC:
                                 break;
                             case XplAccesstype_enum.PROTECTED:
-                                accessStr = "protected "; 
+                                accessStr = "protected ";
                                 break;
                             case XplAccesstype_enum.PRIVATE:
-                                accessStr = "private "; 
+                                accessStr = "private ";
                                 break;
                             case XplAccesstype_enum.IINTERNAL:
                             case XplAccesstype_enum.IPUBLIC:
@@ -1542,12 +1490,32 @@ namespace LayerD.OutputModules
                                 accessStr = "private ";
                                 break;
                         }
-                        if (inh.get_virtual()) temp += "virtual ";
-                        temp += accessStr + processUserTypeName(inh.get_type().get_typename()) + ", ";
+                        
+                        string processedUserTypeName = processUserTypeName(inh.get_type().get_typename());
+                        if (processedUserTypeName.Equals("zoe::lang::Object"))
+                        {
+                            if (classDecl.get_isinterface() && classDecl.get_lddata().Contains(ObjectiveCFlags.OBJC_PROTOCOL_TAG))
+                            {
+                                // for ObjC protocols ignore default base class
+                                continue;
+                            }
+                            processedUserTypeName = "QObject";
+                        }
+                        else
+                        {
+                            if (inh.get_virtual()) temp += CppKeywords.VirtualPC;
+                        }
+
+                        temp += accessStr + processedUserTypeName + ", ";
+                        if (isFirstBase)
+                        {
+                            p_currentFirstBase = processedUserTypeName;
+                            isFirstBase = false;
+                        }
                     }
                 }
+                if (temp != String.Empty) temp = temp.Substring(0, temp.Length - 2);
             }
-            if (temp != "") temp = temp.Substring(0, temp.Length - 2);
             return temp;
         }
 
@@ -1572,8 +1540,19 @@ namespace LayerD.OutputModules
             XplAccesstype_enum access, XplVarstorage_enum functionStorage, bool isAbstract, bool isFinal, bool isFp, bool isNew, bool isConst,
             bool isOverride, bool isVirtual, EZOEContext context)
         {
+			bool isGlobalClass = IsObjCDummyGlobalClass((XplClass)functionDecl.get_Parent());
+			
             //Si la clase actual es externa retorno
-            if (p_isExternalClass > 0 || functionStorage == XplVarstorage_enum.EXTERN || functionStorage == XplVarstorage_enum.STATIC_EXTERN) return;
+            if (p_isExternalClass > 0 || functionStorage == XplVarstorage_enum.EXTERN || functionStorage == XplVarstorage_enum.STATIC_EXTERN)
+            {
+                return;
+            }
+
+            // check for new buffer
+            if (IsObjCDummyGlobalClass(functionDecl.CurrentClass))
+            {
+                CheckBuffer(functionDecl);
+            }
 
             writeLineDirective(functionDecl.get_ldsrc(), false);
 
@@ -1582,128 +1561,133 @@ namespace LayerD.OutputModules
             bool isInterface = functionDecl.get_Parent().get_TypeName() == CodeDOMTypes.XplClass && functionDecl.CurrentClass.get_isinterface();
 
             //Ajusto el nombre de la funcion al nombre externo si es necesario
-            if (functionDecl.get_externalname() != "")
+            if (functionDecl.get_externalname() != String.Empty)
+            {
                 functionName = functionDecl.get_externalname();
+            }
 
             // Si el nombre de la clase es el de la función y la función no es estática,
             // o si tanto la clase como el ns no son ficticios, imprimir el modificador de
             // acceso.
-            if (functionDecl.CurrentNamespace.get_name() != UniversalMockNamespaceName ||
-                functionDecl.CurrentClass.get_name() != UniversalMockClassName)
+            if ((functionDecl.CurrentNamespace.get_name() != CppKeywords.UniversalMockNamespaceName ||
+                functionDecl.CurrentClass.get_name() != CppKeywords.UniversalMockClassName) &&
+                !isGlobalClass)
             {
-                writeOut(getAccess(access, context));
+                Write(getAccess(access, context, true, IsConstructor(functionDecl, functionName) || isInterface ));
             }
 
             // Output the comments of the method declaration.
             RenderComments(functionDecl);
-            writeOut(getStorage(functionStorage, context));
 
-            // TODO: Agregar esto a la lista de métodos en el .h
-            if (isAbstract) writeOut(AbstractPC);
-            if (isFinal) writeOut(FinalPC);
-            if (isNew) writeOut(NewPC);
-            if (isConst) AddWarning("Modificador de función 'const' no aplicado en implementacion.");
-            if (isOverride) writeOut(OverridePC);
-            if (isVirtual || isInterface) writeOut(VirtualPC);
+            // render storage class if it's not a global function
+            if (!isGlobalClass)
+            {
+				Write(getStorage(functionStorage, context));
+            }
+
+            if (isVirtual || isInterface) Write(CppKeywords.VirtualPC);
+
             if (isFp)
-            { //Declaro un delegate
-                // TODO: Esto está mal, utilizar delegados requiere una implementación aparte, no una palabra reservada.
-                //writeOut(DelegatePC);
+            { 
+                // function pointer type decl
+                // TODO : Remove for C++
                 AddError("Wait for delegate implementation soon.");
             }
-            if (functionName.IndexOf("%indexer%") >= 0)
+            if (functionName.IndexOf("%indexer%", StringComparison.InvariantCulture) >= 0)
             {
-                functionName = functionName.Replace("%indexer%", "");
-                functionName += IndexerPC;
-                currentFunctionType = FunctionType.Indexer;
+                // TODO : remove, this is for C#
+                functionName = functionName.Replace("%indexer%", String.Empty);
+                functionName += CppKeywords.IndexerPC;
+                p_currentFunctionType = FunctionType.Indexer;
             }
-            else if (functionName.IndexOf("%op_") >= 0)
+            else if (functionName.IndexOf("%op_", StringComparison.InvariantCulture) >= 0)
             {
-                currentFunctionType = FunctionType.Operator;
+                // TODO : this code is from C# code generation, won't work for C++
+                p_currentFunctionType = FunctionType.Operator;
                 #region Nombres de Operadores
                 switch (functionName)
                 {
                     case "%op_gtr%":
-                        functionName = OperatorPC + ">";
+                        functionName = CppKeywords.OperatorPC + ">";
                         break;
                     case "%op_lst%":
-                        functionName = OperatorPC + "<";
+                        functionName = CppKeywords.OperatorPC + "<";
                         break;
                     case "%op_bneg%":
-                        functionName = OperatorPC + "!";
+                        functionName = CppKeywords.OperatorPC + "!";
                         break;
                     case "%op_comp%":
-                        functionName = OperatorPC + "~";
+                        functionName = CppKeywords.OperatorPC + "~";
                         break;
                     case "%op_eq%":
-                        functionName = OperatorPC + "==";
+                        functionName = CppKeywords.OperatorPC + "==";
                         break;
                     case "%op_lseq%":
-                        functionName = OperatorPC + "<=";
+                        functionName = CppKeywords.OperatorPC + "<=";
                         break;
                     case "%op_greq%":
-                        functionName = OperatorPC + ">=";
+                        functionName = CppKeywords.OperatorPC + ">=";
                         break;
                     case "%op_noteq%":
-                        functionName = OperatorPC + "!=";
+                        functionName = CppKeywords.OperatorPC + "!=";
                         break;
                     case "%op_and%":
-                        functionName = OperatorPC + "&&";
+                        functionName = CppKeywords.OperatorPC + "&&";
                         break;
                     case "%op_or%":
-                        functionName = OperatorPC + "||";
+                        functionName = CppKeywords.OperatorPC + "||";
                         break;
                     case "%op_inc%":
-                        functionName = OperatorPC + "++";
+                        functionName = CppKeywords.OperatorPC + "++";
                         break;
                     case "%op_dec%":
-                        functionName = OperatorPC + "--";
+                        functionName = CppKeywords.OperatorPC + "--";
                         break;
                     case "%op_add%":
-                        functionName = OperatorPC + "+";
+                        functionName = CppKeywords.OperatorPC + "+";
                         break;
                     case "%op_min%":
-                        functionName = OperatorPC + "-";
+                        functionName = CppKeywords.OperatorPC + "-";
                         break;
                     case "%op_mul%":
-                        functionName = OperatorPC + "*";
+                        functionName = CppKeywords.OperatorPC + "*";
                         break;
                     case "%op_div%":
-                        functionName = OperatorPC + "/";
+                        functionName = CppKeywords.OperatorPC + "/";
                         break;
                     case "%op_band%":
-                        functionName = OperatorPC + "&";
+                        functionName = CppKeywords.OperatorPC + "&";
                         break;
                     case "%op_bor%":
-                        functionName = OperatorPC + "|";
+                        functionName = CppKeywords.OperatorPC + "|";
                         break;
                     case "%op_xor%":
-                        functionName = OperatorPC + "^";
+                        functionName = CppKeywords.OperatorPC + "^";
                         break;
                     case "%op_mod%":
-                        functionName = OperatorPC + "%";
+                        functionName = CppKeywords.OperatorPC + "%";
                         break;
                     case "%op_lsh%":
-                        functionName = OperatorPC + "<<";
+                        functionName = CppKeywords.OperatorPC + "<<";
                         break;
                     case "%op_rsh%":
-                        functionName = OperatorPC + ">>";
+                        functionName = CppKeywords.OperatorPC + ">>";
                         break;
                     case "%op_new%":
                         AddError("No se puede sobrecargar el operador 'new'.");
-                        functionName = OperatorPC + "_new";
+                        functionName = CppKeywords.OperatorPC + "_new";
                         break;
                     case "%op_delete%":
                         AddError("No se puede sobrecargar el operador 'delete'.");
-                        functionName = OperatorPC + "_delete";
+                        functionName = CppKeywords.OperatorPC + "_delete";
                         break;
                     case "%op_explicit%":
                         AddWarning("Operadores de conversion no implementados en el modulo de salida.");
-                        functionName = ExplicitPC + OperatorPC + "T";
+                        functionName = CppKeywords.ExplicitPC + CppKeywords.OperatorPC + "T";
                         break;
                     case "%op_implicit%":
                         AddWarning("Operadores de conversion no implementados en el modulo de salida.");
-                        functionName = ImplicitPC + OperatorPC + "T";
+                        functionName = CppKeywords.ImplicitPC + CppKeywords.OperatorPC + "T";
                         break;
                     default:
                         AddError("No se pudo identificar el operador \"" + functionName + "\" utilizado.");
@@ -1715,100 +1699,86 @@ namespace LayerD.OutputModules
             else
             {
                 functionName = processUserTypeName(functionName);
-                currentFunctionType = FunctionType.Method;
+                p_currentFunctionType = FunctionType.Method;
             }
-            writeOut(returnTypeStr + " ");
-            writeOut(functionName);
-            if (currentFunctionType == FunctionType.Indexer)
-                writeOut("[" + parametersStr + "]");
-            else
-                writeOut("(" + parametersStr + ")");
-            if (baseInitializers != "") writeOut(":" + baseInitializers);
+            Write(returnTypeStr + " ");
 
-            if (isInterface) writeOut(" = 0");
-            writeOut(";");
+            // register type usage
+            if (functionDecl.get_ReturnType() != null)
+            {
+                string typeStr = functionDecl.get_ReturnType().get_typeStr();
+                bool required = !IsDerivedType(typeStr);
+                AddTypeUsage(typeStr, required, required, UseofType.Both);
+            }
+
+            Write(functionName);
+            if (p_currentFunctionType == FunctionType.Indexer)
+            {
+                Write("[" + parametersStr + "]");
+            }
+            else
+            {
+                Write("(" + parametersStr + ")");
+            }
+
+            if (isConst) Write(CppKeywords.ConstPC);
+
+            if (isInterface || functionDecl.get_abstract()) Write(" = 0");
+            Write(";");
 
             // The header has the whole signature.
-            writeNewLineOfHeader();
+            WriteNewLineOfHeader();
 
             if (!isAbstract && functionStorage != XplVarstorage_enum.EXTERN && functionStorage != XplVarstorage_enum.STATIC_EXTERN
                 && !isInterface)
             {
                 // The code file has the following: TYPE CLASS::METHOD(parameters){
-                writeOut(returnTypeStr + " ");
+                Write(returnTypeStr + " ");
 
                 // If the class that contains the function is the universal mock class, ignore the class name.
-                if (functionDecl.CurrentClass.get_name() != UniversalMockClassName)
+                if (functionDecl.CurrentClass.get_name() != CppKeywords.UniversalMockClassName &&
+                    !IsObjCDummyGlobalClass(functionDecl.CurrentClass))
                 {
-                    writeOut(functionDecl.CurrentClass.get_name() + ScopePC);
+                    Write(functionDecl.CurrentClass.get_name() + CppKeywords.ScopePC);
                 }
 
-                writeOut(functionName);
+                Write(functionName);
 
-                if (currentFunctionType == FunctionType.Indexer)
-                    writeOut("[" + parametersStr + "]");
+                if (p_currentFunctionType == FunctionType.Indexer)
+                    Write("[" + parametersStr + "]");
                 else
-                    writeOut("(" + parametersStr + ")");
+                    Write("(" + parametersStr + ")");
 
-                writeNewLineOfCode();
-                writeOut("{");
-                incNLevel();
-                writeNewLineOfCode();
+
+                if (baseInitializers != "") Write(": " + baseInitializers);
+
+                WriteNewLineOfCode();
+                Write("{");
+                WriteNewLineOfCode();
+                IncreaseTabulationSource();
             }
 
             // If the name of the function is the same as the name of the class, then
             // assume a constructor and include the call to the initializer after the
             // first line.
-            if (functionName == functionDecl.CurrentClass.get_name())
+            if (p_generateFieldInitialization && IsConstructor(functionDecl, functionName))
             {
                 atLeastOneConstructor = true;
 
                 // Include the call to the initializer. If there is no initialization,
                 // then the compiler will remove the call to the empty function.
-                writeOut(InitializerMethodName + "();");
-                writeNewLineOfCode();
-            }
-
-            // Should the method be static, its name be Main, and the invoke it as
-            // the main function.
-            if(functionStorage == XplVarstorage_enum.STATIC && functionName == "Main")
-            {
-                // The method is a static Main. Check for the arguments
-                if(parametersStr.Trim() == "")
-                {
-                    // The method contains no arguments, record this call.
-                    aStaticMainMethodExists = true;
-                    mainMethodSignature = functionDecl.CurrentNamespace.get_name() +
-                                        ScopePC + 
-                                        functionDecl.CurrentClass.get_name() +
-                                        ScopePC +
-                                        functionName;
-                }
-                else
-                {
-                    // Check that there are two parameters: int argc, and char** argv.
-                    string[] parameters = parametersStr.Split(',');
-                    if(parametersStr.Length == 2)
-                    {
-                        string[] firstParameter = parameters[0].Split(' ');
-                        string[] secondParameter = parameters[1].Split(' ');
-
-                        if(firstParameter.Length == 2 && secondParameter.Length == 2
-                            && firstParameter[0] == "int" && firstParameter[1] == "argc"
-                            && secondParameter[0] == "char**" && secondParameter[1] == "argv")
-                        {
-                            // The method contains both correct arguments, record this call.
-                            aStaticMainMethodWithArgumentsExists = true;
-                            mainMethodSignature = functionDecl.CurrentNamespace.get_name() +
-                                        ScopePC + 
-                                        functionDecl.CurrentClass.get_name() +
-                                        ScopePC +
-                                        functionName;
-                        }
-                    }
-                }
+                Write(CppKeywords.InitializerMethodName + "();");
+                WriteNewLineOfCode();
             }
         }
+
+        private static bool IsConstructor(XplFunction functionDecl, string functionName)
+        {
+            // TODO : if it's a constructor must be defined by zoe compiler with additional metainfo
+            // or queried from the last types table
+            return functionName == functionDecl.CurrentClass.get_name();
+        }
+
         /// <summary>
         /// Renders the end function.
         /// </summary>
@@ -1820,18 +1790,21 @@ namespace LayerD.OutputModules
             bool isAbstract = functionDecl.get_abstract();
             XplVarstorage_enum functionStorage = functionDecl.get_storage();
 
-            if (p_isExternalClass > 0 || functionStorage == XplVarstorage_enum.EXTERN || functionStorage == XplVarstorage_enum.STATIC_EXTERN) return;
+            if (p_isExternalClass > 0 || functionStorage == XplVarstorage_enum.EXTERN || functionStorage == XplVarstorage_enum.STATIC_EXTERN)
+            {
+                return;
+            }
 
             if (!isAbstract && functionStorage != XplVarstorage_enum.EXTERN && functionStorage != XplVarstorage_enum.STATIC_EXTERN
                 && !(functionDecl.get_Parent().get_TypeName() == CodeDOMTypes.XplClass && functionDecl.CurrentClass.get_isinterface()))
             {
-                decNLevel();
-                writeOut("} ");
-                if (p_writeDetailedComments) writeComment("Final función '" + functionName + "'.");
-                writeNewLineOfCode();
-                writeNewLineOfCode();
+                DecreaseTabulationSource();
+                Write("}");
+                WriteNewLineOfCode();
+                WriteNewLineOfCode();
             }
         }
+
         /// <summary>
         /// Renders the begin property.
         /// </summary>
@@ -1852,45 +1825,8 @@ namespace LayerD.OutputModules
             bool isOverride, bool isVirtual, EZOEContext context)
         {
 
-            if (p_isExternalClass > 0 || propertyStorage == XplVarstorage_enum.EXTERN || propertyStorage == XplVarstorage_enum.STATIC_EXTERN) return;
-
-            writeLineDirective(propertyDecl.get_ldsrc(), false);
-
-            if (propertyDecl.get_externalname() != "")
-                propertyName = propertyDecl.get_externalname();
-
-            RenderComments(propertyDecl);
-
-            //Los miembros de las interfaces son siempre publicos no se debe hacer nada
-            // TODO: Considerar el reemplazo de esto por un template Property que implemente el operador =, aunque
-            // de todos modos termine usando dos métodos set y get.
-            if (!(propertyDecl.get_Parent().get_TypeName() == CodeDOMTypes.XplClass && propertyDecl.CurrentClass.get_isinterface()))
-                writeOut(getAccess(access, context));
-
-            writeOut(getStorage(propertyStorage, context));
-
-            if (isAbstract) writeOut(AbstractPC);
-            if (isFinal) writeOut(FinalPC);
-            if (isNew) writeOut(NewPC);
-            if (isConst) AddWarning("Modificador de función 'const' no aplicado en implementacion.");
-            if (isOverride) writeOut(OverridePC);
-            if (isVirtual) writeOut(VirtualPC);
-            // Medio feo, pero funciona.
-            writeOut("@" + typeStr + "@" + processUserTypeName(propertyName));
-
-            // The set and get must be assembled manually, so store the definition on the temporal variable.
-            tempStr = p_currentLine;
-            p_currentLine = string.Empty;
-
-            //writeOut(typeStr + " " + processUserTypeName(propertyName));
-            //writeNewLineOfBothFiles();
-
-            // En el caso del archivo de cabecera, no definir la apertura.
-            //writeOut("{");
-            //incNLevel();
-            //writeNewLineOfCode();
-            //currentFunctionType = FunctionType.Property;
         }
+
         /// <summary>
         /// Renders the end property.
         /// </summary>
@@ -1899,15 +1835,9 @@ namespace LayerD.OutputModules
         /// <param name="context">The context.</param>
         protected override void renderEndProperty(XplProperty propertyDecl, string propertyName, EZOEContext context)
         {
-            XplVarstorage_enum propertyStorage = propertyDecl.get_storage();
-            if (p_isExternalClass > 0 || propertyStorage == XplVarstorage_enum.EXTERN || propertyStorage == XplVarstorage_enum.STATIC_EXTERN) return;
 
-            //decNLevel();
-            //writeOut("} ");
-            if (p_writeDetailedComments) writeComment("Final de propiedad '" + propertyName + "'.");
-            writeNewLineOfBothFiles();
-            writeNewLineOfBothFiles();
         }
+
         /// <summary>
         /// Renders the begin get access.
         /// </summary>
@@ -1915,22 +1845,9 @@ namespace LayerD.OutputModules
         /// <param name="body">The body.</param>
         protected override void renderBeginGetAccess(EZOEContext context, XplFunctionBody body)
         {
-            if (p_isExternalClass > 0) return;
-            string[] splittedProperty = tempStr.Split(new char[] { '@' });
-            writeOut(splittedProperty[0] + splittedProperty[1] + " get" + splittedProperty[1] + "()");
-            if (body.Children().GetLength() != 0)
-            {
-                writeNewLineOfBothFiles();
-                writeOut("{");
-                incNLevel();
-                writeNewLineOfCode();
-            }
 
-            // This is the end for the header declaration.
-            writeOut(";");
-            writeNewLineOfHeader();
-            writeNewLineOfHeader();
         }
+
         /// <summary>
         /// Renders the end get access.
         /// </summary>
@@ -1938,14 +1855,9 @@ namespace LayerD.OutputModules
         /// <param name="body">The body.</param>
         protected override void renderEndGetAccess(EZOEContext context, XplFunctionBody body)
         {
-            if (p_isExternalClass > 0) return;
-            if (body.Children().GetLength() != 0)
-            {
-                decNLevel();
-                writeOut("}");
-                writeNewLineOfCode();
-            }
+
         }
+
         /// <summary>
         /// Renders the begin set access.
         /// </summary>
@@ -1953,20 +1865,7 @@ namespace LayerD.OutputModules
         /// <param name="body">The body.</param>
         protected override void renderBeginSetAccess(EZOEContext context, XplFunctionBody body)
         {
-            if (p_isExternalClass > 0) return;
 
-            string[] splittedProperty = tempStr.Split(new char[] { '@' });
-            writeOut(splittedProperty[0] + "void set" + splittedProperty[2] + "(" + splittedProperty[1] + " value)");
-            if (body.Children().GetLength() != 0)
-            {
-                writeNewLineOfBothFiles();
-                writeOut("{");
-                incNLevel();
-                writeNewLineOfCode();
-            }
-            writeOut(";");
-            writeNewLineOfHeader();
-            writeNewLineOfHeader();
         }
         /// <summary>
         /// Renders the end set access.
@@ -1975,14 +1874,9 @@ namespace LayerD.OutputModules
         /// <param name="body">The body.</param>
         protected override void renderEndSetAccess(EZOEContext context, XplFunctionBody body)
         {
-            if (p_isExternalClass > 0) return;
-            if (body.Children().GetLength() != 0)
-            {
-                decNLevel();
-                writeOut("}");
-                writeNewLineOfCode();
-            }
+
         }
+
         /// <summary>
         /// Renders the field.
         /// </summary>
@@ -2000,49 +1894,110 @@ namespace LayerD.OutputModules
 
             if (p_isExternalClass > 0 || fieldStorage == XplVarstorage_enum.EXTERN || fieldStorage == XplVarstorage_enum.STATIC_EXTERN) return;
 
-            if (fieldDecl.get_externalname() != "")
+            bool isFromObjCGlobalClass = IsObjCDummyGlobalClass(fieldDecl.CurrentClass);
+
+            if (isFromObjCGlobalClass && IsFieldFromObjCAnonymousType(fieldDecl))
+            {
+                return;
+            }
+
+            if (fieldDecl.get_externalname() != String.Empty)
+            {
                 fieldName = fieldDecl.get_externalname();
+            }
+
+            // check for new buffer
+            if (IsObjCDummyGlobalClass(fieldDecl.CurrentClass))
+            {
+                CheckBuffer(fieldDecl);
+            }
 
             writeLineDirective(fieldDecl.get_ldsrc(), false);
 
-            if (!FieldIsFromEnum(fieldDecl))
-            {
-                RenderComments(fieldDecl);
-                writeOut(getAccess(access, EZOEContext.ClassDecl));
-                writeOut(getStorage(fieldStorage, EZOEContext.ClassBody));
+            bool bIsTheLastFieldOfEnum;
 
-                if (isNew) writeOut(NewPC);
-                if (isVolatile) writeOut(VolatilePC);
-                if (fieldDecl.get_type().get_const()) writeOut(ConstPC);
-                writeOut(typeStr);
+            if (!FieldIsFromEnum(fieldDecl, out bIsTheLastFieldOfEnum))
+            {
+                //The new user type is added
+                AddTypeUsage(fieldDecl.get_type().get_typeStr(), !IsDerivedType(fieldDecl.get_type().get_typeStr()), true, UseofType.Both);
+
+                RenderComments(fieldDecl);
+
+                if (!isFromObjCGlobalClass)
+                {
+                    Write(getAccess(access, EZOEContext.ClassDecl, false));
+                }
+
+                if (fieldDecl.get_lddata().Equals("extern"))
+                {
+                    Write(CppKeywords.ExternPC);
+                }
+
+                Write(getStorage(fieldStorage, EZOEContext.ClassBody));
+                if (isNew) Write(CppKeywords.NewPC);
+
+                XplType xType = fieldDecl.get_type();
+                if (xType.get_const()) Write(CppKeywords.ConstPC);
+                if (xType.get_volatile()) Write(CppKeywords.VolatilePC);
+
+                Write(typeStr);
                 
                 // Check if an initializer string is employed.                
-                if (initializerStr != "")
+                if (initializerStr != String.Empty)
                 {
                     if (initializerStr[0] != '(')
                     {
+                        Write(" = " + initializerStr);
+                        // I commented this lines because I don't need an artificial constructor to initialize global variables - Commented by Julieta Alvarez
                         // Load the initialization string into the constructor initialization method.
-                        currentClassConstructorInitializers.Add(fieldName + " = " + initializerStr + ";\n");
+                        // currentClassConstructorInitializers.Add(fieldName + " = " + initializerStr + ";\n");
                     }
                     else
                     {
-                        writeOut(initializerStr);
+                        Write(initializerStr);
                     }
                 }
-                writeOut("; ");
-                if (p_writeDetailedComments) writeComment("campo '" + fieldName + "'");
+                Write(";");
+                if (p_writeDetailedComments)
+                {
+                    writeComment("campo '" + fieldName + "'");
+                }
             }
             else
             { //Es un campo de una enumeración
                 RenderComments(fieldDecl);
-                writeOut(fieldDecl.get_name());
-                if (initializerStr != "")
-                    if (initializerStr[0] != '(') writeOut(" = " + initializerStr);
-                    else writeOut(initializerStr);
-                writeOut(", ");
+                Write(fieldDecl.get_name());
+                if (initializerStr != String.Empty)
+                {
+                    if (initializerStr[0] != '(') Write(" = " + initializerStr);
+                    else Write(initializerStr);
+                }
+                if (!bIsTheLastFieldOfEnum)
+                {
+                    Write(", ");
+                }
             }
-            writeNewLineOfHeader();
+
+            if (!IsObjCDummyGlobalClass(fieldDecl.CurrentClass) || fieldDecl.get_ldsrc().EndsWith(".h", StringComparison.InvariantCulture))
+            {
+                WriteNewLineOfHeader();
+            }
+            else
+            {
+                WriteNewLineOfCode();
+            }
+
         }
+
+        private bool IsFieldFromObjCAnonymousType(XplField fieldDecl)
+        {
+            string className = fieldDecl.CurrentClass.get_name();
+            var list = _anonymousGlobalVars.ContainsKey(className) ? _anonymousGlobalVars[className] : null;
+            if (list == null) return false;
+
+            return list.Contains(fieldDecl);
+        }
+
         /// <summary>
         /// Renders the begin parameters.
         /// </summary>
@@ -2054,6 +2009,7 @@ namespace LayerD.OutputModules
         {
             p_maxParameter = maxParameter;
         }
+
         /// <summary>
         /// Render a parameter.
         /// </summary>
@@ -2070,36 +2026,40 @@ namespace LayerD.OutputModules
             string initializerStr, XplParameterdirection_enum parameterDirection, int parameterNumber,
             bool isParams, bool isVolatile)
         {
-            string retStr = "";
-            switch (parameterDirection)
-            {
-                case XplParameterdirection_enum.IN:
-                    //retStr+=InPC;
-                    //como es por defecto no hago nada
-                    break;
-                case XplParameterdirection_enum.INOUT:
-                    // Esto es la indirección.
-                    // retStr += InoutPC;
-                    break;
-                case XplParameterdirection_enum.OUT:
-                    // Esto es la indirección.
-                    // retStr += OutPC;
-                    break;
-            }
-            if (isParams) retStr += ParamsPC;
+            string retStr = String.Empty;
+            if (isParams) retStr += CppKeywords.ParamsPC;
+            
             if (isVolatile)
-            {
-                AddWarning("Modificador 'volatile' en parametros no soportado en el tipo implementado.");
-            }
+                retStr += CppKeywords.VolatilePC;
+
+            if (parameter.get_type() != null && parameter.get_type().get_const())
+                retStr += CppKeywords.ConstPC;
+
             if (parameterNumber != p_maxParameter) retStr += typeStr + ", ";
             else retStr += typeStr;
-            if (initializerStr != "")
+            
+            if (initializerStr != String.Empty)
             {
                 // AddError("Los parametros no pueden declarar valores por defecto en .NET.");
                 retStr += " = " + initializerStr;
             }
+
+            //The new user type is added to a list
+            AddTypeUsage(parameter.get_type().get_typeStr(), IsINParameterDirection(parameterDirection) && IsATypeByValue(parameter.get_type()), true, UseofType.Both);
             return retStr;
+
         }
+
+        private bool IsATypeByValue(XplType type)
+        {
+            return type.get_typename() != string.Empty && type.get_dt() == null;
+        }
+
+        private bool IsINParameterDirection(XplParameterdirection_enum parameterDirection)
+        {
+            return parameterDirection == XplParameterdirection_enum.IN;
+        }
+
         /// <summary>
         /// Renders the end parameters.
         /// </summary>
@@ -2119,23 +2079,47 @@ namespace LayerD.OutputModules
         /// <returns>A string with the rendered item.</returns>
         protected override string renderType(XplType type, string declareName, EZOETypeContext typeContext, EZOEContext context)
         {
-            string typeStr = "", arrayStr = "", pointerStr = "";
+            if (typeContext == EZOETypeContext.CatchVarDecl)
+            {
+                AddTypeUsage(type.get_typeStr(), false, true, UseofType.InSource);
+            }
+
+            string typeStr = String.Empty, arrayStr = String.Empty, pointerStr = String.Empty;
             bool isValueType = false;
             typeStr += getTypeName(type, typeContext, ref isValueType);
 
             if (p_checkTypes) checkPointerType(type, typeContext);
             pointerStr = getPointerStr(type, typeContext, isValueType);
-            if (pointerStr != "") typeStr += pointerStr;
+            if (pointerStr != String.Empty) typeStr += pointerStr;
             arrayStr = getArrayStr(type, typeContext, context, isValueType);
             switch (typeContext)
             {
-                // TODO: Qué es esto.
                 case EZOETypeContext.CatchVarDecl:
                 case EZOETypeContext.FieldDecl:
                 case EZOETypeContext.ForVarDecl:
                 case EZOETypeContext.LocalVarDecl:
-                case EZOETypeContext.ParameterDecl:
                     typeStr += " " + declareName;
+                    break;
+                case EZOETypeContext.ParameterDecl:
+                    if (type.get_Parent().get_TypeName() == CodeDOMTypes.XplParameter)
+                    {
+                        XplParameter parameter = (XplParameter)type.get_Parent();
+                        switch (parameter.get_direction())
+                        {
+                            case XplParameterdirection_enum.IN:
+                                typeStr += " " + declareName;
+                                break;
+                            case XplParameterdirection_enum.INOUT:
+                            case XplParameterdirection_enum.OUT:
+                                typeStr += "& " + declareName;
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        // THIS IS AN ERROR, THE PARENT MUST ALWAYS BE A PARAMETER
+                        typeStr += " " + declareName;
+                    }
                     break;
                 case EZOETypeContext.PropertyDecl:
                 case EZOETypeContext.ReturnTypeDecl:
@@ -2149,7 +2133,9 @@ namespace LayerD.OutputModules
                 case EZOETypeContext.Unknow:
                     break;
             }
-            if (arrayStr != "") typeStr += arrayStr;
+
+            if (arrayStr != String.Empty) typeStr += arrayStr;
+
             return typeStr;
         }
         /// <summary>
@@ -2229,33 +2215,16 @@ namespace LayerD.OutputModules
         {
             writeLineDirective(functionBody.get_ldsrc(), false);
             if (p_prettyOutput) p_lastCodeStatementLine = 0;
-            if (p_prettyOutput)
+
+            if (context == EZOEContext.FunctionBody &&
+                functionBody.get_Parent().get_TypeName() != CodeDOMTypes.XplFunctionBody ||
+                functionBody.get_Parent().get_TypeName() == CodeDOMTypes.XplFunctionBody &&
+                functionBody.get_DeclsNodeList().GetLength() > 0)
             {
-                //PENDIENTE : La modificación de eliminar el bloque cuando no se poseen declaraciones dentro
-                //es solo para el proyecto Janus!! OJO!!
-                if (context == EZOEContext.FunctionBody &&
-                    functionBody.get_Parent().get_TypeName() != CodeDOMTypes.XplFunctionBody ||
-                    functionBody.get_Parent().get_TypeName() == CodeDOMTypes.XplFunctionBody &&
-                    functionBody.get_DeclsNodeList().GetLength() > 0)
-                {
-                    writeNewLineOfCode();
-                    writeOut("{");
-                    incNLevel();
-                    writeNewLineOfCode();
-                }
-            }
-            else
-            {
-                if (context == EZOEContext.FunctionBody &&
-                    functionBody.get_Parent().get_TypeName() != CodeDOMTypes.XplFunctionBody ||
-                    functionBody.get_Parent().get_TypeName() == CodeDOMTypes.XplFunctionBody &&
-                    functionBody.get_DeclsNodeList().GetLength() > 0)
-                {
-                    writeNewLineOfCode();
-                    writeOut("{");
-                    incNLevel();
-                    writeNewLineOfCode();
-                }
+                WriteNewLineOfCode();
+                Write("{");
+                WriteNewLineOfCode();
+                IncreaseTabulationSource();
             }
         }
         /// <summary>
@@ -2265,31 +2234,14 @@ namespace LayerD.OutputModules
         /// <param name="context">The context.</param>
         protected override void renderEndBlock(XplFunctionBody functionBody, EZOEContext context)
         {
-            if (p_prettyOutput)
+            if (context == EZOEContext.FunctionBody &&
+                functionBody.get_Parent().get_TypeName() != CodeDOMTypes.XplFunctionBody ||
+                functionBody.get_Parent().get_TypeName() == CodeDOMTypes.XplFunctionBody &&
+                functionBody.get_DeclsNodeList().GetLength() > 0)
             {
-                //PENDIENTE : La modificación de eliminar el bloque cuando no se poseen declaraciones dentro
-                //es solo para el proyecto Janus!! OJO!!
-                if (context == EZOEContext.FunctionBody &&
-                    functionBody.get_Parent().get_TypeName() != CodeDOMTypes.XplFunctionBody ||
-                    functionBody.get_Parent().get_TypeName() == CodeDOMTypes.XplFunctionBody &&
-                    functionBody.get_DeclsNodeList().GetLength() > 0)
-                {
-                    decNLevel();
-                    writeOut("}");
-                    writeNewLineOfCode();
-                }
-            }
-            else
-            {
-                if (context == EZOEContext.FunctionBody &&
-                    functionBody.get_Parent().get_TypeName() != CodeDOMTypes.XplFunctionBody ||
-                    functionBody.get_Parent().get_TypeName() == CodeDOMTypes.XplFunctionBody &&
-                    functionBody.get_DeclsNodeList().GetLength() > 0)
-                {
-                    decNLevel();
-                    writeOut("}");
-                    writeNewLineOfCode();
-                }
+                DecreaseTabulationSource();
+                Write("}");
+                WriteNewLineOfCode();
             }
         }
         /// <summary>
@@ -2299,8 +2251,8 @@ namespace LayerD.OutputModules
         /// <param name="context">The context.</param>
         protected override void renderLabel(XplNode label, EZOEContext context)
         {
-            writeOut(label.get_StringValue() + ":");
-            writeNewLineOfCode();
+            Write(label.get_StringValue() + ":");
+            WriteNewLineOfCode();
         }
         /// <summary>
         /// Renders the setonerror.
@@ -2317,7 +2269,7 @@ namespace LayerD.OutputModules
         /// <param name="node">The node.</param>
         protected void RenderComments(XplNode node)
         {
-            if (node.get_doc() != null && node.get_doc() != "")
+            if (node.get_doc() != null && node.get_doc() != String.Empty)
             {
                 string[] comments = node.get_doc().Split('\n');
                 for (int n = 0; n < comments.Length; n++)
@@ -2328,13 +2280,13 @@ namespace LayerD.OutputModules
                         if (node.get_TypeName() == CodeDOMTypes.XplClass ||
                             node.get_TypeName() == CodeDOMTypes.XplNamespace)
                         {
-                            writeOut("/// " + comment);
+                            Write("// " + comment);
                         }
                         else
                         {
-                            writeOut("// " + comment);
+                            Write("// " + comment);
                         }
-                        writeNewLineOfBothFiles();
+                        WriteNewLineOfBothFiles();
                     }
                 }
             }
@@ -2347,7 +2299,7 @@ namespace LayerD.OutputModules
         /// <param name="context">The context.</param>
         protected override void renderExpressionStatement(XplExpression expression, string expressionString, EZOEContext context)
         {
-            if (expressionString != "")
+            if (expressionString != String.Empty)
             {
                 if (p_prettyOutput) UpdateLastStatementLine(expression);
                 RenderComments(expression);
@@ -2357,23 +2309,23 @@ namespace LayerD.OutputModules
                     //es un atributo, hacerlo annotation.
                     expressionString.Replace('[', '@');
                     expressionString = expressionString.Remove(expressionString.Length - 1);
-                    writeOut(expressionString);
+                    Write(expressionString);
                 }
                 else
                 {
-                    writeOut(expressionString + ";");
+                    Write(expressionString + ";");
                 }
 
                 // Verify that the context allows the line in both the header and the file, or for only one of them.
                 if (context == EZOEContext.FunctionBody)
                 {
                     // Print only in the code file.
-                    writeNewLineOfCode();
+                    WriteNewLineOfCode();
                 }
                 else
                 {
                     // Print in both files.
-                    writeNewLineOfBothFiles();
+                    WriteNewLineOfBothFiles();
                 }
             }
         }
@@ -2388,13 +2340,13 @@ namespace LayerD.OutputModules
             if (!String.IsNullOrEmpty(node.get_ldsrc()))
             {
                 string trashData = null;
-                parseLDSRC(node.get_ldsrc(), ref minLine, ref  maxLine, ref trashData);
+                ParseZoeSourceInfo(node.get_ldsrc(), ref minLine, ref  maxLine, ref trashData);
                 if (minLine != 0)
                 {
                     p_lastCodeStatementLine = minLine;
                     if (minLine > backupLine + 1 && backupLine != 0)
                     {
-                        writeNewLineOfBothFiles();
+                        WriteNewLineOfCode();
                     }
                 }
             }
@@ -2408,8 +2360,8 @@ namespace LayerD.OutputModules
         protected override void renderThrow(XplExpression throwExpression, string expressionString, EZOEContext context)
         {
             writeLineDirective(throwExpression.get_ldsrc(), false);
-            writeOut(ThrowPC + expressionString + ";");
-            writeNewLineOfCode();
+            Write(CppKeywords.ThrowPC + expressionString + ";");
+            WriteNewLineOfCode();
         }
         /// <summary>
         /// Renders the return.
@@ -2420,15 +2372,17 @@ namespace LayerD.OutputModules
         protected override void renderReturn(XplExpression returnExpression, string expressionString, EZOEContext context)
         {
             writeLineDirective(returnExpression.get_ldsrc(), false);
+            if (p_prettyOutput) UpdateLastStatementLine(returnExpression);
+
             if (expressionString == String.Empty)
             {
-                writeOut(ReturnPC + ";");
+                Write(CppKeywords.ReturnPC + ";");
             }
             else
             {
-                writeOut(ReturnPC + " " + expressionString + ";");
+                Write(CppKeywords.ReturnPC + " " + expressionString + ";");
             }
-            writeNewLineOfCode();
+            WriteNewLineOfCode();
         }
         /// <summary>
         /// Renders the local declarator.
@@ -2444,17 +2398,27 @@ namespace LayerD.OutputModules
             if (p_prettyOutput) UpdateLastStatementLine(decl);
             RenderComments(decl);
 
-            if (isVolatile) writeOut(VolatilePC);
-            if (decl.get_type().get_const()) writeOut(ConstPC);
-            writeOut(typeStr);
-            if (initializerStr != "")
-                if (decl.get_i().Children().FirstNode().get_ElementName() != "list" || initializerStr[0] != '(') writeOut(" = " + initializerStr);
-                else writeOut(initializerStr);
-            writeOut(";");
+            //I added the static word for local variables' declaration - Commented by Julieta Alvarez
+            if (decl.get_lddata().Equals(ObjectiveCFlags.StaticPC)) Write(CppKeywords.StaticPC);
+            
+            XplType type = decl.get_type();
+                        
+            if (type.get_const()) Write(CppKeywords.ConstPC);
+            if (type.get_volatile()) Write(CppKeywords.VolatilePC); //if (isVolatile) writeOut(CppKeywords.VolatilePC);
+            Write(typeStr);
+
+            // if there is initializer render it
+            if (!String.IsNullOrEmpty(initializerStr) && decl.get_i() != null && decl.get_i().Children().FirstNode() != null)
+            {
+                if (decl.get_i().Children().FirstNode().get_ElementName() != "list" || initializerStr[0] != '(') Write(" = " + initializerStr);
+                else Write(initializerStr);
+            }
+            Write(";");
             // The local declarator is only in the header. (?)
-            writeNewLineOfCode();
-            decl.get_type().get_const();
+            WriteNewLineOfCode();
+            AddTypeUsage(type.get_typeStr(), false, true, UseofType.InSource);
         }
+
         bool p_isOnCase = false;
         /// <summary>
         /// Renders the begin switch.
@@ -2466,12 +2430,11 @@ namespace LayerD.OutputModules
         {
             writeLineDirective(switchSta.get_ldsrc(), false);
             if (p_prettyOutput) UpdateLastStatementLine(switchSta);
-            writeOut(SwitchPC + "(" + boolExpStr + ")");
-            writeNewLineOfCode();
-            writeOut("{");
-            incNLevel();
-            writeNewLineOfCode();
-            tempStr = boolExpStr;
+            Write(CppKeywords.SwitchPC + "(" + boolExpStr + ")");
+            WriteNewLineOfCode();
+            Write("{");
+            WriteNewLineOfCode();
+            IncreaseTabulationSource();
         }
         /// <summary>
         /// Renders the case label.
@@ -2482,14 +2445,14 @@ namespace LayerD.OutputModules
         protected override void renderCaseLabel(XplCase caseNode, string caseExpStr, EZOEContext context)
         {
             writeLineDirective(caseNode.get_ldsrc(), false);
-            if (p_isOnCase) decNLevel();
-            if (caseExpStr == "")
-                writeOut(DefaultPC + ":");
+            if (p_isOnCase) DecreaseTabulationSource();
+            if (caseExpStr == String.Empty)
+                Write(CppKeywords.DefaultPC + ":");
             else
-                writeOut(CasePC + caseExpStr + ":");
+                Write(CppKeywords.CasePC + caseExpStr + ":");
             p_isOnCase = true;
-            incNLevel();
-            writeNewLineOfCode();
+            WriteNewLineOfCode();
+            IncreaseTabulationSource();
         }
         /// <summary>
         /// Renders the end switch.
@@ -2498,12 +2461,11 @@ namespace LayerD.OutputModules
         /// <param name="context">The context.</param>
         protected override void renderEndSwitch(XplSwitchStatement switchSta, EZOEContext context)
         {
-            if (p_isOnCase) decNLevel();
+            if (p_isOnCase) DecreaseTabulationSource();
             p_isOnCase = false;
-            decNLevel();
-            writeOut("} ");
-            writeNewLineOfCode();
-            if (p_writeDetailedComments) writeComment("Fin Switch '" + tempStr + "'");
+            DecreaseTabulationSource();
+            Write("}");
+            WriteNewLineOfCode();
         }
         /// <summary>
         /// Renders if statement.
@@ -2518,11 +2480,11 @@ namespace LayerD.OutputModules
             if (p_prettyOutput) UpdateLastStatementLine(ifSta);
             if (!isElse)
             {
-                writeOut(IfPC + "(" + boolExp + ")");
+                Write(CppKeywords.IfPC + "(" + boolExp + ")");
             }
             else
             {
-                writeOut(ElsePC + IfPC + "(" + boolExp + ")");
+                Write(CppKeywords.ElsePC + CppKeywords.IfPC + "(" + boolExp + ")");
             }
         }
         /// <summary>
@@ -2533,7 +2495,7 @@ namespace LayerD.OutputModules
         /// <param name="context">The context.</param>
         protected override void renderElseStatement(XplIfStatement ifSta, XplFunctionBody elseBody, EZOEContext context)
         {
-            if (elseBody != null) writeOut(ElsePC);
+            if (elseBody != null) Write(CppKeywords.ElsePC);
         }
         /// <summary>
         /// Renders for statement.
@@ -2547,26 +2509,7 @@ namespace LayerD.OutputModules
         {
             writeLineDirective(forSta.get_ldsrc(), false);
             if (p_prettyOutput) UpdateLastStatementLine(forSta);
-            if (updateStr == "_FOR_EACH_")
-            {
-                // Exchange the foreach to a for equivalent, for now, it depends on indentation.
-                // foreach(initStr in boolExpStr) ==> (Assuming initStr = type + name) ==>
-                // type::const_iterator name;
-                // for(name=boolExpStr.rbegin(); name!=boolExpStr.rend(); ++name)
-                AddWarning("Foreach for-replacement only for stl structures.");
-
-                string trimmed = initStr.Trim();
-                string type = trimmed.Remove(trimmed.IndexOf(' '));
-                string name = trimmed.Substring(trimmed.IndexOf(' ') + 1, trimmed.Length - trimmed.IndexOf(' ') - 1);
-
-                writeOut(type + "::const_iterator " + name + ";");
-                writeNewLineOfCode();
-                writeOut(ForPC + "(" + name + "=" + boolExpStr + ".rbegin(); " + name + "!=" + boolExpStr + ".rend(); ++" + name + ")");
-            }
-            else
-            {
-                writeOut(ForPC + "(" + initStr + "; " + boolExpStr + "; " + updateStr + ")");
-            }
+            Write(CppKeywords.ForPC + "(" + initStr + "; " + boolExpStr + "; " + updateStr + ")");
         }
         /// <summary>
         /// Render a for declaration.
@@ -2580,15 +2523,15 @@ namespace LayerD.OutputModules
             //Usamos "varName" para nombre de variable
             //"initStr" para el inicializador (ej: int n "=0")
             //"typeStr" para el tipo (ej: "int[]" a = new int[] {3,4,5,5})
-            string varName = "", initStr = "", typeStr = "", backTypeStr = ""; ;
-            string retStr = "";
+            string varName = String.Empty, initStr = String.Empty, typeStr = String.Empty, backTypeStr = String.Empty; ;
+            string retStr = String.Empty;
             //for(int a = 0, d, f;; ....
             for (int n = 0; n < listaDeclaraciones.GetLength(); n++)
             {
                 XplDeclarator nodo = (XplDeclarator)listaDeclaraciones.GetNodeAt(n);
                 varName = nodo.get_name();
                 initStr = processInitializer(nodo.get_i(), EZOEContext.Statement);
-                typeStr = renderType(nodo.get_type(), "", EZOETypeContext.ForVarDecl, EZOEContext.Statement);
+                typeStr = renderType(nodo.get_type(), String.Empty, EZOETypeContext.ForVarDecl, EZOEContext.Statement);
                 if (n == 0)
                 {
                     backTypeStr = typeStr;
@@ -2603,7 +2546,7 @@ namespace LayerD.OutputModules
                 // Agrego el nombre de la variable
                 retStr += " " + varName;
                 // Agrego el inicializador
-                if (initStr != "")
+                if (initStr != String.Empty)
                     if (nodo.get_i().Children().FirstNode().get_ElementName() != "list") retStr += " = " + initStr;
                     else retStr += initStr;
                 // Agrego la coma
@@ -2620,7 +2563,7 @@ namespace LayerD.OutputModules
         protected override void renderWhileStatement(XplDowhileStatement doSta, string boolExpStr, EZOEContext context)
         {
             writeLineDirective(doSta.get_ldsrc(), false);
-            writeOut(WhilePC + "(" + boolExpStr + ")");
+            Write(CppKeywords.WhilePC + "(" + boolExpStr + ")");
         }
         /// <summary>
         /// Renders the begin do statement.
@@ -2631,7 +2574,7 @@ namespace LayerD.OutputModules
         protected override void renderBeginDoStatement(XplDowhileStatement doSta, string boolExpStr, EZOEContext context)
         {
             writeLineDirective(doSta.get_ldsrc(), false);
-            writeOut(DoPC);
+            Write(CppKeywords.DoPC);
         }
         /// <summary>
         /// Renders the end do statement.
@@ -2642,8 +2585,8 @@ namespace LayerD.OutputModules
         protected override void renderEndDoStatement(XplDowhileStatement doSta, string boolExpStr, EZOEContext context)
         {
             writeLineDirective(doSta.get_ldsrc(), true);
-            writeOut(WhilePC + "(" + boolExpStr + ");");
-            writeNewLineOfCode();
+            Write(CppKeywords.WhilePC + "(" + boolExpStr + ");");
+            WriteNewLineOfCode();
         }
         /// <summary>
         /// Renders the begin try.
@@ -2654,7 +2597,7 @@ namespace LayerD.OutputModules
         {
             writeLineDirective(trySta.get_ldsrc(), false);
             if (p_prettyOutput) UpdateLastStatementLine(trySta);
-            writeOut(TryPC);
+            Write(CppKeywords.TryPC);
         }
         /// <summary>
         /// Renders the end try.
@@ -2663,7 +2606,7 @@ namespace LayerD.OutputModules
         /// <param name="context">The context.</param>
         protected override void renderEndTry(XplTryStatement trySta, EZOEContext context)
         {
-            writeNewLineOfCode();
+            WriteNewLineOfCode();
         }
         /// <summary>
         /// Renders the catch statement.
@@ -2674,7 +2617,7 @@ namespace LayerD.OutputModules
         protected override void renderCatchStatement(XplCatchStatement catchSta, string declExp, EZOEContext context)
         {
             writeLineDirective(catchSta.get_ldsrc(), false);
-            writeOut(CatchPC + "(" + declExp + ")");
+            Write(CppKeywords.CatchPC + "(" + declExp + ")");
         }
         /// <summary>
         /// Renders the finally.
@@ -2684,7 +2627,7 @@ namespace LayerD.OutputModules
         protected override void renderFinally(XplFunctionBody tryBk, EZOEContext context)
         {
             writeLineDirective(tryBk.get_ldsrc(), false);
-            writeOut(FinallyPC);
+            Write(CppKeywords.FinallyPC);
         }
         /// <summary>
         /// Renders the break.
@@ -2694,8 +2637,8 @@ namespace LayerD.OutputModules
         protected override void renderBreak(XplJump jump, EZOEContext context)
         {
             writeLineDirective(jump.get_ldsrc(), false);
-            writeOut(BreakPC + ";");
-            writeNewLineOfCode();
+            Write(CppKeywords.BreakPC + ";");
+            WriteNewLineOfCode();
         }
         /// <summary>
         /// Renders the continue.
@@ -2705,8 +2648,8 @@ namespace LayerD.OutputModules
         protected override void renderContinue(XplJump jump, EZOEContext context)
         {
             writeLineDirective(jump.get_ldsrc(), false);
-            writeOut(ContinuePC + ";");
-            writeNewLineOfCode();
+            Write(CppKeywords.ContinuePC + ";");
+            WriteNewLineOfCode();
         }
         /// <summary>
         /// Renders the goto.
@@ -2717,8 +2660,8 @@ namespace LayerD.OutputModules
         protected override void renderGoto(XplJump jump, string label, EZOEContext context)
         {
             writeLineDirective(jump.get_ldsrc(), false);
-            writeOut(GotoPC + label + ";");
-            writeNewLineOfCode();
+            Write(CppKeywords.GotoPC + label + ";");
+            WriteNewLineOfCode();
         }
 
         /// <summary>
@@ -2783,12 +2726,16 @@ namespace LayerD.OutputModules
         /// <returns>A string with the rendered item.</returns>
         protected override string renderNewExp(XplNewExpression newExp, string typeStr, string initializerStr, EZOEContext context)
         {
-            if (initializerStr != "" && initializerStr[0] != '(' && initializerStr[0] != '{')
+            if (initializerStr != String.Empty && initializerStr[0] != '(' && initializerStr[0] != '{')
             {
                 AddWarning("No se permiten inicializadores de expresiones simples en expresiones 'new', sólo son validos inicializadores de matrices y objetos.");
-                initializerStr = "";
+                initializerStr = String.Empty;
             }
-            if (initializerStr == "" && newExp.get_type().get_typename() != "" && newExp.get_type().get_typename()[0] != '$')
+
+            // check for user type
+            AddTypeUsage(newExp.get_type().get_typeStr(), false, true, UseofType.InSource);
+
+            if (initializerStr == String.Empty && newExp.get_type().get_typename() != String.Empty && newExp.get_type().get_typename()[0] != '$')
                 return "new " + typeStr + "()";
             else
                 return "new " + typeStr + initializerStr;
@@ -2802,7 +2749,7 @@ namespace LayerD.OutputModules
         /// <returns>A string with the rendered item.</returns>
         protected override string renderBeginExpressionList(XplExpressionlist list, int expCount, EZOEContext context)
         {
-            return "";
+            return String.Empty;
         }
         /// <summary>
         /// Render a expression list item.
@@ -2826,7 +2773,7 @@ namespace LayerD.OutputModules
         /// <returns>A string with the rendered item.</returns>
         protected override string renderEndExpressionList(XplExpressionlist list, EZOEContext context)
         {
-            return "";
+            return String.Empty;
         }
         /// <summary>
         /// Render a simple name.
@@ -2834,11 +2781,24 @@ namespace LayerD.OutputModules
         /// <param name="name">The name.</param>
         /// <param name="context">The context.</param>
         /// <returns>A string with the rendered item.</returns>
-        protected override string renderSimpleName(string name, EZOEContext context)
+        protected override string renderSimpleName(XplNode node, string name, EZOEContext context)
         {
-            //Simplemente asumo que todo es correcto y debo reemplazar "::" por "."
-            return processUserTypeName(name);
+            if (name == "base")
+            {
+                return "this";
+            }
+            else
+            {
+                if (TypeString.IsQualifiedName(name) && !node.get_Parent().get_Parent().IsA(CodeDOMTypes.XplFunctioncall))
+                {
+                    string typeName = TypeString.GetTypeNameFromQualified(name).Replace(CppKeywords.ScopePC, ".");
+                    AddTypeUsage(typeName, false, true, UseofType.InSource);
+                }
+                
+                return processUserTypeName(name);
+            }
         }
+
         /// <summary>
         /// Render a literal.
         /// </summary>
@@ -2848,6 +2808,8 @@ namespace LayerD.OutputModules
         /// <returns>A string with the rendered item.</returns>
         protected override string renderLiteral(XplLiteral litNode, string litStr, EZOEContext context)
         {
+            string tempStr;
+
             #region Switch de Tipos de Literal
             switch (litNode.get_type())
             {
@@ -2868,7 +2830,7 @@ namespace LayerD.OutputModules
                     tempStr = litStr;
                     break;
                 case XplLiteraltype_enum.FLOAT:
-                    tempStr = litStr.EndsWith("f") ? litStr.Substring(0, litStr.Length-1) : litStr;
+                    tempStr = litStr.EndsWith("f", StringComparison.InvariantCulture) ? litStr.Substring(0, litStr.Length - 1) : litStr;
                     break;
                 case XplLiteraltype_enum.DATETIME:
                 case XplLiteraltype_enum.ASCIISTRING:
@@ -2889,6 +2851,7 @@ namespace LayerD.OutputModules
                     break;
             }
             #endregion
+            
             return tempStr;
         }
         /// <summary>
@@ -2900,7 +2863,7 @@ namespace LayerD.OutputModules
         /// <returns>A string with the rendered item.</returns>
         protected override string renderDeleteExp(XplExpression deleteExp, string expStr, EZOEContext context)
         {
-            return DeletePC + expStr;
+            return CppKeywords.DeletePC + expStr;
         }
         /// <summary>
         /// Render a onpointer exp.
@@ -2912,7 +2875,7 @@ namespace LayerD.OutputModules
         protected override string renderOnpointerExp(XplExpression onpointerExp, string expStr, EZOEContext context)
         {
             AddError("Expresión 'onpointer' no soportada por el Modulo de Salida.");
-            return "/*Expresion Onpointer No Soportada*/";
+            return "/* Expresion Onpointer No Soportada */";
         }
         /// <summary>
         /// Render a assing exp.
@@ -2930,6 +2893,8 @@ namespace LayerD.OutputModules
                 leftExpStr = "(" + leftExpStr + ")";
             }
             #region Switch de Operadores de Asignación
+            string tempStr = String.Empty;
+
             switch (operation)
             {
                 case XplAssingop_enum.ADD:
@@ -2967,9 +2932,14 @@ namespace LayerD.OutputModules
                     break;
             }
             #endregion
-            //if(p_OptimiseParenthesis && requireParenthesis(assing))tempStr="("+tempStr+")";
+            
+            // Quitar Julieta 
+            if (p_OptimiseParenthesis && requireParenthesis(assing)) tempStr = "(" + tempStr + ")";
+            
             return tempStr;
         }
+
+        
         /// <summary>
         /// Render a bin op exp.
         /// </summary>
@@ -2981,6 +2951,8 @@ namespace LayerD.OutputModules
         /// <returns>A string with the rendered item.</returns>
         protected override string renderBinOpExp(XplBinaryoperator bopExp, string leftExpStr, string rightExpStr, XplBinaryoperators_enum op, EZOEContext context)
         {
+            string tempStr = String.Empty;
+
             switch (op)
             {
                 case XplBinaryoperators_enum.IMP: //Flecha "=>"
@@ -2989,6 +2961,12 @@ namespace LayerD.OutputModules
                 case XplBinaryoperators_enum.PM: //Pointer Member Access "->"
                 case XplBinaryoperators_enum.PMP: //Pointer To Member Pointer Access "->*"
                 case XplBinaryoperators_enum.RM: //Reservado para Acceso a miembros
+                    if (bopExp.get_targetClass() != String.Empty)
+                    {
+                        //add to used typenames
+                        AddTypeUsage(bopExp.get_targetClass(), false, true, UseofType.InSource);
+                    }
+
                     if (p_OptimiseParenthesis && getOperatorPrecedence(op) > getExpressionPrecedence(bopExp.get_l()))
                     {
                         leftExpStr = "(" + leftExpStr + ")";
@@ -3063,11 +3041,28 @@ namespace LayerD.OutputModules
                     tempStr = leftExpStr + " << " + rightExpStr;
                     break;
                 case XplBinaryoperators_enum.M: //Member access "."
-                    //tempStr = leftExpStr + "." + bopExp.get_targetMember(); flag = true;
-                    if(leftExpStr=="this")
+                    if (bopExp.get_l().get_Content().IsA(CodeDOMTypes.XplNewExpression))
+                    {
+                        tempStr = "(" + leftExpStr + ")->" + rightExpStr;
+                    }
+                    else if (leftExpStr == "this")
+                    {
+                        // check if it's base
+                        if (bopExp.get_l().get_Content().get_StringValue()=="base")
+                        {
+                            tempStr = leftExpStr + "->" + p_currentFirstBase + "::" + rightExpStr;
+                            break;
+                        }
                         tempStr = leftExpStr + "->" + rightExpStr;
+                    }
+                    else if (bopExp.get_l().get_typeStr().StartsWith("^", StringComparison.InvariantCulture))
+                    {
+                        tempStr = leftExpStr + "->" + rightExpStr;
+                    }
                     else
+                    {
                         tempStr = leftExpStr + "." + rightExpStr;
+                    }
                     flag = true;
                     break;
                 case XplBinaryoperators_enum.MIN: //Resta
@@ -3090,7 +3085,20 @@ namespace LayerD.OutputModules
                     tempStr = leftExpStr + " || " + rightExpStr;
                     break;
                 case XplBinaryoperators_enum.PM: //Pointer Member Access "->"
-                    tempStr = leftExpStr + "->" + rightExpStr; flag = true;
+                    // check if left exp is new
+                    if (bopExp.get_l().get_Content().IsA(CodeDOMTypes.XplNewExpression))
+                    {
+                        tempStr = "(" + leftExpStr + ")->" + rightExpStr;
+                    }
+                    // check if it's base
+                    else if (bopExp.get_l().get_Content().get_StringValue() == "base")
+                    {
+                        tempStr = leftExpStr + "->" + p_currentFirstBase + "::" + rightExpStr;
+                    }
+                    else
+                    {
+                        tempStr = leftExpStr + "->" + rightExpStr; flag = true;
+                    }
                     break;
                 case XplBinaryoperators_enum.PMP: //Pointer To Member Pointer Access "->*"
                     tempStr = leftExpStr + "->*" + rightExpStr; flag = true;
@@ -3104,6 +3112,13 @@ namespace LayerD.OutputModules
                     break;
                 case XplBinaryoperators_enum.XOR: //Xor de Bits
                     tempStr = leftExpStr + " ^ " + rightExpStr;
+                    break;
+                case XplBinaryoperators_enum.COMMA:
+                    tempStr = leftExpStr + ", " + rightExpStr;
+                    break;
+                default:
+                    tempStr = leftExpStr + "+" + rightExpStr;
+                    AddError("Unrecognized binary operator in expression.");
                     break;
             }
             #endregion
@@ -3125,14 +3140,12 @@ namespace LayerD.OutputModules
         /// <returns>A string with the rendered item.</returns>
         protected override string renderUnOpExp(XplUnaryoperator uopExp, string expStr, XplUnaryoperators_enum op, EZOEContext context)
         {
+            String tempStr = String.Empty;
             #region Switch de Operadores Unarios
             switch (op)
             {
-                case XplUnaryoperators_enum.AOF: //Address of '&'
-                    if (!p_isUnsafeContext) AddWarning("Operador 'Address of' usado en posible contexto no seguro, posible error.");
-                    XplExpression parentExp = (XplExpression)uopExp.get_Parent();
-                    if (!parentExp.get_typeStr().Contains("/")) tempStr = "&" + expStr;
-                    else tempStr = expStr;
+                case XplUnaryoperators_enum.AOF: //Address of '&'                    
+                    tempStr = "&" + expStr;
                     break;
                 case XplUnaryoperators_enum.DEC: //Decremento postfijo 'e--'
                     tempStr = expStr + "--";
@@ -3141,7 +3154,6 @@ namespace LayerD.OutputModules
                     tempStr = expStr + "++";
                     break;
                 case XplUnaryoperators_enum.IND: //Indireccion de puntero '*'
-                    if (!p_isUnsafeContext) AddWarning("Operador 'Indirección de Puntero' ('*') usado en posible contexto no seguro, posible error.");
                     tempStr = "*" + expStr;
                     break;
                 case XplUnaryoperators_enum.MIN: //Negativo '-'
@@ -3180,6 +3192,7 @@ namespace LayerD.OutputModules
             else tempStr = "(" + tempStr + ")";
             return tempStr;
         }
+
         /// <summary>
         /// Render a function call exp.
         /// </summary>
@@ -3191,51 +3204,58 @@ namespace LayerD.OutputModules
         /// <returns>A string with the rendered item.</returns>
         protected override string renderFunctionCallExp(XplFunctioncall fcallExp, string leftExpStr, string argsStr, bool useBrackets, EZOEContext context)
         {
-            // PENDIENTE : eliminar esto cuando se implemente correctamente el tema de atributos en Zoe
-            if (leftExpStr == "Zoe.Attribute.Add")
+            if (fcallExp.get_targetClass() != String.Empty)
             {
-                AddWarning("The support for attributes in methods is still not fully implemented. Assuming [${Attribute}]class, not class __atribute__((${Attribute}))");
-                return "[" + argsStr.Substring(1, argsStr.Length - 2).Replace("\\\"", "\"") + "]";
+                //add to used typenames
+                AddTypeUsage(fcallExp.get_targetClass(), false, true, UseofType.InSource);
             }
 
-            string internalName = fcallExp.get_targetMember();
-            if (fcallExp.get_targetMemberExternalName() != "")
-            {
-                // Debo modificar el leftExpStr.
-                int indexDot = leftExpStr.LastIndexOf('.');
-                int indexPrecedence = leftExpStr.LastIndexOf(ScopePC);
-                int index = Math.Max(indexDot, indexPrecedence);
+            //string internalName = fcallExp.get_targetMember();
+            //if (fcallExp.get_targetMemberExternalName() != String.Empty)
+            //{
+            //    // Debo modificar el leftExpStr.
+            //    int indexDot = leftExpStr.LastIndexOf('.');
+            //    int indexPrecedence = leftExpStr.LastIndexOf(CppKeywords.ScopePC, StringComparison.InvariantCulture);
+            //    int index = Math.Max(indexDot, indexPrecedence);
 
-                if (index > 0)
-                {
-                    // La expresion izquierda es un acceso a miembro. Chequear si corresponde a la mock class,
-                    // en cuyo caso, obviar la inserción del nombre de expresión del lado izquierdo.
-                    if (leftExpStr.Substring(0, index) != "MockClass")
-                    {
-                        leftExpStr = leftExpStr.Substring(0, index) + ScopePC + fcallExp.get_targetMemberExternalName();
-                    }
-                    else
-                    {
-                        leftExpStr = fcallExp.get_targetMemberExternalName();
-                    }
-                }
-                else
-                {
-                    index = leftExpStr.LastIndexOf("->");
-                    if (index > 0)
-                    {
-                        //La expresion izquierda es un acceso a miembro de puntero
-                        leftExpStr = leftExpStr.Substring(0, index) + "->" + fcallExp.get_targetMemberExternalName();
-                    }
-                    else
-                    {
-                    }
-                }
-            }
+            //    if (index > 0)
+            //    {
+            //        // La expresion izquierda es un acceso a miembro. Chequear si corresponde a la mock class,
+            //        // en cuyo caso, obviar la inserción del nombre de expresión del lado izquierdo.
+            //        if (leftExpStr.Substring(0, index) != "MockClass")
+            //        {
+            //            leftExpStr = leftExpStr.Substring(0, index) + CppKeywords.ScopePC + fcallExp.get_targetMemberExternalName();
+            //        }
+            //        else
+            //        {
+            //            leftExpStr = fcallExp.get_targetMemberExternalName();
+            //        }
+            //    }
+            //    else
+            //    {
+            //        index = leftExpStr.LastIndexOf("->", StringComparison.InvariantCulture);
+            //        if (index > 0)
+            //        {
+            //            //La expresion izquierda es un acceso a miembro de puntero
+            //            leftExpStr = leftExpStr.Substring(0, index) + "->" + fcallExp.get_targetMemberExternalName();
+            //        }
+            //        else
+            //        {
+            //        }
+            //    }
+            //}
 
             if (!useBrackets)
             {
-                return leftExpStr + "(" + argsStr + ")";
+                // Qt SIGNAL and SLOT macros special cases
+                if ((leftExpStr == "SIGNAL" || leftExpStr == "SLOT") && argsStr.Length > 1 && argsStr[0] == '\"')
+                {
+                    return leftExpStr + "(" + argsStr.Substring(1, argsStr.Length - 2) +")";
+                }
+                else
+                {
+                    return leftExpStr + "(" + argsStr + ")";
+                }
             }
             else
             {
@@ -3253,8 +3273,29 @@ namespace LayerD.OutputModules
         /// <returns>A string with the rendered item.</returns>
         protected override string renderCastExp(XplCastexpression castExp, string typeStr, string castExpStr, XplCasttype_enum castType, EZOEContext context)
         {
-            tempStr = "(" + typeStr + ")" + castExpStr;
-            tempStr = "(" + tempStr + ")"; //Cuidado con esto al corregir lo superior
+            string tempStr = String.Empty;
+            switch (castExp.get_castType())
+            {
+                case XplCasttype_enum.REINTERPRET:
+                    tempStr = "reinterpret_cast<" + typeStr + ">(" + castExpStr + ")";
+                    break;
+                case XplCasttype_enum.STATIC:
+                    tempStr = "(" + typeStr + ")" + castExpStr;
+                    tempStr = "(" + tempStr + ")"; //Cuidado con esto al corregir lo superior
+                    break;
+                case XplCasttype_enum.DYNAMIC:
+                    tempStr = "dynamic_cast<" + typeStr + ">(" + castExpStr + ")";
+                    break;
+                case XplCasttype_enum.CONST:
+                    tempStr = "const_cast<" + typeStr + ">(" + castExpStr + ")";
+                    break;
+                case XplCasttype_enum.OTHER:
+                default:
+                    tempStr = "(" + typeStr + ")" + castExpStr;
+                    tempStr = "(" + tempStr + ")"; //Cuidado con esto al corregir lo superior
+                    break;
+            }
+            AddTypeUsage(castExp.get_type().get_typeStr(), false, true, UseofType.InSource);
             return tempStr;
         }
         /// <summary>
@@ -3276,7 +3317,7 @@ namespace LayerD.OutputModules
             else
             {
                 AddError("Ternary operator not supported.");
-                return "__error__ternary_operator_not_supported__";
+                return "__error__ternary_operator_not_supported__(" + o1ExpStr + ", " + o2ExpStr + ", " + o3ExpStr + ")";
             }
         }
         #endregion
@@ -3291,7 +3332,20 @@ namespace LayerD.OutputModules
         {
             if (documentation != null)
             {
+                if (documentation.get_Parent().get_Parent().IsA(CodeDOMTypes.XplDocumentBody) ||
+                    documentation.get_Parent().IsA(CodeDOMTypes.XplClass) && IsObjCDummyGlobalClass(documentation.get_Parent() as XplClass))
+                {
+                    CheckBuffer(documentation);
+                }
+
                 string docStr = documentation.get_short();
+                string ldsrcStr = documentation.get_ldsrc();
+                int minLine = 0, maxLine = 0;
+                string currentFile = String.Empty;
+
+                if (!String.IsNullOrEmpty(ldsrcStr))
+                    ParseZoeSourceInfo(ldsrcStr, ref minLine, ref  maxLine, ref currentFile);
+                
                 if (!String.IsNullOrEmpty(docStr))
                 {
                     bool mainComment = false;
@@ -3310,19 +3364,21 @@ namespace LayerD.OutputModules
                         if (comment != String.Empty)
                         {
                             if (mainComment)
-                                writeOut("// " + comment);
+                                Write("// " + comment);
                             else
-                                writeOut("// " + comment);
-                            
-                            if(documentation.CurrentBlock==null)
-                                writeNewLineOfHeader();
+                                Write("// " + comment);
+
+                            /* Old decision : if (documentation.CurrentBlock == null) writeNewLineOfHeader(); else .... */
+                            if (currentFile.Contains(".h"))                                
+                                WriteNewLineOfHeader();
                             else
-                                writeNewLineOfCode();
+                                WriteNewLineOfCode();
                         }
                     }
                 }
             }
         }
+
         /// <summary>
         /// Renders the unrecognized node.
         /// </summary>
@@ -3497,41 +3553,68 @@ namespace LayerD.OutputModules
             {
                 if (renderArguments != null)
                 {
-                    string[] renderArgs = renderArguments.Split(',');
+                    //Proceso los argumentos de renderizacion
+                    string[] renderArgs = renderArguments.Split(' ');
                     foreach (string renderArgument in renderArgs)
                     {
-                        //Proceso los argumentos de renderizacion
-                        //Por ahora solo considero la grabación del código recibido
-                        if (renderArgument.ToLower() == "save_ezoe" && p_XplDocument != null)
+                        string[] strArg = renderArgument.Split('=');
+                        switch (strArg[0].ToLower(CultureInfo.InvariantCulture))
                         {
-                            XplWriter writer = null;
-                            try
-                            {
-                                if (p_outputPath == null) p_outputPath = "";
-                                writer = new XplWriter(Path.Combine(p_outputPath, Path.GetFileNameWithoutExtension(p_outputFileName) + "_dotnet.ezoe"));
-                                p_XplDocument.Write(writer);
-                            }
-                            finally
-                            {
-                                if (writer != null) writer.Close();
-                            }
+                            case "output":
+                                {
+                                    if (strArg[1].ToLower(CultureInfo.InvariantCulture) == "pretty")
+                                    {
+                                        p_prettyOutput = true;
+                                        p_dontWriteLineDirecties = true;
+                                    }
+                                    else if (strArg[1].ToLower(CultureInfo.InvariantCulture) == "mf")
+                                    {
+                                        renderOnly = false; 
+                                        p_multipleFiles = true;
+                                        p_prettyOutput = true;
+                                    }
+                                    break;
+                                }
+                            case "global_class":
+                                {
+                                    p_globalClassName = strArg[1];
+                                    break;
+                                }
+                            case "global_file":
+                                {
+                                    p_globalSourceFile = strArg[1];
+                                    if (!p_globalClassName.Contains(".h")) p_globalSourceFile += ".h";
+                                    break;
+                                }
+                            case "save_ezoe":
+                                {
+                                    SaveExtendedZoe();
+                                    break;
+                                }
+                            default:
+                                {
+                                    renderOnly = true;
+                                    break;
+                                }
                         }
-                    }
-                    if (renderArguments.ToLower() == "pretty")
-                    {
-                        p_prettyOutput = true;
-                        p_dontWriteLineDirecties = true;
+                        
                     }
                 }
-                p_namespaceToRemove = "";
-                p_assemblyList.Clear();
+
                 PrepareOutput();
+
+                // index global classes and enum
+                IndexGlobalClassesAndEnums();
+
                 parseResult = base.ParseDocument();
             }
             finally
             {
                 CloseOutput();
             }
+
+            p_buffer.SetGlobalImportDirectives(p_globalImportDirectives);
+
             if (renderOnly)
             {
                 RenderIntermediateOutputFiles();
@@ -3539,6 +3622,10 @@ namespace LayerD.OutputModules
             if (p_prettyOutput)
             {
                 RenderPrettyOutput();
+            }
+            if (p_multipleFiles)
+            {
+                RenderMultipleFiles();
             }
             else
             {
@@ -3551,121 +3638,146 @@ namespace LayerD.OutputModules
             return parseResult;
         }
 
+        private void IndexGlobalClassesAndEnums()
+        {
+            var children = p_XplDocument.get_DocumentBody().Children();
+            foreach (XplNode child in children)
+            {
+                IndexGlobalClassesAndEnums(child);
+            }
+        }
+        private void IndexGlobalClassesAndEnums(XplNode node)
+        {
+            XplNodeList children = null;
+
+            if (node.IsA(CodeDOMTypes.XplNamespace))
+            {
+                children = node.Children();
+            }
+            else if (node.IsA(CodeDOMTypes.XplClass))
+            {
+                RegisterEnumOrGlobalClass(node as XplClass);
+                children = node.Children();
+            }
+            else if (node.IsA(CodeDOMTypes.XplField))
+            {
+                var parentClass = node.get_Parent() as XplClass;
+                if(IsObjCDummyGlobalClass(parentClass)) IndexGlobalVar(parentClass, node as XplField);
+            }
+
+            if (children != null)
+            {
+                foreach (XplNode child in children)
+                {
+                    IndexGlobalClassesAndEnums(child);
+                }
+            }
+        }
+
+        private void IndexGlobalVar(XplClass parentClass, XplField field)
+        {
+            if (MantainOriginalObjCDeclarationContext(parentClass))
+            {
+                if (field.get_type().get_typename().Contains(ObjectiveCFlags.ANONYMOUS_DECL))
+                {
+                    // add global class name --> field association
+                    string className = parentClass.get_name();
+                    List<XplField> list = null;
+                    if (_anonymousGlobalVars.ContainsKey(className))
+                    {
+                        list = _anonymousGlobalVars[className];
+                    }
+                    else
+                    {
+                        list = new List<XplField>();
+                        _anonymousGlobalVars.Add(className, list);
+                    }
+
+                    list.Add(field);
+
+                    // add anonymous type name --> field association
+                    string fieldAnonymType = TypeString.GetSimpleNameFromQualified(field.get_type().get_typename());
+                    if (_anonymousGlobalVars.ContainsKey(fieldAnonymType))
+                    {
+                        list = _anonymousGlobalVars[fieldAnonymType];
+                    }
+                    else
+                    {
+                        list = new List<XplField>();
+                        _anonymousGlobalVars.Add(fieldAnonymType, list);
+                    }
+                    list.Add(field);
+                }
+            }
+        }
+
+        private bool MantainOriginalObjCDeclarationContext(XplClass parentClass)
+        {
+            return !parentClass.get_lddata().Contains(ObjectiveCFlags.TAG_CONTEXT_CHANGES_PREFIX);
+        }
+
+        private void RegisterEnumOrGlobalClass(XplClass classNode)
+        {
+            if (classNode.get_isenum() || IsObjCDummyGlobalClass(classNode))
+            {
+                string fullName = CompilationUnit.GetZoeFullName(classNode);
+                p_classNamesToRemove.Add(fullName.Replace(".", CppKeywords.ScopePC) + CppKeywords.ScopePC);
+            }
+        }
+        private void PrepareOutput()
+        {
+            p_buffer = new RenderBuffer(p_outputPath, this);
+        }
+
+        private void CloseOutput()
+        {
+            p_buffer.Close();
+        }
+
+        private void RenderMultipleFiles()
+        {
+            p_buffer.Render();
+        }
+
         private void RenderPrettyOutput()
         {
-            foreach (ClassInfo classInfo in p_classInfos)
-            {
-                RenderClassInfo(classInfo);
-            }
+            p_buffer.Render();
         }
 
-        private void RenderClassInfo(ClassInfo classInfo)
-        {
-            if (p_outputPath == null) p_outputPath = ".";
-            string outputFolder = Path.GetFullPath(Path.Combine(p_outputPath, classInfo.Namespace));
-            if (!Directory.Exists(outputFolder))
-            {
-                Directory.CreateDirectory(outputFolder);
-            }
-            string outputCodeFile = Path.Combine(outputFolder, classInfo.ClassName + ".cpp");
-            string outputHeaderFile = Path.Combine(outputFolder, classInfo.ClassName + ".h");
-
-            StreamWriter currentCodeWriter = null;
-            StreamWriter currentHeaderWriter = null;
-            try
-            {
-                currentCodeWriter = new StreamWriter(outputCodeFile, false, p_outputEncoding);
-                currentHeaderWriter = new StreamWriter(outputHeaderFile, false, p_outputEncoding);
-
-                // TODO : check this for C++, this code was inherited from C# code generator!!!
-                foreach (string usingStr in classInfo.Usings.Keys)
-                {
-                    string usingStr2 = usingStr;
-                    if (usingStr2.StartsWith(p_namespaceToRemove)) usingStr2 = usingStr2.Substring(p_namespaceToRemove.Length + 1);
-                    {
-                        currentCodeWriter.WriteLine(IncludePC + usingStr2 + ";");
-                        currentHeaderWriter.WriteLine(IncludePC + usingStr2 + ";");
-                    }
-                }
-
-                // Copy the code lines.
-                currentCodeWriter.WriteLine();
-                currentCodeWriter.WriteLine(NamespacePC + classInfo.Namespace);
-                currentCodeWriter.WriteLine("{");
-                currentCodeWriter.WriteLine();
-
-                for (int n = classInfo.FirstLine; n < classInfo.LastLine; n++)
-                {
-                    currentCodeWriter.WriteLine(p_currentCodeFileLines[n]);
-                }
-                currentCodeWriter.WriteLine();
-                currentCodeWriter.WriteLine("}");
-                currentCodeWriter.WriteLine();
-
-                // Copy the header lines.
-                currentHeaderWriter.WriteLine();
-                currentHeaderWriter.WriteLine(NamespacePC + classInfo.Namespace);
-                currentHeaderWriter.WriteLine("{");
-                currentHeaderWriter.WriteLine();
-
-                for (int n = classInfo.FirstLine; n < classInfo.LastLine; n++)
-                {
-                    currentHeaderWriter.WriteLine(p_currentHeaderFileLines[n]);
-                }
-                currentHeaderWriter.WriteLine();
-                currentHeaderWriter.WriteLine("}");
-                currentHeaderWriter.WriteLine();
-            }
-            catch (IOException ioError)
-            {
-                AddWarning("IO Error while saving intermediate files. " + ioError.Message);
-            }
-            finally
-            {
-                if (currentCodeWriter != null) currentCodeWriter.Close();
-                if (currentHeaderWriter != null) currentHeaderWriter.Close();
-            }
-        }
-
-        /// <summary>
-        /// Renders the intermediate output files.
-        /// </summary>
         private void RenderIntermediateOutputFiles()
         {
-            p_intermediateFile = p_outputPath + Path.GetFileNameWithoutExtension(p_outputFileName) + ".cs";
-            RenderInternalIntermediateOutput(p_intermediateFile);
+            p_buffer.Render();
         }
 
-        /// <summary>
-        /// Renders the internal intermediate output.
-        /// </summary>
-        /// <param name="outputFileName">Name of the output file.</param>
-        /// <returns>True if successful</returns>
-        private bool RenderInternalIntermediateOutput(string outputFileName)
+        private void SaveExtendedZoe()
         {
-            try
+            if (p_XplDocument != null)
             {
-                string outputCodeFileName = getCodeFileVersion(outputFileName);
-                string outputHeaderFileName = getHeaderFileVersion(outputFileName);
-
-                // Render the code file.
-                currentCodeWriter = new StreamWriter(outputCodeFileName, false, p_outputEncoding);
-                foreach (string line in p_currentCodeFileLines)
-                    currentCodeWriter.WriteLine(line);
-                if (currentCodeWriter != null) currentCodeWriter.Close();
-
-                // Render the header file.
-                currentHeaderWriter = new StreamWriter(outputHeaderFileName, false, p_outputEncoding);
-                foreach (string line in p_currentHeaderFileLines)
-                    currentHeaderWriter.WriteLine(line);
-                if (currentHeaderWriter != null) currentHeaderWriter.Close();
+                //Por ahora solo considero la grabación del código recibido
+                XplWriter writer = null;
+                try
+                {
+                    if (p_outputPath == null) p_outputPath = String.Empty;
+                    writer = new XplWriter(Path.Combine(p_outputPath, Path.GetFileNameWithoutExtension(p_outputFileName) + "_dotnet.ezoe"));
+                    p_XplDocument.Write(writer);
+                }
+                finally
+                {
+                    if (writer != null) writer.Close();
+                }
             }
-            catch (IOException ioError)
+        }
+
+        private string GetFileNameFromLdsrc(string strFullSourceFileInfo)
+        {
+            if (strFullSourceFileInfo != string.Empty)
             {
-                AddWarning("IO Error while saving intermediate files. " + ioError.Message);
-                return false;
+                //The file path with .h extension is returned
+                string[] strComponentsOfFileInfo = strFullSourceFileInfo.Split(',');
+                strFullSourceFileInfo = strComponentsOfFileInfo[strComponentsOfFileInfo.Length - 1];
+                strFullSourceFileInfo = Path.GetFileNameWithoutExtension(strFullSourceFileInfo);
             }
-            return true;
+            return strFullSourceFileInfo;
         }
 
         #region Construccion de Modulos
@@ -3791,21 +3903,6 @@ namespace LayerD.OutputModules
             writeLineDirective(xplName.get_ldsrc(), false);
 
             // TODO : implement this for C++ | using namesace fullname;
-            //if (p_prettyOutput)
-            //{
-            //    string usingStr = xplName.Children().FirstNode().get_StringValue();
-            //    if (usingStr.StartsWith(p_namespaceToRemove))
-            //    {
-            //        usingStr = usingStr.Replace("::", ".");
-            //        if (p_namespaceToRemove != "" && usingStr.StartsWith(p_namespaceToRemove))
-            //            usingStr = usingStr.Remove(0, p_namespaceToRemove.Length + 1);
-
-            //        if (!p_includes.ContainsValue(usingStr))
-            //        {
-            //            p_includes.Add(usingStr.Length + Convert.ToSingle("." + p_includes.Count.ToString(NumberFormatInfo.InvariantInfo), NumberFormatInfo.InvariantInfo), usingStr);
-            //        }
-            //    }
-            //}
         }
 
         /// <summary>
@@ -3817,8 +3914,7 @@ namespace LayerD.OutputModules
         /// <returns>A string with the rendered item.</returns>
         protected override string renderWritecodeExpression(XplExpression xplExpression, string expStr, ExtendedZOEProcessor.EZOEContext context)
         {
-            //throw new Exception("The method or operation is not implemented.");
-            return "";
+            return "__EXPRESSION_WRITECODE_NOT_SUPPORTED_IN_CPP__";
         }
 
         /// <summary>
@@ -3829,8 +3925,7 @@ namespace LayerD.OutputModules
         /// <returns>A string with the rendered item.</returns>
         protected override string renderWritecodeBlock(XplWriteCodeBody xplWriteCodeBody, ExtendedZOEProcessor.EZOEContext context)
         {
-            //throw new Exception("The method or operation is not implemented.");
-            return "";
+            return "__EXPRESSION_WRITECODE_NOT_SUPPORTED_IN_CPP__";
         }
 
         /// <summary>
@@ -3843,6 +3938,12 @@ namespace LayerD.OutputModules
         protected override string renderTypeOfExp(XplType typeofExpNode, string typeStr, ExtendedZOEProcessor.EZOEContext EZOEContext)
         {
             return "typeof( " + typeStr + " )";
+        }
+
+        protected override string renderSizeofExp(XplType xplType, string typeStr, EZOEContext eZOEContext)
+        {
+            AddTypeUsage(xplType.get_typeStr(), false, !IsDerivedType(xplType.get_typeStr()), UseofType.InSource);
+            return "sizeof( " + typeStr + " )";
         }
 
         /// <summary>
@@ -3869,43 +3970,17 @@ namespace LayerD.OutputModules
             }
             return "(" + expStr + " is " + typeStr + ")";
         }
-        
-        /// <summary>
-        /// Prints an enveloping function to be called at the starting of the program.
-        /// </summary>
-        /// <param name="localMainInvocation">A single method signature, with no parenthesis.</param>
-        private void renderIntMainFunction(string localMainInvocation)
-        {
-            // Print a line of comment on the main method.
-            writeComment("This method is given to run any class that is named Main and has a main method.");
-            writeNewLineOfBothFiles();
-
-            // Print the header prototype.
-            writeOut("int main();");
-            writeNewLineOfHeader();
-
-            // Print the code.
-            writeOut("int main(){ " + localMainInvocation  + "(); " + ReturnPC + " 0; }");
-            writeNewLineOfCode();
-        }
 
         /// <summary>
-        /// Prints an enveloping function to be called at the starting of the program.
+        /// Renders a external declaration for a global variable (field inside special ObjC Global class)
         /// </summary>
-        /// <param name="localMainInvocation">A single method signature, with no parenthesis.</param>
-        private void renderIntMainFunctionWithParameters(string localMainInvocation)
+        internal string renderGlobalVarForwardDecl(XplField field)
         {
-            // Print a line of comment on the main method.
-            writeComment("This method is given to run any class that is named Main and has a main method.");
-            writeNewLineOfBothFiles();
+            string temp = String.Empty;
+            if (field.get_type().get_const()) temp = CppKeywords.ConstPC;
+            if (field.get_type().get_volatile()) temp += CppKeywords.VolatilePC;
 
-            // Print the header prototype.
-            writeOut("int main(int argc, char** argv);");
-            writeNewLineOfHeader();
-
-            // Print the code.
-            writeOut("int main(int argc, char** argv){ " + localMainInvocation + "(argc,argv); " + ReturnPC + " 0; }");
-            writeNewLineOfCode();
+            return CppKeywords.ExternPC + temp + renderType(field.get_type(), field.get_name(), EZOETypeContext.LocalVarDecl, EZOEContext.FunctionBody) + ";\n";
         }
     }
 }

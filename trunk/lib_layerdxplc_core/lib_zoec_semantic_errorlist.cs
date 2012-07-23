@@ -1,12 +1,13 @@
 /*******************************************************************************
-* Copyright (c) 2007, 2008 Alexis Ferreyra.
+* Copyright (c) 2007, 2012 Alexis Ferreyra, Intel Corporation.
 * All rights reserved. This program and the accompanying materials
 * are made available under the terms of the Eclipse Public License v1.0
 * which accompanies this distribution, and is available at
 * http://www.eclipse.org/legal/epl-v10.html
 *
 * Contributors:
-*     Alexis Ferreyra - initial API and implementation
+*       Alexis Ferreyra - initial API and implementation
+*       Alexis Ferreyra (Intel Corporation)
 *******************************************************************************/
 /****************************************************************************
 * 
@@ -26,6 +27,7 @@
 using System;
 using System.Collections;
 using LayerD.CodeDOM;
+using System.Globalization;
 
 namespace LayerD.ZOECompiler
 {
@@ -182,6 +184,10 @@ namespace LayerD.ZOECompiler
         BooleanTernaryOperatorRequireValues             = 1138,
         UnsupportedTernaryOperator                      = 1139,
         IncompatibleTypesOnBooleanTernaryOperator       = 1140,
+        IncompatibleTypesForAssignmentInInitialization  = 1141,
+        CustomExplicitConversionOperationAlreadyDefined = 1142,
+        CustomImplicitConversionOperationAlreadyDefined = 1143,
+        PointerTypesCannotBeCompared                    = 1144,
 
         //Fin de los Códigos de Error
         LastSemanticError                               = 2000,
@@ -347,6 +353,11 @@ namespace LayerD.ZOECompiler
             {SemanticErrorCode.BooleanTernaryOperatorRequireValues,"Boolean ternary operator requires return expression to be values. %1","","","Operador booleano requiere valores como expresiones de retorno. %1"},
             {SemanticErrorCode.UnsupportedTernaryOperator,"Ternary operator unsupported. %1","","","Operador ternario no soportado. %1"},
             {SemanticErrorCode.IncompatibleTypesOnBooleanTernaryOperator,"Incompatible types on boolean operator. Types must be the same or implicit convertible. %1","","","Tipos incompatibles en operador booleano. Los tipos deben ser iguales o implicitamente convertibles. %1"},
+            {SemanticErrorCode.IncompatibleTypesForAssignmentInInitialization,"Incompatible types for assignment in initialization. Type \"%1\" is not implicitly convertible to \"%2\". %3","","","Tipos incompatibles para la asignación en la inicialización. Los tipos \"%1\" y \"%2\" no son implicitamente convertibles. %3"},
+            {SemanticErrorCode.CustomExplicitConversionOperationAlreadyDefined,"Custom explicit conversion from type \"%1\" to type \"%2\" already defined in type \"%3\". %4","","","Conversion explicita del tipo \"%1\" al tipo \"%2\" ya definida en el tipo \"%3\". %4"},
+            {SemanticErrorCode.CustomImplicitConversionOperationAlreadyDefined,"Custom implicit conversion from type \"%1\" to type \"%2\" already defined in type \"%3\". %4","","","Conversion implicita del tipo \"%1\" al tipo \"%2\" ya definida en el tipo \"%3\". %4"},
+            {SemanticErrorCode.PointerTypesCannotBeCompared,"Pointer types \"%1\" and \"%2\" can not be compared. Try casting one pointer. %3","","","Pointer types \"%1\" and \"%2\" can not be compared. Try casting one pointer. %3"},
+
             
             //Fin Errores Reales
 
@@ -393,6 +404,7 @@ namespace LayerD.ZOECompiler
             errorMsg = ErrorUtils.AdaptErrorMessage(errorMsg);
             errorLocale = ErrorUtils.AdaptErrorMessage(errorLocale);
             Error retError = new Error(errorMsg, errorLocale);
+            retError.set_ErrorCode("Z" + Convert.ToString((int)errorCode, CultureInfo.InvariantCulture));
             retError.set_ErrorNode(sourceNode);
             retError.set_UrlErrorDescription(errorUrl);
             retError.set_UrlErrorHelp(errorHelp);
@@ -435,8 +447,14 @@ namespace LayerD.ZOECompiler
             error = error.Replace("$TYPE$", "type");
             error = error.Replace("$BLOCK$", "block");
 
-            error = error.Replace("$NULL$", "null");
+            error = error.Replace("$CHAR_LIT$", "char");
+            error = error.Replace("$ASCIICHAR_LIT$", "ASCIIChar");
+            error = error.Replace("$STRING_LIT$", "string");
+            error = error.Replace("$ASCIISTRING_LIT$", "ASCIIString");
 
+            error = error.Replace("$NULL$", "null");
+            error = error.Replace("$NONE$", "");
+            
             error = error.Replace("^c", "^const ");
             error = error.Replace("^v", "^volatile ");
             error = error.Replace("^w", "^const volatile ");
@@ -548,6 +566,7 @@ namespace LayerD.ZOECompiler
             errorLocale = ErrorUtils.AdaptErrorMessage(errorLocale);
 
             Warning retError = new Warning(errorMsg, errorLocale, sourceNode);
+            retError.set_ErrorCode("ZW" + Convert.ToString((int)warningCode, CultureInfo.InvariantCulture));
             retError.set_ErrorNode(sourceNode);
             retError.set_UrlErrorDescription(errorUrl);
             retError.set_UrlErrorHelp(errorHelp);
@@ -641,6 +660,7 @@ namespace LayerD.ZOECompiler
             }
             if (n < 10) for (; n < 11; n++) errorMsg = errorMsg.Replace("%" + n, "");
             Error retError = new Error(errorMsg, errorLocale);
+            retError.set_ErrorCode("Z" + Convert.ToString((int)errorCode, CultureInfo.InvariantCulture));
             retError.set_ErrorNode(sourceNode);
             retError.set_UrlErrorDescription(errorUrl);
             retError.set_UrlErrorHelp(errorHelp);
@@ -665,6 +685,13 @@ namespace LayerD.ZOECompiler
 
         UnspecifiedLexicalError = 401,
         InvalidIdentifierName = 402,
+        InvalidIntegerConstant = 403,
+        InvalidFloatConstant = 404,
+        InvalidDecimalConstant = 405,
+        InvalidCharConstant = 406,
+        InvalidStringConstant = 407,
+        InvalidBooleanConstant = 408,
+        InvalidDateTimeConstant = 409,
 
         //Fin de los Códigos de Error
         LastLexicalError = 499,
@@ -690,8 +717,15 @@ namespace LayerD.ZOECompiler
             {LexicalErrorCode.FirstLexicalError,"ErrorMsg","ErrorUrl","ErrorHelp","LocaleMsg"},
 
             //Inicio Errores Reales
-            {LexicalErrorCode.UnspecifiedLexicalError,"Unspecified Lexical Error.%1","","",""},
+            {LexicalErrorCode.UnspecifiedLexicalError,"Unspecified Lexical Error. %1","","",""},
             {LexicalErrorCode.InvalidIdentifierName,"Invalid identifier name. %1","","",""},
+            {LexicalErrorCode.InvalidIntegerConstant,"Invalid constant \"%1\".","","",""},
+            {LexicalErrorCode.InvalidFloatConstant,"Invalid constant \"%1\".","","",""},
+            {LexicalErrorCode.InvalidDecimalConstant,"Invalid constant \"%1\".","","",""},
+            {LexicalErrorCode.InvalidCharConstant,"Invalid constant \"%1\".","","",""},
+            {LexicalErrorCode.InvalidStringConstant,"Invalid constant \"%1\".","","",""},
+            {LexicalErrorCode.InvalidBooleanConstant,"Invalid constant \"%1\".","","",""},
+            {LexicalErrorCode.InvalidDateTimeConstant,"Invalid constant \"%1\".","","",""},
             //Fin Errores Reales
 
             {LexicalErrorCode.LastLexicalError,"ErrorMsg","ErrorUrl","ErrorHelp","LocaleMsg"},
@@ -737,6 +771,7 @@ namespace LayerD.ZOECompiler
             errorMsg = ErrorUtils.AdaptErrorMessage(errorMsg);
             errorLocale = ErrorUtils.AdaptErrorMessage(errorLocale);
             Error retError = new Error(errorMsg, errorLocale);
+            retError.set_ErrorCode("Z" + Convert.ToString((int)errorCode, CultureInfo.InvariantCulture));
             retError.set_ErrorNode(sourceNode);
             retError.set_UrlErrorDescription(errorUrl);
             retError.set_UrlErrorHelp(errorHelp);            

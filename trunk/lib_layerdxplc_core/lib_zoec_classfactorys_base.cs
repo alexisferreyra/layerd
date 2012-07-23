@@ -1,12 +1,13 @@
 /*******************************************************************************
-* Copyright (c) 2007, 2008 Alexis Ferreyra.
+* Copyright (c) 2007, 2012 Alexis Ferreyra, Intel Corporation.
 * All rights reserved. This program and the accompanying materials
 * are made available under the terms of the Eclipse Public License v1.0
 * which accompanies this distribution, and is available at
 * http://www.eclipse.org/legal/epl-v10.html
 *
 * Contributors:
-*     Alexis Ferreyra - initial API and implementation
+*       Alexis Ferreyra - initial API and implementation
+*       Alexis Ferreyra (Intel Corporation)
 *******************************************************************************/
 /****************************************************************************
 * 
@@ -27,7 +28,8 @@ namespace LayerD.ZOECompiler{
 	Clase Base para Classfactorys Ordinarias
 	*/
 	public class ClassfactoryBase{
-		public static ZOECompilerCore __compiler;
+        XplType _instanceType;
+        public static ZOECompilerCore __compiler;
 		public static XplDocument __currentDTE;
         public static XplDocument[] __program;
         public static XplNode __context;
@@ -50,11 +52,28 @@ namespace LayerD.ZOECompiler{
 			set{__context=value;}
 		}
 
+        /// <summary>
+        /// returns an XplType with the instance type of this classfactory
+        /// </summary>
+        public XplType InstanceType
+        {
+            get
+            {
+                if (_instanceType == null)
+                {
+                    _instanceType = new XplType();
+                    _instanceType.set_typename(this.GetType().FullName);
+                }
+                return _instanceType;
+            }
+        }
+
 	}
 	/*
 	Clase Base para Classfactorys Interactivas
 	*/
 	public class ClassfactoryInteractiveBase{
+        XplType _instanceType;
 		public static ZOECompilerCore __compiler;
 		public static XplDocument __currentDTE;
 		public static XplDocument[] __program;
@@ -77,5 +96,21 @@ namespace LayerD.ZOECompiler{
 			get{return __context;}
 			set{__context=value;}
 		}
-	}
+
+        /// <summary>
+        /// returns an XplType with the instance type of this classfactory
+        /// </summary>
+        public XplType InstanceType
+        {
+            get
+            {
+                if (_instanceType == null)
+                {
+                    _instanceType = new XplType();
+                    _instanceType.set_typename(this.GetType().FullName);
+                }
+                return _instanceType;
+            }
+        }
+    }
 }
