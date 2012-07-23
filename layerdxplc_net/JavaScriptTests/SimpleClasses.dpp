@@ -1,0 +1,59 @@
+import "default", "platform=JavaScript";
+
+using js;
+
+namespace T
+{
+	class C1
+	{
+		string^ _name;
+	public:
+		C1()
+		{
+			global::alert("C1 constructor");
+		}
+		static int Main(string^[] args)
+		{
+			C1^ obj1 = new C1();
+			obj1.SetName("Alexis");
+			C2^ obj2 = new C2("Gaby", obj1);
+
+			global::alert("C1 Says: " + obj1.GetName());
+			global::alert("C2 Says: " + obj2.GetName() + " " + obj2.GetC1().GetName());
+
+		}
+		string^ GetName()
+		{
+			return this._name;
+		}
+		void SetName(string^ newName)
+		{
+			this._name = newName;
+		}
+	}
+
+	class C2
+	{
+		C1^ _c1;
+		string^ _name;
+	public:
+		C2(string^ name, C1^ c1)
+		{
+			global::alert("C2 constructor");
+			this._c1 = c1;
+			this.SetName(name);
+		}
+		C1^ GetC1()
+		{
+			return this._c1;
+		}
+		string^ GetName()
+		{
+			return this._name;
+		}
+		void SetName(string^ newName)
+		{
+			this._name = newName;
+		}
+	}
+}

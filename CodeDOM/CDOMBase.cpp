@@ -34,7 +34,7 @@
 #include <string>
 #include <vector>
 #include <stdlib.h>
-#include <stdio.h>
+#include <io.h>
 #include "CDOMBase.h"
 
 namespace CodeDOM{
@@ -42,12 +42,12 @@ namespace CodeDOM{
 	string CODEDOM_Att_ToString(string p){
 		return p;
 	}
-	string CODEDOM_Att_ToString(const DOM_CHARP p){
+	string CODEDOM_Att_ToString(const wchar_t* p){
 		return p;
 	}
 	string CODEDOM_Att_ToString(unsigned int p){
-		DOM_CHAR buffer[40];
-		swprintf(buffer, 40, L"%u", p);
+		wchar_t buffer[40];
+		_itow(p,buffer,10);
 		return buffer;
 	}
 	string CODEDOM_Att_ToString(bool p){
@@ -55,8 +55,8 @@ namespace CodeDOM{
 		else return L"false";
 	}
 	string CODEDOM_Att_ToString(int p){
-		DOM_CHAR buffer[40];
-		swprintf(buffer, 40, L"%i", p);
+		wchar_t buffer[40];
+		_itow(p,buffer,10);
 		return buffer;
 	}
 
@@ -76,8 +76,7 @@ namespace CodeDOM{
 		string CodeDOM_Exception::get_error(){return error;}
 		string CodeDOM_Exception::get_source(){return source;}
 
-		CodeDOM_NotImplementedException::CodeDOM_NotImplementedException(string source):
-			CodeDOM_Exception(L"Not implemented.",source){
+		CodeDOM_NotImplementedException::CodeDOM_NotImplementedException(string source):CodeDOM_Exception(L"Método no Implementado.",source){
 		}
 
 		XplWriter::XplWriter(std::wiostream *new_writer){
@@ -93,8 +92,8 @@ namespace CodeDOM{
 				(*writer).write((const wchar_t*)toWrite.c_str(),toWrite.length());
 			else{
 				const wchar_t *ptr1 = 0;
-				//ptr1= toWrite.data ( );
-				//_write(writer2,ptr1,wcslen ( ptr1)*sizeof(wchar_t) );
+				ptr1= toWrite.data ( );
+				_write(writer2,ptr1,wcslen ( ptr1)*sizeof(wchar_t) );
 				//_write(writer2,(const wchar_t*)toWrite.c_str(),toWrite.length()*sizeof(wchar_t));
 				//_write(writer2,(const wchar_t*)toWrite.c_str(),toWrite.length());
 			}

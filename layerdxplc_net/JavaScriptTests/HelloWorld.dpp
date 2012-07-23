@@ -1,0 +1,204 @@
+//import "default", "platform=JavaScript";
+
+using js;
+
+namespace js
+{
+	// *************** GLOBAL ***************** //
+	extern public class global
+	{
+	public:
+		static js::Object*ref undefined;
+		static js::Object*ref window;
+				
+		static string*ref decodeURI(string*ref uri);
+		static string*ref decodeURIComponent(string*ref uri);
+		static string*ref encodeURI(string*ref uri);
+		static string*ref encodeURIComponent(string*ref uri);
+		static string*ref escape(string*ref str);
+		static void eval(string*ref arg);
+		static bool isFinite(js::Object*ref element);
+		static bool isNan(js::Object*ref element);
+		static Number*ref Number(js::Object*ref obj);
+		static float parseFloat(string*ref arg);
+		static int parseInt(string*ref arg);
+		static int parseInt(string*ref arg, int radix);
+		static string*ref String(js::Object*ref obj);
+		static string*ref unescape(string*ref str);
+
+		static void alert(string*ref msg);
+		
+		extern public class console
+		{
+		public:
+			static void log(string*ref text);
+		}
+
+		
+		static js::Object*ref S(params js::Object*ref []args);
+	}
+
+	// *************** object ***************** //
+	extern public class Object
+	{
+	public:
+		//Object();
+		Object(params js::Object*ref[] args);
+
+		extern js::Object*ref indexer(string*ref name)
+		{ 
+			get;
+			set;
+		}
+
+		js::Object*ref constructor;
+		js::Object*ref prototype;
+
+		static js::Object*ref operator implicit (string*ref arg);
+		static js::Object*ref operator implicit (double arg);
+		static js::Object*ref operator implicit (long arg);
+		static js::Object*ref operator implicit (bool arg);
+		static js::String*ref operator implicit (js::Object*ref arg);
+
+	}
+
+	// *************** string ***************** //
+	extern public class String inherits js::Object
+	{
+	public:
+		// Constructors
+		String();
+		String(js::Object*ref arg);
+		String(js::String*ref str);
+		//String(js::String str);
+		String(char* str);
+		
+		// properties
+		int length;
+
+		// methods
+		char charAt(int arg);
+		js::Object*ref charCodeAt(int arg); 
+		js::String*ref concat(string*ref[] args);
+		js::String*ref fromCharCode(Object*ref[] args);
+		int indexOf(js::String*ref searchStr);
+		int indexOf(js::String*ref searchStr, int start);
+		int lastIndexOf(js::String*ref searchStr);
+		int lastIndexOf(js::String*ref searchStr, int start);
+		js::Object*ref[] match(js::Object*ref pattern);
+		js::String*ref replace(js::String*ref substring, js::String*ref newString);
+		int search (js::Object*ref regexp);
+		js::String*ref slice(int start);
+		js::String*ref slice(int start, int end);
+		js::String*ref split();
+		js::String*ref split(char separator);
+		js::String*ref split(char separator, int limit);
+		js::String*ref split(js::String*ref separator);
+		js::String*ref split(js::String*ref separator, int limit);
+		js::String*ref substr(int startIndex);
+		js::String*ref substr(int startIndex, int length);
+		js::String*ref substring(int from);
+		js::String*ref substring(int from, int to);
+		js::String*ref toLowerCase();
+		js::String*ref toUpperCase();
+		js::Object*ref valueOf();
+					   
+
+		// Conversions
+		static js::String*ref operator implicit (string*ref arg);
+		//static js::String*ref operator implicit (string arg);
+		//static js::String*ref operator implicit (js::String arg);
+		static string*ref operator implicit (js::String*ref arg);
+		static js::String*ref operator + (js::String*ref op1, js::String*ref op2);
+	}
+	
+	// *************** Array ***************** //
+	extern public class Array inherits js::Object
+	{
+	public:
+		// Constructors
+		//Array();
+		Array(params js::Object*ref[] args);
+		
+		// properties
+		int length;
+
+		// methods
+		js::Array*ref concat(js::Array*ref[] args);
+		js::String*ref join(js::Object*ref separator);
+		js::Object*ref pop();
+		int push(js::Object*ref[] args);
+		void reverse();
+		js::Object*ref shift();
+		js::Array*ref slice(int start);
+		js::Array*ref slice(int start, int end);
+		void sort(js::Object*ref sortfunc); 
+		js::Array*ref splice(int index, int start);
+		js::Array*ref splice(int index, int howmany, js::Object*ref[] args);
+		js::String*ref toString();
+		int unshift(params object*ref[] args);
+		js::Object*ref valueOf();
+		int indexOf(js::Object*ref arg);
+		
+	}
+
+	// *************** Number ***************** //
+	extern public class Number inherits js::Object
+	{
+	public:
+		// Constructors
+		Number();
+
+		// properties
+		// methods
+	}
+
+	extern public class RegExp inherits js::Object
+	{
+	public:
+		// Constructors
+		RegExp();
+		RegExp(js::String*ref arg);
+		RegExp(js::String*ref arg, js::String*ref flag);
+
+		// properties
+		// methods
+	}
+}
+
+namespace T
+{
+	class C1
+	{
+	public:
+		static int Main(string^[] args)
+		{
+			int []intArray;
+			int []intArray2 = new int[5] = {1, 2, 3, 4};
+			int []intArray3 = {1, 2, 3};
+			int [][]intArray4 = {{1,2},{3,4}};
+
+			js::Object*ref newObj = new Object( "a", 1, "b" , 2, "c", new js::Object( "aa", 3, "bb", 4) , 
+				"d", new js::Array(9, 8, 7), 
+				"e", new js::Array(), 
+				"f", new js::Array("hola" , 2, 3) );
+
+			newObj = global::S("aaaa");
+
+			if(newObj == global::undefined)
+			{
+				newObj = new Object();
+			}
+
+			string^ var1 = GetName(5);
+			global::alert("Hello World " + var1 + " from Meta D++ and JavaScript code generator");
+		}
+		static string^ GetName(int times)
+		{
+			string^ temp = "Nahuel ";
+			for(int n = 0; n < times; n++)
+				temp += temp;
+			return temp;
+		}
+	}
+}

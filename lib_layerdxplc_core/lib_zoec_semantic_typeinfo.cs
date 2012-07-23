@@ -1,12 +1,13 @@
 /*******************************************************************************
-* Copyright (c) 2007, 2008 Alexis Ferreyra.
+* Copyright (c) 2007, 2012 Alexis Ferreyra, Intel Corporation.
 * All rights reserved. This program and the accompanying materials
 * are made available under the terms of the Eclipse Public License v1.0
 * which accompanies this distribution, and is available at
 * http://www.eclipse.org/legal/epl-v10.html
 *
 * Contributors:
-*     Alexis Ferreyra - initial API and implementation
+*       Alexis Ferreyra - initial API and implementation
+*       Alexis Ferreyra (Intel Corporation)
 *******************************************************************************/
 /****************************************************************************
 * 
@@ -25,6 +26,7 @@ using System.Diagnostics;
 using System.Collections;
 using LayerD.CodeDOM;
 using LayerD.ZOEOutputModulesLibrary;
+using System.Globalization;
 
 namespace LayerD.ZOECompiler
 {
@@ -52,14 +54,17 @@ namespace LayerD.ZOECompiler
         bool p_baseCheckeds;
         bool p_isOnDeferedTypeCheck;
         bool p_typeChequed;
+        bool p_isCompiledClassfactory;
         #endregion
 
         #region Constructores
-        public TypeInfo(string fullName, XplNode typeNode, XplAccesstype_enum accessOfType, MemberInfo fpMember)
+        public TypeInfo(string fullName, XplNode typeNode, XplAccesstype_enum accessOfType, MemberInfo fpMember, bool isCompiledClassfactory)
         {
             p_fullName = fullName;
             p_typeNode = typeNode;
             p_fpMemberInfo = fpMember;
+            p_isCompiledClassfactory = isCompiledClassfactory;
+
             switch (typeNode.get_TypeName())
             {
                 case CodeDOMTypes.XplNamespace:
@@ -84,6 +89,16 @@ namespace LayerD.ZOECompiler
 
 
         #region Interfaz Publica
+        /// <summary>
+        /// Returns if it´s a class in a compiled classfactory module.
+        /// Only members from compiled classfactorys modules must be used in calls from virtual subprogram
+        /// </summary>
+        /// <returns>True if it´s a type from compiled classfactory module</returns>
+        public bool get_IsCompiledClassfactory()
+        {
+            return this.p_isCompiledClassfactory;
+        }
+
         /// <summary>
         /// Devuelve el MemberInfo para un Tipo Puntero a funcion, si no es un tipo puntero 
         /// devuelve nulo.
@@ -145,6 +160,12 @@ namespace LayerD.ZOECompiler
         public void set_AccessOfType(XplAccesstype_enum newAccessOfType)
         {
             p_accessOfType = newAccessOfType;
+        }
+        public bool get_IsUnion()
+        {
+            if (p_typeOfTypeNode == XplNodeType.Class
+                && ((XplClass)p_typeNode).get_isunion()) return true;
+            return false;
         }
         public bool get_IsStruct()
         {
@@ -268,16 +289,16 @@ namespace LayerD.ZOECompiler
         /// 
         /// SOLO USADO INTERNAMENTE POR EL ANALIZADOR SEMANTICO
         /// </summary>
-        public void set_IsOnDeferedTypeCheck(bool p)
+        public void set_IsOnDeferedTypeCheck(bool value)
         {
-            p_isOnDeferedTypeCheck = p;
+            p_isOnDeferedTypeCheck = value;
         }
         /// <summary>
         /// Establece si el tipo fue chequeado completamente.
         /// </summary>
-        internal void set_TypeChequed(bool p)
+        internal void set_TypeChequed(bool value)
         {
-            p_typeChequed = p;
+            p_typeChequed = value;
         }
         /// <summary>
         /// Chequea si las bases directas o indirectas han sido completamente chequeadas,
@@ -334,12 +355,13 @@ namespace LayerD.ZOECompiler
         /// <summary>
         /// Indica si el tipo posee constructor de tipo por defecto o no.
         /// </summary>
-        bool p_haveDefaultTypeConstructor;
+        bool p_hasDefaultTypeConstructor;
         bool p_defaultTypeConstructorCalculated;
-        public bool get_HaveDefaultTypeConstructor()
+
+        public bool get_HasDefaultTypeConstructor()
         {
             //PENDIENTE : Revisar esto!!! hacerlo mas rapido
-            if (p_defaultTypeConstructorCalculated) return p_haveDefaultTypeConstructor;
+            if (p_defaultTypeConstructorCalculated) return p_hasDefaultTypeConstructor;
             MemberInfoCollection mic = get_MemberInfoCollection();
             MemberInfo[] constructores = mic.get_MembersInfo(this.get_Name());
             if (constructores != null)
@@ -348,12 +370,12 @@ namespace LayerD.ZOECompiler
                     XplType retType = minfo.get_ReturnType();
                     if (NativeTypes.IsNativeType(retType.get_typename()))
                     {
-                        p_haveDefaultTypeConstructor = true;
+                        p_hasDefaultTypeConstructor = true;
                         break;
                     }
                 }
             p_defaultTypeConstructorCalculated = true;
-            return p_haveDefaultTypeConstructor;
+            return p_hasDefaultTypeConstructor;
         }
 
         public bool get_BaseCheckeds()
@@ -567,7 +589,7 @@ namespace LayerD.ZOECompiler
             p_declaratorTypeInfo = declaratorTypeInfo;
             p_baseTypeInfo = baseTypeInfo;
             p_inheritOrImplement = inheritNode;
-            p_isInherit = inheritNode.get_Parent().get_ElementName().StartsWith("Inh");
+            p_isInherit = inheritNode.get_Parent().get_ElementName().StartsWith("Inh",StringComparison.InvariantCulture);
             p_direct = isDirectBase;
         }
         /// <summary>
@@ -934,6 +956,7 @@ namespace LayerD.ZOECompiler
                     break;
             }
         }
+
         /// <summary>
         /// Obtiene el Nombre Completo del Tipo al que pertenece el Miembro, que puede ser un tipo diferente al tipo donde se declara el miembro.
         /// </summary>
@@ -941,6 +964,7 @@ namespace LayerD.ZOECompiler
         {
             return p_classType.get_FullName();
         }
+
         /// <summary>
         /// Obtiene el Nombre Completo del Tipo en el cual es Declarado el Miembro.
         /// </summary>
@@ -948,31 +972,29 @@ namespace LayerD.ZOECompiler
         {
             return p_declarationClassType.get_FullName();
         }
+
         public override string ToString()
         {
             return ToString(get_DeclarationClassTypeFullName() + Scope.ScopeSeparator);
         }
-        public string ToStringSimple()
-        {
-            return ToString("");
-        }
+
         string ToString(string prevName)
         {
             string str = prevName + get_MemberName();
             switch (p_type)
             {
                 case MemberType.Field:
-                    str += " ["+((XplField)p_memberNode).get_type().get_typeStr() + "]";
+                    str += "["+((XplField)p_memberNode).get_type().get_typeStr() + "]";
                     break;
                 case MemberType.Property:
-                    str += " ["+((XplProperty)p_memberNode).get_type().get_typeStr() + "]";
+                    str += "["+((XplProperty)p_memberNode).get_type().get_typeStr() + "]";
                     break;
                 case MemberType.Indexer:
                 case MemberType.Operator:
                 case MemberType.Method:
                     XplParameters parameters = get_Parameters();
                     if (parameters != null) str += get_ParametersString(parameters);
-                    str += " [" + ((XplFunction)p_memberNode).get_ReturnType().get_typeStr() + "]";
+                    str += "[" + ((XplFunction)p_memberNode).get_ReturnType().get_typeStr() + "]";
                     break;
                 case MemberType.Expression:
                 case MemberType.BeginCFPermissions:
@@ -996,15 +1018,23 @@ namespace LayerD.ZOECompiler
 
         private string get_ParametersString(XplParameters parameters)
         {
-            string retStr="( ";
+            string retStr = "(";
             XplNodeList list = parameters.Children();
             if (list != null)
+            {
+                int n = 0;
                 foreach (XplParameter p in list)
-                    retStr += p.get_type().get_typeStr() + " ,";
-            if (retStr.Length > 3)
-                return retStr.Substring(0, retStr.Length - 1) + ") ";
-            else
-                return retStr + ")";                
+                {
+                    if (p.get_direction() == XplParameterdirection_enum.INOUT) retStr += "inout ";
+                    else if (p.get_direction() == XplParameterdirection_enum.OUT) retStr += "out ";
+                    if (p.get_params()) retStr += "params ";
+                    retStr += p.get_type().get_typeStr() + " " + p.get_name();
+
+                    n++;
+                    if (n < list.GetLength()) retStr += ", ";
+                }
+            }
+            return retStr + ")";
         }
         /// <summary>
         /// Devuelve si existe el modificador "factory" en la declaracion del miembro
@@ -1149,7 +1179,7 @@ namespace LayerD.ZOECompiler
 
         public bool get_IsAccesible(Scope scope)
         {
-            if (scope.get_FullClassName().StartsWith(p_declarationClassType.get_FullName()))
+            if (scope.get_FullClassName().StartsWith(p_declarationClassType.get_FullName(),StringComparison.InvariantCulture))
                 return true;
             else
             {
@@ -1176,6 +1206,60 @@ namespace LayerD.ZOECompiler
             foreach (MemberInfo member in members)
                 retStr += member.ToString() + " . ";
             return retStr;
+        }
+
+        /// <summary>
+        /// Returns the parameter at position index.
+        /// If the index is out of range returns null.
+        /// If the member doesnot have parameters returns null.
+        /// If the index is out of range and the last parameter is params, returns the last parameter
+        /// </summary>
+        /// <param name="index">Zero based position of the parameter to retrieve</param>
+        /// <param name="includeParams">Take into account params last parameter when index is out of range</param>
+        /// <returns>A parameter or null</returns>
+        public XplParameter get_Parameter(int index, bool includeParams)
+        {
+            if (index < 0) return null;
+            XplParameters parameters = this.get_Parameters();
+            if (parameters == null) return null;
+
+            if (index >= parameters.Children().GetLength() && index > 0)
+            {
+                if (!includeParams) return null;
+                XplParameter lastParam = (XplParameter)parameters.Children().GetNodeAt(parameters.Children().GetLength() - 1);
+                if (lastParam.get_params())
+                {
+                    return lastParam;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            else
+            {
+                return (XplParameter)parameters.Children().GetNodeAt(index);
+            }
+        }
+
+        /// <summary>
+        /// returns the index in formal parameters list for parameterName
+        /// </summary>
+        /// <param name="constructorParameterName">name of the parameter to get the index</param>
+        /// <returns>Zero based index of the parameter with that name or -1 if not found</returns>
+        public int get_IndexOfParameter(string parameterName)
+        {
+            XplParameters parameters = get_Parameters();
+            if (parameters == null) return -1;
+
+            for (int n = 0; n < parameters.Children().GetLength(); n++)
+            {
+                if (((XplParameter)parameters.Children().GetNodeAt(n)).get_name() == parameterName)
+                {
+                    return n;
+                }
+            }
+            return -1;
         }
     }
     #endregion
@@ -1264,7 +1348,7 @@ namespace LayerD.ZOECompiler
                 int index = (int)p_memberTable[name];
                 ArrayList retValue = new ArrayList();
                 MemberInfo member = null;
-                bool isQualified = SemanticAnalizer.IsQualifiedName(className);
+                bool isQualified = TypeString.IsQualifiedName(className);
                 for (int n = index; n < p_memberList.Count; n++)
                 {
                     member = (MemberInfo)p_memberList[n];
@@ -1376,13 +1460,13 @@ namespace LayerD.ZOECompiler
         public string ExistAnyMemberInfoNameLike(string like)
         {
             string mname;
-            like = like.ToLower();
+            like = like.ToLower(CultureInfo.InvariantCulture);
             double maxValue = 0;
             double currentValue=0;
             string currentMember = null;
             foreach (MemberInfo member in p_memberList)
             {
-                mname = member.get_MemberName().ToLower();                
+                mname = member.get_MemberName().ToLower(CultureInfo.InvariantCulture);                
                 //if (mname.StartsWith(like) || like.StartsWith(mname)) return member.get_MemberName();
                 //if (mname.Contains(like)) return member.get_MemberName();
                 currentValue = IsSimilarString(mname, like);
@@ -1398,12 +1482,12 @@ namespace LayerD.ZOECompiler
         public string ExistAnyMemberInfoNameLike(string like, double minLimit)
         {
             string mname;
-            like = like.ToLower();
+            like = like.ToLower(CultureInfo.InvariantCulture);
             double currentValue = 0;
             string membersStr = null;
             foreach (MemberInfo member in p_memberList)
             {
-                mname = member.get_MemberName().ToLower();
+                mname = member.get_MemberName().ToLower(CultureInfo.InvariantCulture);
                 currentValue = IsSimilarString(mname, like);
                 if (currentValue > minLimit)
                 {

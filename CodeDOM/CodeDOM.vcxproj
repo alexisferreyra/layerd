@@ -1,0 +1,327 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug All|Win32">
+      <Configuration>Debug All</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release All|Win32">
+      <Configuration>Release All</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{3F45B085-BB45-43D1-A0C5-21A27750199E}</ProjectGuid>
+    <RootNamespace>CodeDOM</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release All|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug All|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release All|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC70.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug All|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC70.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC70.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC70.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Debug\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Debug\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Release\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Release\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug All|Win32'">$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug All|Win32'">$(Configuration)\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release All|Win32'">$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release All|Win32'">$(Configuration)\</IntDir>
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Debug All|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Debug All|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Debug All|Win32'" />
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release All|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release All|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release All|Win32'" />
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <DisableLanguageExtensions>true</DisableLanguageExtensions>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
+      <ForceConformanceInForLoopScope>true</ForceConformanceInForLoopScope>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+    </ClCompile>
+    <Lib>
+      <OutputFile>$(OutDir)CodeDOM.lib</OutputFile>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <OmitFramePointers>true</OmitFramePointers>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
+      <ForceConformanceInForLoopScope>true</ForceConformanceInForLoopScope>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Lib>
+      <OutputFile>$(OutDir)CodeDOM.lib</OutputFile>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug All|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <DisableLanguageExtensions>true</DisableLanguageExtensions>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
+      <ForceConformanceInForLoopScope>true</ForceConformanceInForLoopScope>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+    </ClCompile>
+    <Lib>
+      <OutputFile>$(OutDir)CodeDOM.lib</OutputFile>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release All|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <OmitFramePointers>true</OmitFramePointers>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
+      <ForceConformanceInForLoopScope>true</ForceConformanceInForLoopScope>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Lib>
+      <OutputFile>$(OutDir)CodeDOM.lib</OutputFile>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="CDOM_ClassfactoryData.cpp" />
+    <ClCompile Include="CDOM_FactoryTypesDatabase.cpp" />
+    <ClCompile Include="CDOM_SimpleTypes.cpp" />
+    <ClCompile Include="CDOM_XplAssing.cpp" />
+    <ClCompile Include="CDOM_XplAutoInstance.cpp" />
+    <ClCompile Include="CDOM_XplBaseInitializer.cpp" />
+    <ClCompile Include="CDOM_XplBaseInitializers.cpp" />
+    <ClCompile Include="CDOM_XplBinaryoperator.cpp" />
+    <ClCompile Include="CDOM_XplCase.cpp" />
+    <ClCompile Include="CDOM_XplCastexpression.cpp" />
+    <ClCompile Include="CDOM_XplCatchinit.cpp" />
+    <ClCompile Include="CDOM_XplCatchStatement.cpp" />
+    <ClCompile Include="CDOM_XplCexpression.cpp" />
+    <ClCompile Include="CDOM_XplClass.cpp" />
+    <ClCompile Include="CDOM_XplClassfactorysPermissions.cpp" />
+    <ClCompile Include="CDOM_XplClassMembersList.cpp" />
+    <ClCompile Include="CDOM_XplComplexfunctioncall.cpp" />
+    <ClCompile Include="CDOM_XplConfig.cpp" />
+    <ClCompile Include="CDOM_XplCopyright.cpp" />
+    <ClCompile Include="CDOM_XplDeclarator.cpp" />
+    <ClCompile Include="CDOM_XplDeclaratorlist.cpp" />
+    <ClCompile Include="CDOM_XplDirectoutput.cpp" />
+    <ClCompile Include="CDOM_XplDocument.cpp" />
+    <ClCompile Include="CDOM_XplDocumentation.cpp" />
+    <ClCompile Include="CDOM_XplDocumentBody.cpp" />
+    <ClCompile Include="CDOM_XplDocumentData.cpp" />
+    <ClCompile Include="CDOM_XplDowhileStatement.cpp" />
+    <ClCompile Include="CDOM_XplError.cpp" />
+    <ClCompile Include="CDOM_XplExpression.cpp" />
+    <ClCompile Include="CDOM_XplExpressionlist.cpp" />
+    <ClCompile Include="CDOM_XplExtendedLayerDZoeDocumentConfig.cpp" />
+    <ClCompile Include="CDOM_XplExtendedLayerDZoeRequirementsConfig.cpp" />
+    <ClCompile Include="CDOM_XplField.cpp" />
+    <ClCompile Include="CDOM_XplFileData.cpp" />
+    <ClCompile Include="CDOM_XplForinit.cpp" />
+    <ClCompile Include="CDOM_XplForStatement.cpp" />
+    <ClCompile Include="CDOM_XplFunction.cpp" />
+    <ClCompile Include="CDOM_XplFunctionBody.cpp" />
+    <ClCompile Include="CDOM_XplFunctioncall.cpp" />
+    <ClCompile Include="CDOM_XplGarbageCollector.cpp" />
+    <ClCompile Include="CDOM_XplIfStatement.cpp" />
+    <ClCompile Include="CDOM_XplImportProcessConfig.cpp" />
+    <ClCompile Include="CDOM_XplInfoLayerZoeOutputModuleConfig.cpp" />
+    <ClCompile Include="CDOM_XplInherit.cpp" />
+    <ClCompile Include="CDOM_XplInherits.cpp" />
+    <ClCompile Include="CDOM_XplInitializerList.cpp" />
+    <ClCompile Include="CDOM_XplJump.cpp" />
+    <ClCompile Include="CDOM_XplLanguage.cpp" />
+    <ClCompile Include="CDOM_XplLayerDCompiler.cpp" />
+    <ClCompile Include="CDOM_XplLayerDErrorInterchangeConfig.cpp" />
+    <ClCompile Include="CDOM_XplLayerDZoeDocumentConfig.cpp" />
+    <ClCompile Include="CDOM_XplLayerDZoeProgramConfig.cpp" />
+    <ClCompile Include="CDOM_XplLayerDZoeProgramRequirements.cpp" />
+    <ClCompile Include="CDOM_XplLiteral.cpp" />
+    <ClCompile Include="CDOM_XplName.cpp" />
+    <ClCompile Include="CDOM_XplNamespace.cpp" />
+    <ClCompile Include="CDOM_XplNewExpression.cpp" />
+    <ClCompile Include="CDOM_XplOutputModuleCapabilities.cpp" />
+    <ClCompile Include="CDOM_XplParameter.cpp" />
+    <ClCompile Include="CDOM_XplParameters.cpp" />
+    <ClCompile Include="CDOM_XplPlatform.cpp" />
+    <ClCompile Include="CDOM_XplPlatformAlias.cpp" />
+    <ClCompile Include="CDOM_XplPointerinfo.cpp" />
+    <ClCompile Include="CDOM_XplProperty.cpp" />
+    <ClCompile Include="CDOM_XplSetonerror.cpp" />
+    <ClCompile Include="CDOM_XplSetPlatforms.cpp" />
+    <ClCompile Include="CDOM_XplSourceFile.cpp" />
+    <ClCompile Include="CDOM_XplSwitchStatement.cpp" />
+    <ClCompile Include="CDOM_XplTargetPlatform.cpp" />
+    <ClCompile Include="CDOM_XplTernaryoperator.cpp" />
+    <ClCompile Include="CDOM_XplTryStatement.cpp" />
+    <ClCompile Include="CDOM_XplType.cpp" />
+    <ClCompile Include="CDOM_XplUnaryoperator.cpp" />
+    <ClCompile Include="CDOM_XplWriteCodeBody.cpp" />
+    <ClCompile Include="CDOMBase.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="CDOM_ClassfactoryData.h" />
+    <ClInclude Include="CDOM_FactoryTypesDatabase.h" />
+    <ClInclude Include="CDOM_IncludeAll.h" />
+    <ClInclude Include="CDOM_PreDecl.h" />
+    <ClInclude Include="CDOM_SimpleTypes.h" />
+    <ClInclude Include="CDOM_XplAssing.h" />
+    <ClInclude Include="CDOM_XplAutoInstance.h" />
+    <ClInclude Include="CDOM_XplBaseInitializer.h" />
+    <ClInclude Include="CDOM_XplBaseInitializers.h" />
+    <ClInclude Include="CDOM_XplBinaryoperator.h" />
+    <ClInclude Include="CDOM_XplCase.h" />
+    <ClInclude Include="CDOM_XplCastexpression.h" />
+    <ClInclude Include="CDOM_XplCatchinit.h" />
+    <ClInclude Include="CDOM_XplCatchStatement.h" />
+    <ClInclude Include="CDOM_XplCexpression.h" />
+    <ClInclude Include="CDOM_XplClass.h" />
+    <ClInclude Include="CDOM_XplClassfactorysPermissions.h" />
+    <ClInclude Include="CDOM_XplClassMembersList.h" />
+    <ClInclude Include="CDOM_XplComplexfunctioncall.h" />
+    <ClInclude Include="CDOM_XplConfig.h" />
+    <ClInclude Include="CDOM_XplCopyright.h" />
+    <ClInclude Include="CDOM_XplDeclarator.h" />
+    <ClInclude Include="CDOM_XplDeclaratorlist.h" />
+    <ClInclude Include="CDOM_XplDirectoutput.h" />
+    <ClInclude Include="CDOM_XplDocument.h" />
+    <ClInclude Include="CDOM_XplDocumentation.h" />
+    <ClInclude Include="CDOM_XplDocumentBody.h" />
+    <ClInclude Include="CDOM_XplDocumentData.h" />
+    <ClInclude Include="CDOM_XplDowhileStatement.h" />
+    <ClInclude Include="CDOM_XplError.h" />
+    <ClInclude Include="CDOM_XplExpression.h" />
+    <ClInclude Include="CDOM_XplExpressionlist.h" />
+    <ClInclude Include="CDOM_XplExtendedLayerDZoeDocumentConfig.h" />
+    <ClInclude Include="CDOM_XplExtendedLayerDZoeRequirementsConfig.h" />
+    <ClInclude Include="CDOM_XplField.h" />
+    <ClInclude Include="CDOM_XplFileData.h" />
+    <ClInclude Include="CDOM_XplForinit.h" />
+    <ClInclude Include="CDOM_XplForStatement.h" />
+    <ClInclude Include="CDOM_XplFunction.h" />
+    <ClInclude Include="CDOM_XplFunctionBody.h" />
+    <ClInclude Include="CDOM_XplFunctioncall.h" />
+    <ClInclude Include="CDOM_XplGarbageCollector.h" />
+    <ClInclude Include="CDOM_XplIfStatement.h" />
+    <ClInclude Include="CDOM_XplImportProcessConfig.h" />
+    <ClInclude Include="CDOM_XplInfoLayerZoeOutputModuleConfig.h" />
+    <ClInclude Include="CDOM_XplInherit.h" />
+    <ClInclude Include="CDOM_XplInherits.h" />
+    <ClInclude Include="CDOM_XplInitializerList.h" />
+    <ClInclude Include="CDOM_XplJump.h" />
+    <ClInclude Include="CDOM_XplLanguage.h" />
+    <ClInclude Include="CDOM_XplLayerDCompiler.h" />
+    <ClInclude Include="CDOM_XplLayerDErrorInterchangeConfig.h" />
+    <ClInclude Include="CDOM_XplLayerDZoeDocumentConfig.h" />
+    <ClInclude Include="CDOM_XplLayerDZoeProgramConfig.h" />
+    <ClInclude Include="CDOM_XplLayerDZoeProgramRequirements.h" />
+    <ClInclude Include="CDOM_XplLiteral.h" />
+    <ClInclude Include="CDOM_XplName.h" />
+    <ClInclude Include="CDOM_XplNamespace.h" />
+    <ClInclude Include="CDOM_XplNewExpression.h" />
+    <ClInclude Include="CDOM_XplOutputModuleCapabilities.h" />
+    <ClInclude Include="CDOM_XplParameter.h" />
+    <ClInclude Include="CDOM_XplParameters.h" />
+    <ClInclude Include="CDOM_XplPlatform.h" />
+    <ClInclude Include="CDOM_XplPlatformAlias.h" />
+    <ClInclude Include="CDOM_XplPointerinfo.h" />
+    <ClInclude Include="CDOM_XplProperty.h" />
+    <ClInclude Include="CDOM_XplSetonerror.h" />
+    <ClInclude Include="CDOM_XplSetPlatforms.h" />
+    <ClInclude Include="CDOM_XplSourceFile.h" />
+    <ClInclude Include="CDOM_XplSwitchStatement.h" />
+    <ClInclude Include="CDOM_XplTargetPlatform.h" />
+    <ClInclude Include="CDOM_XplTernaryoperator.h" />
+    <ClInclude Include="CDOM_XplTryStatement.h" />
+    <ClInclude Include="CDOM_XplType.h" />
+    <ClInclude Include="CDOM_XplUnaryoperator.h" />
+    <ClInclude Include="CDOM_XplWriteCodeBody.h" />
+    <ClInclude Include="CDOMBase.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="License.txt" />
+    <None Include="ReadMe.txt" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

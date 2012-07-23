@@ -1,7 +1,7 @@
 /*-------------------------------------------------
  *
  *	Este archivo fue generado automáticamente.
- *	Fecha: 3/2/2010 9:11:42 PM
+ *	Fecha: 8/11/2011 4:27:20 PM
  *
  *	Generado por Zoe CodeDOM Generator para C#.
  *	COPYRIGHT 2002,2005-2006. por Alexis Ferreyra.
@@ -153,7 +153,7 @@ public class FactoryTypesDatabase:  XplNode{
 	public override bool BinaryWrite(XplBinaryWriter writer){
 		bool result=true;
 		//Escribo el ID y el nombre del elemento
-		writer.Write((int) 120 );
+		writer.Write((int) 141 );
 		writer.Write( this.get_ElementName() );
 		//Escribo los atributos del elemento
 		writer.Write( p_version );

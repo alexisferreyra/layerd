@@ -1,12 +1,13 @@
 /*******************************************************************************
-* Copyright (c) 2007, 2008 Alexis Ferreyra.
+* Copyright (c) 2007, 2012 Alexis Ferreyra, Intel Corporation.
 * All rights reserved. This program and the accompanying materials
 * are made available under the terms of the Eclipse Public License v1.0
 * which accompanies this distribution, and is available at
 * http://www.eclipse.org/legal/epl-v10.html
 *
 * Contributors:
-*     Alexis Ferreyra - initial API and implementation
+*       Alexis Ferreyra - initial API and implementation
+*       Alexis Ferreyra (Intel Corporation)
 *******************************************************************************/
 /****************************************************************************
 * 
@@ -38,10 +39,14 @@ using LayerD.ZOEOutputModulesLibrary;
 using System.IO;
 using System.Threading;
 using System.Windows.Forms;
+using System.Globalization;
+using System.Collections.Generic;
 
 namespace LayerD.ZOECompiler{
     public class ZOECompilerCore
     {
+        const int MAX_COMPILE_TIME_CYCLES = 100;
+
         #region Campos Privados / Protegidos
         bool p_interactiveOnly = false;
         string p_xplProgramFileName;
@@ -49,7 +54,8 @@ namespace LayerD.ZOECompiler{
         string p_compilationPlatform;
         string p_returnErrorMessage;
         string p_workingPath = ".";
-        int p_currentCompileCicle;
+        int p_currentCompileCycle;
+        int p_extensionCompileTimeCycle;
         OutputModulesLibrary p_outputModulesLibrary;
         IEZOEOutputModuleServices p_compileTimeOutputModule;
         IEZOEOutputModuleServices p_runtimeOutputModule;
@@ -83,10 +89,13 @@ namespace LayerD.ZOECompiler{
         bool p_checkSemanticOfExtensions;
         TypesTable p_lastTypesTable;
         DTEDebugWindow p_debugWindow;
+        int p_addExtensionFromCompileTime;
+        IZoeCoreEvents p_coreEvents;
 
         //Plataformas por defecto a utilizar si no se especifica otra
         readonly string p_defaultOutputPlatform = "DotNET 1.0";
         readonly string p_defaultCompilationPlatform = "DotNET 1.0";
+
         #endregion
 
         public ZOECompilerCore(){
@@ -96,6 +105,69 @@ namespace LayerD.ZOECompiler{
         #region Interfaz Publica
 
         #region Propiedades
+
+        public IZoeCoreEvents CoreEvents
+        {
+            get
+            {
+                return p_coreEvents;
+            }
+            set
+            {
+                p_coreEvents = value;
+            }
+        }
+
+        /// <summary>
+        /// Enable or disable dump of compile time function calls for debugging porpuses
+        /// </summary>
+        public bool DumpCompileTimeFunctionCalls
+        {
+            get
+            {
+                return zoe.lang.SubprogramBase.DebugFunctioncallMerges;
+            }
+            set
+            {
+                zoe.lang.SubprogramBase.DebugFunctioncallMerges = value;
+            }
+        }
+
+        /// <summary>
+        /// Flag to enable or disable dumping of compile cycle progress information in standard output
+        /// </summary>
+        public bool DumpCompileCycleProgress
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Flag to break compile time after a compile time function call
+        /// </summary>
+        public bool BreakCompileTime
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Set from which compile time index the current classfactorys extension that is being added will be active. Default is 0, meaning that
+        /// the classfactory module will be active from the first compile time.
+        /// </summary>
+        public int AddExtensionFromCompileTimeIndex
+        {
+            get
+            {
+                return p_addExtensionFromCompileTime;
+            }
+            set
+            {
+                if (value >= 0)
+                    p_addExtensionFromCompileTime = value;
+            }
+        }
+
         public bool ShowInternalDebuger
         {
             get
@@ -118,12 +190,24 @@ namespace LayerD.ZOECompiler{
                 p_workingPath = value;
             }
         }
-        public int CurrentCompileCicle
+        public int CurrentCompileCycle
         {
             get 
             {
-                return p_currentCompileCicle;
+                return p_currentCompileCycle;
             }
+        }
+        /// <summary>
+        /// Set the activation compile time cycle for the extension that is compiling
+        /// </summary>
+        /// <param name="compileCycle">Compile cycle in which the extension will be activated. Default 0. Values lower than 0 will deactivate the extension.</param>
+        public void set_ExtensionCompileCycle(int compileCycle)
+        {
+            p_extensionCompileTimeCycle = compileCycle;
+        }
+        public int set_ExtensionCompileCycle()
+        {
+            return p_extensionCompileTimeCycle;
         }
         public TypesTable LastTypesTable
         {
@@ -340,24 +424,22 @@ namespace LayerD.ZOECompiler{
             try
             {
                 p_lastProgram = program;
-                //if (p_runtimeOutputModule == null || p_compileTimeOutputModule == null)
-                //    PrepareOutputModules();
+
                 if (p_runtimeOutputModule == null || p_compileTimeOutputModule == null)
                 {
                     p_runtimeOutputModule = p_compileTimeOutputModule = new DotNET_ZOE_Output_Module();
-                    //return false;
                 }
                 p_errorCollection = new ErrorCollection();
-                p_currentCompileCicle = 0;
+                p_currentCompileCycle = 0;
                 p_donotBuildExtensions = true;
                 p_checkSemanticOfExtensions = true;
                 p_persistentSemanticAnalizer = true;
                 p_ignoreErrorsOnImportedTypes = true;
                 
                 //Compilo
-                CompileCicle(program);
+                CompileCycle(program);
 
-                p_currentCompileCicle = 0;
+                p_currentCompileCycle = 0;
                 p_donotBuildExtensions = false;
                 p_checkSemanticOfExtensions = false;
                 p_persistentSemanticAnalizer = false;
@@ -387,6 +469,67 @@ namespace LayerD.ZOECompiler{
         public bool CompileProgram(string ZOEProgramFileName)
         {
             return CompileProgram(ZOEProgramFileName, p_outputPlatform, null, null);
+        }
+
+        /// <summary>
+        /// Creates a safe unique Id from desired prefix and XplNode context.
+        /// </summary>
+        /// <param name="identifierPrefix">Desired prefix, for example "temp" will generate a valid unique Id like "temp", "temp1", etc.</param>
+        /// <param name="context">XplNode for context of identifier.</param>
+        /// <returns>A new identifier that can be safelly used in context.</returns>
+        public XplIName CreateSafeIdFrom(string identifierPrefix, XplNode context)
+        {
+            string newIdName = identifierPrefix;
+            int counter = 0;
+
+            // find context class type
+            TypeInfo contextClass = this.GetTypeInfoFrom(context.CurrentClass);
+
+            // find all declarations in current function
+            XplNodeList declarations = null;
+            List<string> localVars = new List<string>();
+            XplFunction currentFunction = context.CurrentFunction;
+
+            if (currentFunction != null)
+            {
+                if (currentFunction.get_Parameters() != null)
+                {
+                    foreach (XplParameter parameter in currentFunction.get_Parameters().Children())
+                    {
+                        localVars.Add(parameter.get_name());
+                    }
+                }
+                declarations = currentFunction.FindNodes("@XplDeclarator");
+                if (declarations != null)
+                {
+                    foreach (XplDeclarator declarator in declarations)
+                    {
+                        localVars.Add(declarator.get_name());
+                    }
+                }
+            }
+
+            // try to find non-colliding name for current type
+            if (contextClass != null)
+            {
+                while (contextClass.get_MemberInfoCollection().get_MembersInfo(newIdName) != null)
+                {
+                    ++counter;
+                    newIdName = identifierPrefix + Convert.ToString(counter, CultureInfo.InvariantCulture);
+                }
+            }
+
+            // try to find non-colliding name for local vars
+            if (localVars.Count > 0)
+            {
+                while (localVars.Contains(newIdName))
+                {
+                    ++counter;
+                    newIdName = identifierPrefix + Convert.ToString(counter, CultureInfo.InvariantCulture);
+                }
+            }
+
+            return new XplIName(newIdName);
         }
 
         private void ShowDebugWindow()
@@ -434,66 +577,111 @@ namespace LayerD.ZOECompiler{
             //y en algun lugar tengo que desambiguar para el caso de que dos o
             //mas modulos de salida soporten una misma plataforma.
             XplDocument[] program = null;
-            try
-            {
-                //1º) Cargo el programa
-                if (fullZoeProgram == null)
-                {
-                    if (zoeProgram == null)
-                        p_lastProgram = program = ZOEProgramLoader.LoadProgram(p_xplProgramFileName);
-                    else
-                        p_lastProgram = program = ZOEProgramLoader.LoadSourceFiles(zoeProgram);
-                }
-                else
-                    p_lastProgram = program = fullZoeProgram;
-                if(p_interactiveOnly) MakeProgramBackup();
-                //Falta chequear la version del programa coincida con la 
-                //version soportada por el compilador.
-                if (program != null)
-                {
-                    //2º) Obtengo interfaces a la los modulos de salida
-                    if (!PrepareOutputModules()) return false;
-                    if (p_interactiveOnly)
-                    {
-                        if (p_interactiveOutputModule == null)
-                        {
-                            p_errorCollection.AddError(new Error("Output module for interactive compilation not found."));
-                            return false;
-                        }
-                    }
-                    //If Show Debug DTE Window is enabled
-                    if (p_showInternalDebuger) ShowDebugWindow();
 
-                    //3º) Ejecuto los ciclos de compilación
-                    p_currentCompileCicle = 0;
-                    if (CompileCicle(program))
+            //1º) Cargo el programa
+            if (fullZoeProgram == null)
+            {
+                if (zoeProgram == null)
+                    p_lastProgram = program = ZOEProgramLoader.LoadProgram(p_xplProgramFileName);
+                else
+                    p_lastProgram = program = ZOEProgramLoader.LoadSourceFiles(zoeProgram);
+            }
+            else
+                p_lastProgram = program = fullZoeProgram;
+            if(p_interactiveOnly) MakeProgramBackup();
+            //Falta chequear la version del programa coincida con la 
+            //version soportada por el compilador.
+            if (program != null)
+            {
+                //2º) Obtengo interfaces a la los modulos de salida
+                if (!PrepareOutputModules()) return false;
+                if (p_interactiveOnly)
+                {
+                    if (p_interactiveOutputModule == null)
                     {
-                        //Si solo estoy agregando extensiones retorno.
-                        if (p_addExtensions) return true;
-                        //Si no continuo :-)
-                        if (!p_interactiveOnly)
-                        {
-                            //4º) Termino la compilación pasando el resultado a la libreria de modulos de salida
-                            return RenderAndBuild();
-                        }
-                        else
-                            return RenderInteractiveOnly();
-                    }
-                    else
-                    {
+                        p_errorCollection.AddError(new Error("Output module for interactive compilation not found."));
                         return false;
                     }
                 }
+                //If Show Debug DTE Window is enabled
+                if (p_showInternalDebuger) ShowDebugWindow();
+
+                OnBeforeInitCompilation();
+
+                //3º) Ejecuto los ciclos de compilación
+                p_currentCompileCycle = 0;
+                if (CompileCycle(program))
+                {
+                    OnBeforeRender();
+                    //Si solo estoy agregando extensiones retorno.
+                    if (p_addExtensions)
+                    {
+                        OnAfterEndsCompilation();
+                        return true;
+                    }
+                    //Si no continuo :-)
+                    if (!p_interactiveOnly)
+                    {
+                        //4º) Termino la compilación pasando el resultado a la libreria de modulos de salida
+                        return RenderAndBuild();
+                    }
+                    else
+                        return RenderInteractiveOnly();
+                }
                 else
                 {
-                    p_returnErrorMessage = "No se ha podido cargar el programa \""+p_xplProgramFileName+"\" indicado.";
                     return false;
                 }
             }
-            catch (Exception e)
+            else
             {
-                //OK, no es muy util capturar para solo lanzar de nuevo el error
-                throw e;
+                p_returnErrorMessage = "No se ha podido cargar el programa \""+p_xplProgramFileName+"\" indicado.";
+                return false;
+            }
+        }
+
+        private void OnAfterEndsCompilation()
+        {
+            if (CoreEvents != null)
+            {
+                try
+                {
+                    CoreEvents.AfterEndsCompilation(this);
+                }
+                catch (Exception)
+                {
+                    AddError(new Warning("Error in Zoe Core events handler."));
+                }
+            }
+        }
+
+        private void OnBeforeRender()
+        {
+            if (CoreEvents != null)
+            {
+                try
+                {
+                    CoreEvents.BeforeRender(this);
+                }
+                catch (Exception)
+                {
+                    AddError(new Warning("Error in Zoe Core events handler."));
+                }
+            }
+        }
+
+        private void OnBeforeInitCompilation()
+        {
+            if (CoreEvents != null)
+            {
+                try
+                {
+                    CoreEvents.BeforeInitCompilation(this);
+                }
+                catch (Exception)
+                {
+                    AddError(new Warning("Error in Zoe Core events handler."));
+                }
             }
         }
 
@@ -521,7 +709,11 @@ namespace LayerD.ZOECompiler{
                 if (p_renderOriginalProgram) sourceProgram = p_originalSourceProgram[n];
                 else sourceProgram = p_lastProgram[n];
 
-                if (sourceProgram.get_DocumentData().get_DocumentType() == XplDocumenttype_enum.LAYERD_ZOE_DOC)
+                if (sourceProgram.get_DocumentData() == null)
+                {
+                    AddError(new Warning("DocumentData missing on Zoe document.", sourceProgram));
+                }
+                if (sourceProgram.get_DocumentData()==null || sourceProgram.get_DocumentData().get_DocumentType() == XplDocumenttype_enum.LAYERD_ZOE_DOC)
                 {
                     if (!p_outputModulesLibrary.BuildSourceFile(
                         sourceFile.get_fileName(), sourceProgram, p_interactiveOutputModule, "Meta D++",
@@ -535,8 +727,16 @@ namespace LayerD.ZOECompiler{
         private bool RenderAndBuild()
         {
 
-            // PENDIETE: primero debo convertir el documento resultado en código
+            // TODO : primero debo convertir el documento resultado en código
             // ZOE Extendido de acuerdo a los requerimientos del generador de código.
+            XplDocument docToRender = p_lastResultDocument;
+
+            // if we are building an extension apply needed transformations
+            if (p_buildingExtension)
+            {
+                docToRender = (XplDocument)p_lastResultDocument.Clone();
+                ClassfactoryModuleGenerator.RefactorZOEExtensionDocument(docToRender);
+            }
 
             if (p_errorCollection.get_ErrorsCount() > 0 && this.p_inyectedCodeDebug)
             {
@@ -550,7 +750,7 @@ namespace LayerD.ZOECompiler{
                             ((XplLayerDZoeProgramConfig)p_lastProgram[0].get_DocumentData().get_Config().get_Content()).get_defaultOutputFileName() );
                         renderModule.SetOutputFileName(programName + ".debug.dpp");
                         renderModule.SetOutputPath(p_outputPath);
-                        renderModule.SetEZOEInputDocument(p_lastResultDocument);
+                        renderModule.SetEZOEInputDocument(docToRender);
                         if (renderModule.SetZoeErrorListToMap(p_errorCollection))
                         {
                             if (!renderModule.StartParseDocument(true, null, null))
@@ -583,7 +783,7 @@ namespace LayerD.ZOECompiler{
             {
                 if (p_outputModulesLibrary.BuildProgram(
                     (XplLayerDZoeProgramConfig)p_lastProgram[0].get_DocumentData().get_Config().get_Content(),
-                    p_lastResultDocument, p_runtimeOutputModule, p_outputPlatform,
+                    docToRender, p_runtimeOutputModule, p_outputPlatform,
                     p_outputPlatformBuildArguments, p_outputPlatformRenderArguments, p_outputPath, p_renderIntermediateOutputOnly))
                 {
                     return true;
@@ -655,12 +855,19 @@ namespace LayerD.ZOECompiler{
         #endregion
 
         #region CompileCicle, RecompileParameterDocument, RequireCicle
-        protected bool CompileCicle(XplDocument[] program)
+        protected bool CompileCycle(XplDocument[] program)
         {
             bool result;
-            p_currentCompileCicle++;
-            if (p_showFullDebugInfo) WriteDebugTextLine("Compiling Cicle Nº" + p_currentCompileCicle + ".");
-            if (p_currentCompileCicle == 1)
+            p_currentCompileCycle++;
+
+            if (p_currentCompileCycle > MAX_COMPILE_TIME_CYCLES)
+            {
+                AddError(new Error("Maximum number of allowed compile time cycles. Compilation is aborted."));
+                return false;
+            }
+
+            if (p_showFullDebugInfo) WriteDebugTextLine("Compiling Cicle Nº" + p_currentCompileCycle + ".");
+            if (p_currentCompileCycle == 1)
             {
                 Debug.Assert(
                     program[0].get_DocumentData().get_DocumentType() == XplDocumenttype_enum.LAYERD_ZOE_PROG,
@@ -668,6 +875,9 @@ namespace LayerD.ZOECompiler{
                     );
                 p_originalProgram = program[0];
             }
+
+            OnBeforeCompileCycle(); 
+
             //1º) Realizo el analisis semántico
             SemanticAnalizer analizer;
             if (p_currentSemanticAnalizer != null && p_persistentSemanticAnalizer)
@@ -675,7 +885,7 @@ namespace LayerD.ZOECompiler{
             else
                 analizer = new SemanticAnalizer();
             if (p_persistentSemanticAnalizer) p_currentSemanticAnalizer = analizer;
-            
+
             analizer.set_ShowFullDebugInfo(p_showFullDebugInfo);
             analizer.set_ShowInternalTimes(p_showInternalTimes);
             analizer.set_PersistentStructures(p_persistentSemanticAnalizer);
@@ -708,7 +918,8 @@ namespace LayerD.ZOECompiler{
                         foreach (ExtensionData extension in extensions)
                         {
                             n++;
-                            if (!cflib.AddExtensionToLibrary(extension, n, p_compilationPlatform))
+                            OnBeforeCompileExtension(extension);
+                            if (!cflib.AddExtensionToLibrary(extension, n, p_compilationPlatform, p_addExtensionFromCompileTime))
                             {
                                 if (p_showFullDebugInfo) WriteDebugTextLine("Error compiling extension (" + n + ").");
                                 Error error = new Error("Error compiling extension (" + n + ").", "Error compilando la extension (" + n + ").");
@@ -719,6 +930,7 @@ namespace LayerD.ZOECompiler{
                             }
                             else
                             {
+                                OnAfterCompileExtension(extension);
                                 if (!p_silentMode)
                                     WriteDebugTextLine("Extension Added: " + extension.Name + ".");
                             }
@@ -732,8 +944,8 @@ namespace LayerD.ZOECompiler{
                 //3º)Separo el DTE en Subprograma Virtual y Documento Parametro
                 XplDocument virtualSubprogram = null;
                 XplDocument parameterDocument = null;
-                DTECodeSplitter splitter = new DTECodeSplitter();
-                if (splitter.SplitDTE(programDTE, p_errorCollection, analizer.get_TypesTable(), analizer.get_CandidateStructuresCollection(), p_interactiveOnly))
+                DTECodeSplitter splitter = new DTECodeSplitter(this.DumpCompileCycleProgress);
+                if (splitter.SplitDTE(programDTE, analizer.get_CandidateStructuresCollection(), p_interactiveOnly))
                 {
                     virtualSubprogram = splitter.get_LastSplitVirtualSubprogram();
                     parameterDocument = splitter.get_LastSplitParameterDocument();
@@ -752,7 +964,11 @@ namespace LayerD.ZOECompiler{
                         buildingControler.VSPArgumentVector = splitter.get_LastArgumentVector();
                         buildingControler.VSPRIPVector = splitter.get_LastRIPVector();
                         buildingControler.VSContextVector = splitter.get_LastContextVector();
-                        if (p_showFullDebugInfo) WriteDebugTextLine("Running Compile Time Nº" + p_currentCompileCicle + ".");
+                        
+                        // reset flag 
+                        this.BreakCompileTime = false;
+
+                        if (p_showFullDebugInfo) WriteDebugTextLine("Running Compile Time Nº" + p_currentCompileCycle + ".");
                         if (buildingControler.RunCompileTime(
                             virtualSubprogram,
                             parameterDocument,
@@ -761,10 +977,13 @@ namespace LayerD.ZOECompiler{
                             p_compilationPlatform
                             ))
                         {
+                            p_lastResultDocument = parameterDocument;
+                            if (p_showFullDebugInfo) WriteDebugTextLine("End Compile Time Nº" + p_currentCompileCycle + ".");
+
+                            OnAfterCompileCycle();
+
                             //elimino la referencia a la ultima tabla de tipos
                             p_lastTypesTable = null;
-                            p_lastResultDocument = parameterDocument;
-                            if (p_showFullDebugInfo) WriteDebugTextLine("End Compile Time Nº" + p_currentCompileCicle + ".");
                             //5º)Recompilo el Documento Parametro
                             //if (!p_interactiveOnly)
                             result = RecompileParameterDocument(parameterDocument, p_originalProgram);
@@ -773,8 +992,9 @@ namespace LayerD.ZOECompiler{
                         }
                         else
                         {
-                            if (p_showFullDebugInfo) WriteDebugTextLine("End Compile Time Nº" + p_currentCompileCicle + ".");
-                            p_returnErrorMessage = "No se pudo realizar la Fabricación del Tiempo de Compilación Nº" + p_currentCompileCicle + ".";
+                            OnAfterCompileCycle();
+                            if (p_showFullDebugInfo) WriteDebugTextLine("End Compile Time Nº" + p_currentCompileCycle + ".");
+                            p_returnErrorMessage = "No se pudo realizar la Fabricación del Tiempo de Compilación Nº" + p_currentCompileCycle + ".";
                             result = false;
                         }
                     }
@@ -813,17 +1033,79 @@ namespace LayerD.ZOECompiler{
                 }
                 else
                 {
-                    if (p_showFullDebugInfo) WriteDebugTextLine("Error while splitting of Compile Cicle Nº" + p_currentCompileCicle + ".");
-                    p_returnErrorMessage = "No se pudo realizar la separación del Documento de Tiempo de Ejecución del Tiempo de Compilacion Nº" + p_currentCompileCicle + ".";
+                    if (p_showFullDebugInfo) WriteDebugTextLine("Error while splitting of Compile Cicle Nº" + p_currentCompileCycle + ".");
+                    p_returnErrorMessage = "No se pudo realizar la separación del Documento de Tiempo de Ejecución del Tiempo de Compilacion Nº" + p_currentCompileCycle + ".";
                     return false;
                 }
             }
             else
-            {   //Error no recuperable durante el analisis semántico
+            {   
+                //Error no recuperable durante el analisis semántico
                 return false; //<-- CORRECTO
             }
             return result;
         }
+
+        private void OnAfterCompileCycle()
+        {
+            if (CoreEvents != null)
+            {
+                try
+                {
+                    CoreEvents.AfterCompileCycle(this, p_currentCompileCycle);
+                }
+                catch (Exception)
+                {
+                    AddError(new Warning("Error in Zoe Core events handler."));
+                }
+            }
+        }
+
+        private void OnAfterCompileExtension(ExtensionData extension)
+        {
+            if (CoreEvents != null)
+            {
+                try
+                {
+                    CoreEvents.AfterCompileExtension(this, extension.Document);
+                }
+                catch (Exception)
+                {
+                    AddError(new Warning("Error in Zoe Core events handler."));
+                }
+            }
+        }
+
+        private void OnBeforeCompileExtension(ExtensionData extension)
+        {
+            if (CoreEvents != null)
+            {
+                try
+                {
+                    CoreEvents.BeforeCompileExtension(this, extension.Document);
+                }
+                catch (Exception)
+                {
+                    AddError(new Warning("Error in Zoe Core events handler."));
+                }
+            }
+        }
+
+        private void OnBeforeCompileCycle()
+        {
+            if (CoreEvents != null)
+            {
+                try
+                {
+                    CoreEvents.BeforeCompileCycle(this, p_currentCompileCycle);
+                }
+                catch (Exception)
+                {
+                    AddError(new Warning("Error in Zoe Core events handler."));
+                }
+            }
+        }
+
         protected bool RecompileParameterDocument(XplDocument parameterDocument, XplDocument originalProgram)
         {
             //Debe recompilar el documento parametro llamando CompileCicle pero
@@ -837,7 +1119,7 @@ namespace LayerD.ZOECompiler{
                 if(newError.get_PersistentError())newErrors.AddError(newError);
             p_errorCollection = newErrors;
             //Llamo a compilecicle
-            return CompileCicle(prog);
+            return CompileCycle(prog);
         }
         #endregion
 
@@ -956,6 +1238,33 @@ namespace LayerD.ZOECompiler{
         internal bool get_BuildingExtension()
         {
             return p_buildingExtension;            
+        }
+
+
+        /// <summary>
+        /// Register a full class name to ignore at compile time.
+        /// Registration holds for all compile times until it is unregistered.
+        /// </summary>
+        /// <param name="fullClassfactoryNameToIngnore">Full qualified class name of classfactory to ignore like "namespace1.classname1.innerclassname2".</param>
+        public void RegisterClassfactoryToIgnore(string fullClassfactoryNameToIngnore)
+        {
+            if (p_currentSemanticAnalizer != null)
+            {
+                p_currentSemanticAnalizer.RegisterClassfactoryToIgnore(fullClassfactoryNameToIngnore);
+            }
+        }
+
+        /// <summary>
+        /// Unregister a full class name to ignore at compile time.
+        /// Unregistration holds for all compile times until it is registered again.
+        /// </summary>
+        /// <param name="fullClassfactoryNameToIngnore">Full qualified class name of classfactory to stop ignoring like "namespace1.classname1.innerclassname2".</param>
+        public void UnregisterClassfactoryToIgnore(string fullClassfactoryNameToIngnore)
+        {
+            if (p_currentSemanticAnalizer != null)
+            {
+                p_currentSemanticAnalizer.UnregisterClassfactoryToIgnore(fullClassfactoryNameToIngnore);
+            }
         }
     }
 }

@@ -1,12 +1,13 @@
 /*******************************************************************************
-* Copyright (c) 2007, 2008 Alexis Ferreyra.
+* Copyright (c) 2007, 2012 Alexis Ferreyra, Intel Corporation.
 * All rights reserved. This program and the accompanying materials
 * are made available under the terms of the Eclipse Public License v1.0
 * which accompanies this distribution, and is available at
 * http://www.eclipse.org/legal/epl-v10.html
 *
 * Contributors:
-*     Alexis Ferreyra - initial API and implementation
+*       Alexis Ferreyra - initial API and implementation
+*       Alexis Ferreyra (Intel Corporation)
 *******************************************************************************/
 /****************************************************************************
 * 
@@ -37,6 +38,7 @@ using System.IO;
 using System.Collections;
 using LayerD.CodeDOM;
 using LayerD.ZOECompiler;
+using System.Globalization;
 
 namespace LayerD.ZOECompiler{
     /// <summary>
@@ -111,25 +113,70 @@ namespace LayerD.ZOECompiler{
         /// compilada para la plataforma de tiempo de compilación
         /// indicada.
         /// </summary>
-        public bool AddExtensionToLibrary(ExtensionData extension, int number, string compileTimePlatform)
+        public bool AddExtensionToLibrary(ExtensionData extension, int number, string compileTimePlatform, int fromCompileTime)
         {
-            string baseName = extension.Name + number.ToString();
+            string baseName = extension.Name + number.ToString(CultureInfo.InvariantCulture);
             baseName = Path.Combine(p_libraryPath, baseName);
             RemoveFromLibrary(baseName + ".dll");
             SaveDatabase();
             if (CheckFileAndCompile(extension, baseName, compileTimePlatform))
-                return AddToLibraryIndex(extension, baseName, compileTimePlatform);
+                return AddToLibraryIndex(extension, baseName, compileTimePlatform, fromCompileTime);
             else
                 return false;
         }
 
-        private bool AddToLibraryIndex(ExtensionData extension, string baseName, string compileTimePlatform)
+        private bool AddToLibraryIndex(ExtensionData extension, string baseName, string compileTimePlatform, int fromCompileTime)
         {
             //Agrego los tipos al indice
-            AddTypesToIndex(extension, baseName);
+            AddTypesToIndex(extension, baseName, fromCompileTime);
             //Guardo el programa en la libreria
-            ZOEProgramLoader.SaveCDOMFile(extension.DocumentClone, baseName + ".zoe");
+            ZOEProgramLoader.SaveCDOMFile(CleanZoeDocument(extension.Document), baseName + ".zoe");
             return true;
+        }
+
+        /// <summary>
+        /// Remove not needed Zoe nodes from Classfactory Zoe document that will be added as meta-info to classfactorys library.
+        /// WARNING: The cleanning is done in the same instance that is provided.
+        /// </summary>
+        /// <param name="xplDocument">document to clean</param>
+        /// <returns>cleaned document</returns>
+        static private XplNode CleanZoeDocument(XplDocument xplDocument)
+        {
+            CleanZoeDocumentIterator(xplDocument.get_DocumentBody().Children());
+            return xplDocument;
+        }
+
+        private static void CleanZoeDocumentIterator(XplNodeList xplNodeList)
+        {
+            foreach (XplNode node in xplNodeList)
+            {
+                switch (node.get_TypeName())
+                {
+                    case CodeDOMTypes.XplNamespace:
+                        CleanZoeDocumentIterator(node.Children());
+                        break;
+                    case CodeDOMTypes.XplClass:
+                        CleanZoeDocumentIterator(node.Children());
+                        break;
+                    case CodeDOMTypes.XplFunction:
+                        XplFunction function = node as XplFunction;
+                        function.set_FunctionBody(null);
+                        break;
+                    case CodeDOMTypes.XplProperty:
+                        XplProperty property = node as XplProperty;
+                        if (property.get_body() != null)
+                        {
+                            foreach (XplNode subNode in property.get_body().Children())
+                            {
+                                if (subNode.get_TypeName() == CodeDOMTypes.XplFunctionBody)
+                                {
+                                    subNode.Children().Clear();
+                                }
+                            }
+                        }
+                        break;
+                }
+            }
         }
 
         private void RemoveFromLibrary(string moduleFileName)
@@ -142,12 +189,12 @@ namespace LayerD.ZOECompiler{
                 p_database.Children().Remove(cfd);
         }
 
-        private void AddTypesToIndex(ExtensionData extension, string baseName)
+        private void AddTypesToIndex(ExtensionData extension, string baseName, int fromCompileTime)
         {
-            IterateAndAddTypesToIndex(extension.DocumentClone.get_DocumentBody().Children(), "", baseName);
+            IterateAndAddTypesToIndex(extension.Document.get_DocumentBody().Children(), "", baseName, fromCompileTime);
         }
 
-        private void IterateAndAddTypesToIndex(XplNodeList list, string baseTypeName, string baseName)
+        private void IterateAndAddTypesToIndex(XplNodeList list, string baseTypeName, string baseName, int fromCompileTime)
         {
             if (list == null) return;
             foreach (XplNode node in list)
@@ -156,23 +203,23 @@ namespace LayerD.ZOECompiler{
                 {
                     if (node.get_ElementName()[0] == 'N')
                         if (baseTypeName != "")
-                            IterateAndAddTypesToIndex(node.Children(), baseTypeName + "." + ((XplNamespace)node).get_name(), baseName);
+                            IterateAndAddTypesToIndex(node.Children(), baseTypeName + "." + ((XplNamespace)node).get_name(), baseName, fromCompileTime);
                         else
-                            IterateAndAddTypesToIndex(node.Children(), ((XplNamespace)node).get_name(),baseName);
+                            IterateAndAddTypesToIndex(node.Children(), ((XplNamespace)node).get_name(),baseName, fromCompileTime);
                 }
                 else if (node.get_TypeName() == CodeDOMTypes.XplClass)
                 {
                     XplClass clase = (XplClass)node;
                     string typeName = baseTypeName + "." + clase.get_name();
-                    AddClassToIndex(clase, typeName, baseName);
-                    IterateAndAddTypesToIndex(clase.Children(), typeName, baseName);
+                    AddClassToIndex(clase, typeName, baseName, fromCompileTime);
+                    IterateAndAddTypesToIndex(clase.Children(), typeName, baseName, fromCompileTime);
                 }
             }
         }
 
-        private void AddClassToIndex(XplClass clase, string fullName, string baseName)
+        private void AddClassToIndex(XplClass clase, string fullName, string baseName, int fromCompileTime)
         {
-            ClassfactoryData cfd = new ClassfactoryData(fullName, clase.get_isinterface(), clase.get_isinteractive(), true,
+            ClassfactoryData cfd = new ClassfactoryData(fullName, clase.get_isinterface(), fromCompileTime, clase.get_isinteractive(), true,
                 baseName + ".dll", baseName + ".zoe");
             string platformsStr = GetPlatformsString(clase);
             cfd.set_platforms(platformsStr);
@@ -196,8 +243,9 @@ namespace LayerD.ZOECompiler{
         {
             baseName += ".dll";
             if (File.Exists(baseName)) File.Delete(baseName);
+            
             //Clono el doc antes de compilar
-            extension.CloneDoc();
+            // extension.CloneDoc();
 
             ClassfactoryModuleGenerator modgen = new ClassfactoryModuleGenerator();
             modgen.CurrentClientCore = p_currentClientCore;
@@ -245,7 +293,7 @@ namespace LayerD.ZOECompiler{
             foreach (ClassfactoryData cfd in p_database.Children())
             {
                 string fileName = Path.Combine(p_libraryPath,Path.GetFileName( cfd.get_zoeDocFileName()));
-                if (loaded[fileName] == null && cfd.get_active())
+                if (loaded[fileName] == null && cfd.get_active() && cfd.get_fromCompileTime() <= p_currentClientCore.CurrentCompileCycle-1)
                 {
                     if (File.Exists(fileName))
                     {
@@ -326,7 +374,7 @@ namespace LayerD.ZOECompiler{
             {
                 string fileName = Path.GetFileNameWithoutExtension(Path.GetFileName(cfd.get_moduleFileName()));
                 string number;
-                if (fileName.StartsWith(extensionBaseName))
+                if (fileName.StartsWith(extensionBaseName,StringComparison.InvariantCulture))
                 {
                     number = fileName.Remove(0, extensionBaseName.Length);
                     bool isNumber = true;

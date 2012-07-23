@@ -1,12 +1,13 @@
 /*******************************************************************************
-* Copyright (c) 2007, 2008 Alexis Ferreyra.
+* Copyright (c) 2007, 2012 Alexis Ferreyra, Intel Corporation.
 * All rights reserved. This program and the accompanying materials
 * are made available under the terms of the Eclipse Public License v1.0
 * which accompanies this distribution, and is available at
 * http://www.eclipse.org/legal/epl-v10.html
 *
 * Contributors:
-*     Alexis Ferreyra - initial API and implementation
+*       Alexis Ferreyra - initial API and implementation
+*       Alexis Ferreyra (Intel Corporation)
 *******************************************************************************/
 /****************************************************************************
 * 
@@ -62,33 +63,20 @@ namespace LayerD.ZOECompiler{
             p_runtimePlatform = runtimePlatform;
             p_moduleFileName = moduleFileName;
             p_moduleType = moduleType;
-            //1º) Transformo el código de alto nivel
-            TransformZOEExtension(extension);
-            //2º) Compilo el programa como una DLL            
+
             return CompileZOEExtension(extension);
         }
 
-        private void TransformZOEExtension(ExtensionData extension)
-        {
-            ChangeTypes(extension.Document.get_DocumentBody().Children());
+        static public void RefactorZOEExtensionDocument(XplDocument document){
+            ChangeTypes(document.get_DocumentBody().Children());
         }
 
-        /*
-         * 
-        private bool IsInsideWritecode(XplClass classNode)
-        {
-            XplNode node = classNode.get_Parent();
-            while (node != null && node.get_TypeName() != CodeDOMTypes.XplWriteCodeBody) node = node.get_Parent();
-            return node != null;
-        }
-         * 
-         */
-
-        #region Cambio de Tipos, FindClasses
-        private void ChangeTypes(XplNodeList source)
+        static private void ChangeTypes(XplNodeList source)
         {
             if (source == null) return;
+
             XplNodeList nodesToAdd = new XplNodeList();
+
             foreach (XplNode node in source)
             {
                 if (node.get_TypeName() == CodeDOMTypes.XplNamespace)
@@ -98,6 +86,7 @@ namespace LayerD.ZOECompiler{
                 else if (node.get_TypeName() == CodeDOMTypes.XplClass)
                 {
                     XplClass classNode = (XplClass)node;
+                    
                     if (classNode.get_isfactory() && !classNode.get_isinteractive())
                     {
                         classNode.set_isfactory(false);
@@ -107,21 +96,27 @@ namespace LayerD.ZOECompiler{
                         classNode.set_isinteractive(false);
                         classNode.set_isfactory(false);
                     }
+                    
                     ChangeTypes(node.Children());
                 }
-                else if (node.get_TypeName()==CodeDOMTypes.XplFunction)
+                else if (node.get_TypeName() == CodeDOMTypes.XplFunction)
                 {
                     // TODO : when the function is an indexer
+                    
                     XplFunction func = (XplFunction)node;
-                    if (func.get_Parameters()!=null)
+
+                    if (func.get_Parameters() != null)
+                    {
                         foreach (XplParameter p in func.get_Parameters().Children())
                             ChangeType(p.get_type());
+                    }
                     ChangeTypes(func.Children());
-                    //if (NativeTypes.IsNativeType(func.get_ReturnType().get_typename())
-                    //    && func.get_name() == ((XplClass)func.get_Parent()).get_name())
-                    string funcReturnType = func.get_ReturnType()!=null ? func.get_ReturnType().get_typeStr() : null;
-                    if (func.get_name()==((XplClass)func.get_Parent()).get_name() &&
-                        funcReturnType!=null &&
+
+                    string funcReturnType = func.get_ReturnType() != null ? func.get_ReturnType().get_typename() : null;
+
+                    // TODO : what if the developer uses "XplType^", in that case it wont work :P
+                    if (func.get_name() == ((XplClass)func.get_Parent()).get_name() &&
+                        funcReturnType != null &&
                         (NativeTypes.IsNativeType(funcReturnType) ||
                         NativeTypes.IsNativeVoid(funcReturnType)))
                     {
@@ -140,13 +135,20 @@ namespace LayerD.ZOECompiler{
                         else
                             func.set_storage(XplVarstorage_enum.STATIC);
                     }
+                    if (func.get_ElementName() == "Operator")
+                    {
+                        // convert operators to normal functions
+                        func.set_ElementName("Function");
+                        func.set_name(GetFunctionNameFromOperator(func.get_name()));
+                    }
+
                     ChangeType(func.get_ReturnType());
                 }
                 else if (node.get_TypeName()==CodeDOMTypes.XplProperty)
                 {
                     XplProperty property = (XplProperty)node;
                     if (property.get_type().get_ftype() != XplFactorytype_enum.NONE ||
-                        property.get_type().get_typename()==NativeTypes.Block ||
+                        property.get_type().get_typename()== NativeTypes.Block ||
                         property.get_type().get_typename() == NativeTypes.Type)
                     {
                         ChangeType(property.get_type());
@@ -172,7 +174,12 @@ namespace LayerD.ZOECompiler{
             source.InsertAtEnd(nodesToAdd);
         }
 
-        private XplFunction CreateSetFunction(XplProperty node)
+        internal static string GetFunctionNameFromOperator(string operatorFunctionName)
+        {
+            return "___zoe_ct_op_" + operatorFunctionName.Replace("%", "__");
+        }
+
+        static private XplFunction CreateSetFunction(XplProperty node)
         {
             if (node.get_body() == null) return null;
             XplFunctionBody setBody = (XplFunctionBody)node.get_body().FindNode("Set");
@@ -202,7 +209,7 @@ namespace LayerD.ZOECompiler{
             return function;
         }
 
-        private XplFunction CreateGetFunction(XplProperty node)
+        static private XplFunction CreateGetFunction(XplProperty node)
         {
             if (node.get_body() == null) return null;
             XplFunctionBody getBody = (XplFunctionBody)node.get_body().FindNode("Get");
@@ -225,7 +232,9 @@ namespace LayerD.ZOECompiler{
             function.set_FunctionBody((XplFunctionBody)getBody.Clone());
             return function;
         }
-        private void ChangeType(XplType type)
+
+        
+        static private void ChangeType(XplType type)
         {
             if (type == null) return;
             XplType clase = null;
@@ -278,7 +287,7 @@ namespace LayerD.ZOECompiler{
             type.set_customTypeCheck(false);
             type.set_volatile(false);
         }
-        #endregion
+        
 
         //const string ZOE_FACTORY_BASE_DLL = ".\\FactoriesLib\\zoe_factorytypes_base.dll";
 

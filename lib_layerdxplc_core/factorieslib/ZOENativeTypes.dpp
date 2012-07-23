@@ -1,11 +1,14 @@
-/*
-		Archivo de Libreria Base ZOE.
-
-		Usado principalmente por el compilador
-		ZOE para simular los tipos nativos.
-
-		2007(R) Alexis, Ferreyra.
-*/
+/*******************************************************************************
+* Copyright (c) 2007, 2012 Alexis Ferreyra, Intel Corporation.
+* All rights reserved. This program and the accompanying materials
+* are made available under the terms of the Eclipse Public License v1.0
+* which accompanies this distribution, and is available at
+* http://www.eclipse.org/legal/epl-v10.html
+*
+* Contributors:
+*       Alexis Ferreyra - initial API and implementation
+*       Alexis Ferreyra (Intel Corporation)
+*******************************************************************************/
 
 namespace zoe::lang{
 	public class Object{
@@ -152,6 +155,7 @@ namespace zoe::lang{
 		extern static bool operator&&(bool opA, bool OpB);
 		extern static bool operator||(bool opA, bool OpB);
 	}
+
 	public struct Char {
 	public:
 		extern static const long MinValue;
@@ -162,7 +166,30 @@ namespace zoe::lang{
 		extern static bool operator!=(char opA, char opB);
 
 		extern override string^ ToString();
+
+		// operators for C / C++
+		extern static char operator+(char opA, char OpB);
+		extern static char operator-(char opA, char OpB);
+		extern static char operator*(char opA, char OpB);
+		extern static char operator/(char opA, char OpB);
+		extern static char operator|(char opA, char OpB);
+		extern static char operator&(char opA, char OpB);
+		extern static char operator^(char opA, char OpB);
+		extern static char operator%(char opA, char OpB);
+		extern static char operator-(char opA);
+		extern static char operator!(char opA);
+		extern static char operator~(char opA);
+		extern static char operator++(char opA, char OpB);
+		extern static char operator--(char opA, char OpB);
+		extern static bool operator>(char opA, char OpB);
+		extern static bool operator<(char opA, char OpB);
+		extern static bool operator>=(char opA, char OpB);
+		extern static bool operator<=(char opA, char OpB);
+
+		extern static char operator<<(char opA, char OpB);
+		extern static char operator>>(char opA, char OpB);
 	}
+
 	public struct Byte{
 	public:
 		extern override string^ ToString();
@@ -182,12 +209,17 @@ namespace zoe::lang{
 		extern static byte operator-(byte opA);
 		extern static byte operator!(byte opA);
 		extern static byte operator~(byte opA);
+		extern static byte operator++(byte opA, byte OpB);
+		extern static byte operator--(byte opA, byte OpB);
 		extern static bool operator==(byte opA, byte OpB);
 		extern static bool operator!=(byte opA, byte OpB);
 		extern static bool operator>(byte opA, byte OpB);
 		extern static bool operator<(byte opA, byte OpB);
 		extern static bool operator>=(byte opA, byte OpB);
 		extern static bool operator<=(byte opA, byte OpB);
+
+		extern static byte operator<<(byte opA, byte OpB);
+		extern static byte operator>>(byte opA, byte OpB);
 	}
 	public struct SByte {
 	public:
@@ -216,6 +248,9 @@ namespace zoe::lang{
 		extern static bool operator<(sbyte opA, sbyte OpB);
 		extern static bool operator>=(sbyte opA, sbyte OpB);
 		extern static bool operator<=(sbyte opA, sbyte OpB);
+
+		extern static sbyte operator<<(sbyte opA, sbyte OpB);
+		extern static sbyte operator>>(sbyte opA, sbyte OpB);
 	}
 	public struct Short {
 	public:
@@ -244,6 +279,9 @@ namespace zoe::lang{
 		extern static bool operator<(short opA, short OpB);
 		extern static bool operator>=(short opA, short OpB);
 		extern static bool operator<=(short opA, short OpB);
+
+		extern static short operator<<(short opA, short OpB);
+		extern static short operator>>(short opA, short OpB);
 	}
 	public struct UShort {
 	public:
@@ -272,6 +310,9 @@ namespace zoe::lang{
 		extern static bool operator<(ushort opA, ushort OpB);
 		extern static bool operator>=(ushort opA, ushort OpB);
 		extern static bool operator<=(ushort opA, ushort OpB);
+
+		extern static ushort operator<<(ushort opA, ushort OpB);
+		extern static ushort operator>>(ushort opA, ushort OpB);
 	}
 	public struct Integer {
 	public:
@@ -300,6 +341,9 @@ namespace zoe::lang{
 		extern static bool operator<(int opA, int OpB);
 		extern static bool operator>=(int opA, int OpB);
 		extern static bool operator<=(int opA, int OpB);
+
+		extern static int operator<<(int opA, int OpB);
+		extern static int operator>>(int opA, int OpB);
 	}
 	public struct Unsigned {
 	public:
@@ -328,6 +372,9 @@ namespace zoe::lang{
 		extern static bool operator<(unsigned opA, unsigned OpB);
 		extern static bool operator>=(unsigned opA, unsigned OpB);
 		extern static bool operator<=(unsigned opA, unsigned OpB);
+
+		extern static unsigned operator<<(unsigned opA, unsigned OpB);
+		extern static unsigned operator>>(unsigned opA, unsigned OpB);
 	}
 	public struct Long {
 	public:
@@ -356,6 +403,9 @@ namespace zoe::lang{
 		extern static bool operator<(long opA, long OpB);
 		extern static bool operator>=(long opA, long OpB);
 		extern static bool operator<=(long opA, long OpB);
+
+		extern static long operator<<(long opA, long OpB);
+		extern static long operator>>(long opA, long OpB);
 	}
 	public struct ULong {
 	public:
@@ -384,6 +434,9 @@ namespace zoe::lang{
 		extern static bool operator<(ulong opA, ulong OpB);
 		extern static bool operator>=(ulong opA, ulong OpB);
 		extern static bool operator<=(ulong opA, ulong OpB);
+
+		extern static ulong operator<<(ulong opA, ulong OpB);
+		extern static ulong operator>>(ulong opA, ulong OpB);
 	}
 	public struct Float {
 	public:
@@ -412,6 +465,9 @@ namespace zoe::lang{
 		extern static bool operator<(float opA, float OpB);
 		extern static bool operator>=(float opA, float OpB);
 		extern static bool operator<=(float opA, float OpB);
+
+		extern static float operator<<(float opA, float OpB);
+		extern static float operator>>(float opA, float OpB);
 	}
 	public struct Double {
 	public:
@@ -440,6 +496,9 @@ namespace zoe::lang{
 		extern static bool operator<(double opA, double OpB);
 		extern static bool operator>=(double opA, double OpB);
 		extern static bool operator<=(double opA, double OpB);
+
+		extern static double operator<<(double opA, double OpB);
+		extern static double operator>>(double opA, double OpB);
 	}
 	public struct Decimal {
 	public:
@@ -470,6 +529,9 @@ namespace zoe::lang{
 		extern static bool operator<(decimal opA, decimal OpB);
 		extern static bool operator>=(decimal opA, decimal OpB);
 		extern static bool operator<=(decimal opA, decimal OpB);
+
+		extern static decimal operator<<(decimal opA, decimal OpB);
+		extern static decimal operator>>(decimal opA, decimal OpB);
 	}
 	public struct DateTime {
 	public:
@@ -560,7 +622,7 @@ namespace zoe::lang{
 	public class Array {
 	public:
 		extern override string^ ToString();
-		extern long property Length{
+		extern int property Length{
 			get;
 		}
 	}

@@ -1,4 +1,16 @@
-﻿using System;
+﻿/*******************************************************************************
+* Copyright (c) 2009, 2012 Mateo Bengualid, Intel Corporation.
+* All rights reserved. This program and the accompanying materials
+* are made available under the terms of the Eclipse Public License v1.0
+* which accompanies this distribution, and is available at
+* http://www.eclipse.org/legal/epl-v10.html
+*
+* Contributors:
+*       Mateo Bengualid - initial API and implementation
+*       Julieta Alvarez (Intel Corporation)
+*       Alexis Ferreyra (Intel Corporation)
+*******************************************************************************/
+using System;
 using System.Collections.Generic;
 using System.Text;
 using LayerD.CodeDOM;
@@ -85,19 +97,19 @@ namespace LayerD.OutputModules.Importers
 
             foreach (string parameter in importDirectiveArguments)
             {
-                if (parameter.StartsWith("ns"))
+                if (parameter.StartsWith("ns", StringComparison.InvariantCulture))
                 {
                     ip.Namespace = parameter.Replace(' ', '\0').Substring(3);
                 }
-                else if (parameter.StartsWith("platform"))
+                else if (parameter.StartsWith("platform", StringComparison.InvariantCulture))
                 {
                     ip.Platform = parameter.Replace(' ', '\0').Substring(9);
                 }
-                else if (parameter.StartsWith("header"))
+                else if (parameter.StartsWith("header", StringComparison.InvariantCulture))
                 {
                     ip.HeaderFile = parameter.Replace(' ', '\0').Substring(7);
                 }
-                else if (parameter.StartsWith("mockClass"))
+                else if (parameter.StartsWith("mockClass", StringComparison.InvariantCulture))
                 {
                     ip.MockClassName = parameter.Replace(' ', '\0').Substring(10);
                 }

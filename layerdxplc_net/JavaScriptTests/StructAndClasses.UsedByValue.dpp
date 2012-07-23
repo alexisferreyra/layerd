@@ -1,0 +1,154 @@
+import "apt.base.js", "platform=Javascript";
+
+namespace js
+{
+	// *************** GLOBAL ***************** //
+	extern public class global
+	{
+	public:
+
+		static void print(string*ref msg);
+		
+		static js::Object*ref S(params js::Object*ref []args);
+	}
+
+	// *************** object ***************** //
+	extern public class Object
+	{
+	public:
+		//Object();
+		Object(params js::Object*ref[] args);
+
+		extern js::Object*ref indexer(string*ref name)
+		{ 
+			get;
+			set;
+		}
+
+		js::Object*ref constructor;
+		js::Object*ref prototype;
+
+		static js::Object*ref operator implicit (string*ref arg);
+		static js::Object*ref operator implicit (double arg);
+		static js::Object*ref operator implicit (long arg);
+		static js::Object*ref operator implicit (bool arg);
+		static js::String*ref operator implicit (js::Object*ref arg);
+		string*ref toString();
+	}
+	// *************** string ***************** //
+	extern public class String inherits js::Object
+	{
+	public:
+		// Constructors
+		String();
+		String(js::Object*ref arg);
+		String(js::String*ref str);
+		//String(js::String str);
+		String(char* str);
+		
+		// properties
+		int length;
+
+		// methods
+		char charAt(int arg);
+		js::Object*ref charCodeAt(int arg); 
+		js::String*ref concat(string*ref[] args);
+		js::String*ref fromCharCode(Object*ref[] args);
+		int indexOf(js::String*ref searchStr);
+		int indexOf(js::String*ref searchStr, int start);
+		int lastIndexOf(js::String*ref searchStr);
+		int lastIndexOf(js::String*ref searchStr, int start);
+		js::Object*ref[] match(js::Object*ref pattern);
+		js::String*ref replace(js::String*ref substring, js::String*ref newString);
+		int search (js::Object*ref regexp);
+		js::String*ref slice(int start);
+		js::String*ref slice(int start, int end);
+		js::String*ref split();
+		js::String*ref split(char separator);
+		js::String*ref split(char separator, int limit);
+		js::String*ref split(js::String*ref separator);
+		js::String*ref split(js::String*ref separator, int limit);
+		js::String*ref substr(int startIndex);
+		js::String*ref substr(int startIndex, int length);
+		js::String*ref substring(int from);
+		js::String*ref substring(int from, int to);
+		js::String*ref toLowerCase();
+		js::String*ref toUpperCase();
+		js::Object*ref valueOf();
+					   
+
+		// Conversions
+		static js::String*ref operator implicit (string*ref arg);
+		//static js::String*ref operator implicit (string arg);
+		//static js::String*ref operator implicit (js::String arg);
+		static string*ref operator implicit (js::String*ref arg);
+		static js::String*ref operator + (js::String*ref op1, js::String*ref op2);
+	}
+}
+
+namespace application
+{
+	struct type1
+	{
+	public:
+		int f1;
+		int f2;
+	}
+
+	struct type2
+	{
+	public:
+		int f1;
+		type1 f2;
+	}
+
+	class _global_1
+	{
+	public:
+		static int main(string*ref []args)
+		{
+			try
+			{
+				js::global::print("TEST: Compare by value");
+				type1 var1, var2, var3;
+				var1.f1 = 1;
+				var1.f2 = 2;
+
+				var2.f1 = 1;
+				var2.f2 = 2;
+
+				var3 = var2;
+
+				application::_global_1::foo(var3);
+
+				if(var1.f1 == var3.f1 && var1.f2 == var3.f2) js::global::print("PASS");
+				else js::global::print("FAIL");
+
+				var3.f1 = 5;
+				if(var3.f1 == 5 && var2.f1 == 1) js::global::print("PASS");
+				else js::global::print("FAIL");
+
+				js::global::print("END");
+
+				var1 = application::_global_1::foo2();
+			}
+			catch(js::Object*ref error)
+			{
+				js::global::print("ERROR " + error.toString());
+			}
+
+		}
+		static void foo(type1 arg1)
+		{
+			arg1.f1 = 3;
+			arg1.f2 = 4;
+		}
+		static type1 foo2()
+		{
+			type1 localVar;
+			localVar.f1 = 12;
+			localVar.f2 = 12;
+			return localVar;
+		}
+	}
+}

@@ -1187,12 +1187,23 @@
         diferencia con GetType(type) que devuelve el tipo en tiempo de ejecución y no
         el tipo XplType en tiempo de compilacion.-->
       </xs:element>
+      <xs:element name="sizeof" type="ttype">
+        <!--Expression sizeof(type).-->
+      </xs:element>
       <xs:element name="is" type="tcastexpression" >
         <!--Expresion "exp IS type". Indica si la expresión "exp" es del tipo indicado
         por "type" (en tiempo de ejecución). -->
       </xs:element>
 			<xs:element name="empty"></xs:element>
-		</xs:choice>    
+		</xs:choice>
+    <xs:attribute name="targetClass" type="xs:string" use="optional">
+      <!--Used by Zoe semantic analyzer to save information about which 
+      target class is related to the expression-->
+    </xs:attribute>
+    <xs:attribute name="targetMember" type="xs:string" use="optional">
+      <!--Used by Zoe semantic analyzer to save information about which
+      target member is related to the expression-->
+    </xs:attribute>
     <xs:attribute name="typeStr" type="xs:string" use="optional">
       <!--El analizador semántico ZOE establecera el tipo de la expresión
       cuando pueda ser determinado, si no puede determinarlo el valor
@@ -1509,7 +1520,7 @@
 			<xs:element name="init" type="tInitializerList" minOccurs="0" maxOccurs="1"></xs:element>
 			<xs:element name="GCParams" type="texpressionlist" minOccurs="0" maxOccurs="1"></xs:element>
 		</xs:sequence>
-		<xs:attribute name="GCName" type="xs:string" default="default"></xs:attribute>
+    <xs:attribute name="GCName" type="xs:string" default="default"></xs:attribute>
 		<xs:attributeGroup ref="tDocAttGroup"></xs:attributeGroup>
 		<xs:attributeGroup ref="tLDDataGroup"></xs:attributeGroup>
 	</xs:complexType>
@@ -1586,8 +1597,6 @@
 			<xs:enumeration value="experimental"></xs:enumeration>
 			<xs:enumeration value="experimental_beta"></xs:enumeration>
 			<xs:enumeration value="experimental_alpha"></xs:enumeration>
-			<xs:enumeration value="possibly_tested"></xs:enumeration>
-			<xs:enumeration value="possibly_nontested"></xs:enumeration>
 			<!--Hasta aqui indica niveles de soporte, de mayor a menor. De aquí para abajo explicitamente no soportadas.-->
 			<xs:enumeration value="explicitly_unsupported"></xs:enumeration>
 		</xs:restriction>
@@ -1737,37 +1746,36 @@
   
   <xs:simpleType name="tunaryoperators.enum">
 		<xs:restriction base="xs:string">
-			<!--operadores aritmeticos-->
+			<!--arithmetic operator-->
 			<xs:enumeration value="min"></xs:enumeration>
 			<xs:enumeration value="inc"></xs:enumeration>
 			<xs:enumeration value="dec"></xs:enumeration>
 			<xs:enumeration value="preinc"></xs:enumeration>					
 			<xs:enumeration value="predec"></xs:enumeration>
-			<!--operadores de identificadores-->
-			<xs:enumeration value="ind"></xs:enumeration>		<!--indireccion(* en C)-->
-			<xs:enumeration value="aof"></xs:enumeration>		<!--address of(& en C)-->
-			<xs:enumeration value="raof"></xs:enumeration>		<!--Reference Address Of(para Referencias)-->
+			<!--lvalue operators-->
+			<xs:enumeration value="ind"></xs:enumeration>		<!--indirection(* in C)-->
+			<xs:enumeration value="aof"></xs:enumeration>		<!--address of(& in C)-->
+			<xs:enumeration value="raof"></xs:enumeration>		<!--Reference Address Of (for references)-->
 			<xs:enumeration value="sizeof"></xs:enumeration>
 			<xs:enumeration value="typeof"></xs:enumeration>
-			<!--operadores de bits-->
-			<xs:enumeration value="onecomp"></xs:enumeration>	<!--complemento a uno-->
+			<!--bits operators-->
+			<xs:enumeration value="onecomp"></xs:enumeration>	<!--one complement-->
 			<xs:enumeration value="not"></xs:enumeration>
 		</xs:restriction>
 	</xs:simpleType>
 	
 	<xs:simpleType name="tbinaryoperators.enum">
 		<xs:restriction base="xs:string">
-			<!--aritmeticos-->
 			<xs:enumeration value="add"></xs:enumeration>
 			<xs:enumeration value="min"></xs:enumeration>
 			<xs:enumeration value="mul"></xs:enumeration>
 			<xs:enumeration value="div"></xs:enumeration>
 			<xs:enumeration value="mod"></xs:enumeration>
 			<xs:enumeration value="exp"></xs:enumeration>
-			<!--desplazamiento-->
+			<!--bit shift-->
 			<xs:enumeration value="lsh"></xs:enumeration>
 			<xs:enumeration value="rsh"></xs:enumeration>
-			<!--comparación logica-->
+			<!--logic comparison-->
 			<xs:enumeration value="AND"></xs:enumeration>
 			<xs:enumeration value="OR"></xs:enumeration>
 			<xs:enumeration value="EQ"></xs:enumeration>
@@ -1776,22 +1784,24 @@
 			<xs:enumeration value="LS"></xs:enumeration>
 			<xs:enumeration value="GREQ"></xs:enumeration>
 			<xs:enumeration value="LSEQ"></xs:enumeration>
-			<!--operaciones con bits-->
+			<!--bits operators-->
 			<xs:enumeration value="BAND"></xs:enumeration>
 			<xs:enumeration value="BOR"></xs:enumeration>
 			<xs:enumeration value="XOR"></xs:enumeration>
-			<!--operador de acceso a miembro-->
-			<xs:enumeration value="m"></xs:enumeration>			<!--como "." en C++-->
-			<xs:enumeration value="pm"></xs:enumeration>		<!--como "Felcha" en C++-->
-			<xs:enumeration value="mp"></xs:enumeration>		<!--como ".*" en C++-->
-			<xs:enumeration value="pmp"></xs:enumeration>		<!--como "Flecha*" en C++-->
+			<!--member access operators-->
+			<xs:enumeration value="m"></xs:enumeration>			<!--like "." in C++-->
+			<xs:enumeration value="pm"></xs:enumeration>		<!--like "->" in C++-->
+			<xs:enumeration value="mp"></xs:enumeration>		<!--like ".*" in C++-->
+			<xs:enumeration value="pmp"></xs:enumeration>		<!--like "->*" in C++-->
       
-      <xs:enumeration value="ms"></xs:enumeration>    <!--como "::" en C++-->
-      <xs:enumeration value="msm"></xs:enumeration>   <!--como "::" o "." en C++, automatico, primero intenta "::"-->
+      <xs:enumeration value="ms"></xs:enumeration>    <!--like "::" in C++-->
+      <xs:enumeration value="msm"></xs:enumeration>   <!--like "::" or "." in C++, automatic first try "::"-->
       
-      <xs:enumeration value="rm"></xs:enumeration>		<!--Reservado para acceso a miembros-->
-			<!--operador de asignacion de nombre a parametro-->
-			<xs:enumeration value="imp"></xs:enumeration>		<!--Igual Mayor, Flecha-->
+      <xs:enumeration value="rm"></xs:enumeration>		<!--Reserved for member access-->
+			<!--named argument operator-->
+			<xs:enumeration value="imp"></xs:enumeration>		<!-- => -->
+      <!--COMMA operator-->
+      <xs:enumeration value="comma"></xs:enumeration>
 		</xs:restriction>
 	</xs:simpleType>
 	
@@ -1870,6 +1880,10 @@
     </xs:attribute>
     <xs:attribute name="isInterface" type="xs:boolean" default="false">
       <!--Indica si el tipo factory es una interface en lugar de una clase.-->
+    </xs:attribute>
+    <xs:attribute name="fromCompileTime" type="xs:integer" default="0">
+      <!--From which compile time the factory will be activated. Use 0 to
+      activate the classfactory from the first compile time.-->
     </xs:attribute>
     <xs:attribute name="isInteractive" type="xs:boolean" default="false">
       <!--Indica si la classfactory es interactiva o no, puede utilizarse

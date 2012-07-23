@@ -1,12 +1,13 @@
 ﻿/*******************************************************************************
-* Copyright (c) 2007, 2008 Alexis Ferreyra.
+* Copyright (c) 2007, 2012 Alexis Ferreyra, Intel Corporation.
 * All rights reserved. This program and the accompanying materials
 * are made available under the terms of the Eclipse Public License v1.0
 * which accompanies this distribution, and is available at
 * http://www.eclipse.org/legal/epl-v10.html
 *
 * Contributors:
-*     Alexis Ferreyra - initial API and implementation
+*       Alexis Ferreyra - initial API and implementation
+*       Alexis Ferreyra (Intel Corporation)
 *******************************************************************************/
 /****************************************************************************
 * 
@@ -186,7 +187,7 @@ namespace LayerD.ZOECompiler
             }
 
             if (memberInfo.IsConstructor() && memberRetType == "")
-                memberRetType = !classType.get_IsStruct() ? MakePointerTypeTo(classType.get_FullName()) : classType.get_FullName();
+                memberRetType = !classType.get_IsStruct() ? TypeString.MakePointerTypeTo(classType.get_FullName()) : classType.get_FullName();
 
             if (expRes == null && xplExpression.get_Content() == null)
             {
@@ -247,7 +248,7 @@ namespace LayerD.ZOECompiler
                     string expTypeStr = expRes.get_TypeStr();
                     if (!IsSameStringType(memberRetType, expTypeStr))
                     {
-                        ConversionData cdata = ExistsImplicitConversion(expTypeStr, memberRetType, currentScope);
+                        ConversionData cdata = ExistsImplicitConversion(expTypeStr, memberRetType, xplExpression, currentScope);
                         if (cdata == null)
                         {
                             //Primero debo chequear si el tipo de retorno es un tipo factory y si en cuyo 
@@ -261,23 +262,23 @@ namespace LayerD.ZOECompiler
                                     case XplFactorytype_enum.NONE:
                                         break;
                                     case XplFactorytype_enum.INAME:
-                                        retTypeFTStr = MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".IName");
+                                        retTypeFTStr = TypeString.MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".IName");
                                         break;
                                     case XplFactorytype_enum.EXPRESSION:
-                                        retTypeFTStr = MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".XplExpression");
+                                        retTypeFTStr = TypeString.MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".XplExpression");
                                         break;
                                     case XplFactorytype_enum.EXPRESSIONLIST:
-                                        retTypeFTStr = MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".XplExpressionlist");
+                                        retTypeFTStr = TypeString.MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".XplExpressionlist");
                                         break;
                                     case XplFactorytype_enum.STATEMENT:
-                                        retTypeFTStr = MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".XplFunctionBody");
+                                        retTypeFTStr = TypeString.MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".XplFunctionBody");
                                         break;
                                     default:
                                         break;
                                 }
                                 if (!IsSameStringType(retTypeFTStr, expTypeStr))
                                 {
-                                    cdata = ExistsImplicitConversion(expTypeStr, retTypeFTStr, currentScope);
+                                    cdata = ExistsImplicitConversion(expTypeStr, retTypeFTStr, xplExpression, currentScope);
                                     if (cdata == null)
                                         AddNewError(
                                             SemanticError.New(SemanticErrorCode.InvalidReturnStatementExpressionValue,
@@ -326,10 +327,10 @@ namespace LayerD.ZOECompiler
                     // PENDIENTE : Comprobar si el modulo de salida de tiempo de ejecución
                     // permite lanzar excepciones que no deriven de "Exception" y si permite
                     // lanzar valores directamente.
-                    string targetType = MakePointerTypeTo(NativeTypes.ExceptionClassTypeName);
+                    string targetType = TypeString.MakePointerTypeTo(NativeTypes.ExceptionClassTypeName);
                     //verifico que typeStr no sea una referencia en lugar de un puntero ordinario
-                    if (IsReferencePointerType(typeStr) && IsSameStringType(typeStr, targetType)) return;
-                    ConversionData cdata = ExistsImplicitConversion(typeStr, targetType, currentScope);
+                    if (TypeString.IsReferencePointerType(typeStr) && IsSameStringType(typeStr, targetType)) return;
+                    ConversionData cdata = ExistsImplicitConversion(typeStr, targetType, xplExpression, currentScope);
                     if (cdata == null)
                         AddNewError(
                             SemanticError.New(SemanticErrorCode.ValueOfTypeExceptionRequiredOnThrowStatement,
@@ -447,26 +448,29 @@ namespace LayerD.ZOECompiler
         }
         private void ProcessForStatement(XplForStatement xplForStatement, TypeInfo classType, Scope currentScope, MemberInfo memberInfo)
         {
-            //1º) Chequeo la condición inicial
+            //1) Check for initialization statement
             XplForinit init = xplForStatement.get_init();
             currentScope.EnterScope(ScopeType.Block, null);
             if (init != null && init.get_Content().get_ElementName() == "dl")
             {
-                //Lista de declaradores
+                // declarators list
                 XplDeclaratorlist dl = (XplDeclaratorlist)init.get_Content();
                 ProcessDeclsStatement(dl, classType, currentScope, memberInfo);
             }
             else if (init != null && init.get_Content().get_ElementName() == "el")
             {
-                //Lista de expresiones
+                // expression list
                 XplExpressionlist el = (XplExpressionlist)init.get_Content();
                 ProcessExpressionList(el, currentScope);
             }
+
+            //2) Check repeat expression
             bool isForEach = false;
-            //2º) Chequeo la expresión de repetición
-            if (xplForStatement.get_repeat() != null)
+            XplExpressionlist repeat = xplForStatement.get_repeat();
+            if (repeat != null)
             {
-                if (xplForStatement.get_repeat().FindNode("/n(_FOR_EACH_)") != null)
+                XplNode tempNode = null;
+                if (repeat.Children().GetLength() == 1 && (tempNode = repeat.Children().GetNodeAt(0).get_Content()) != null && tempNode.get_StringValue() == "_FOR_EACH_")
                 {
                     isForEach = true;
                 }
@@ -475,47 +479,63 @@ namespace LayerD.ZOECompiler
                     ProcessExpressionList(xplForStatement.get_repeat(), currentScope);
                 }
             }
-            //3º) Chequeo la expresión de corte
+
+            //3) Check boolean expression
             XplExpression conditionExp = xplForStatement.get_condition();
             if (conditionExp != null)
             {
                 if (isForEach)
                 {
                     XplNode initContent = init == null ? null : init.get_Content();
-                    //Ciclo Foreach
-                    if (init == null || initContent == null || initContent.get_ElementName() != "dl" ||
-                        initContent.get_ElementName() == "dl" && initContent.Children().GetLength() != 1)
+                    // Foreach cycle
+                    // TODO : this check was removed, but in some platforms like .NET
+                    // you need that iteration variable to be declared in the for statement
+                    //
+                    //if (init == null || initContent == null || initContent.get_ElementName() != "dl" ||
+                    //    initContent.get_ElementName() == "dl" && initContent.Children().GetLength() != 1)
+                    //{
+                    //    AddNewError(
+                    //        SemanticError.New(SemanticErrorCode.VariableDeclarationRequiredOnForeach,
+                    //        xplForStatement));
+                    //}
+                    //else
+                    //{
+
+                    ExpressionResult condExpRes = ProcessExpression(conditionExp, currentScope);
+                    if (condExpRes == null)
                     {
                         AddNewError(
-                            SemanticError.New(SemanticErrorCode.VariableDeclarationRequiredOnForeach,
-                            xplForStatement));
+                            SemanticError.New(SemanticErrorCode.ValidExpressionRequiredOnForeach,
+                            conditionExp));
                     }
                     else
                     {
-                        ExpressionResult condExpRes = ProcessExpression(conditionExp, currentScope);
-                        if (condExpRes == null)
+                        //Debo chequear que la expresión sea un valor y de un tipo adecuado
+                        if (!condExpRes.get_IsValue() && condExpRes.get_IsTypeMembers())
+                            condExpRes = TryConvertTypeMembersToValueOrLValue(condExpRes, currentScope, conditionExp.get_Content());
+                        if (!condExpRes.get_IsValue())
                         {
                             AddNewError(
-                                SemanticError.New(SemanticErrorCode.ValidExpressionRequiredOnForeach,
+                                SemanticError.New(SemanticErrorCode.ArrayOrCollectionExpressionRequiredOnForeach,
                                 conditionExp));
                         }
                         else
                         {
-                            //Debo chequear que la expresión sea un valor y de un tipo adecuado
-                            if (!condExpRes.get_IsValue() && condExpRes.get_IsTypeMembers())
-                                condExpRes = TryConvertTypeMembersToValueOrLValue(condExpRes, currentScope, conditionExp.get_Content());
-                            if (!condExpRes.get_IsValue())
+                            string iterationVarTypeStr = null;
+                            if (initContent.IsA(CodeDOMTypes.XplDeclaratorlist))
                             {
-                                AddNewError(
-                                    SemanticError.New(SemanticErrorCode.ArrayOrCollectionExpressionRequiredOnForeach,
-                                    conditionExp));
+                                XplDeclarator iterationDeclarator = (XplDeclarator)initContent.Children().FirstNode();
+                                iterationVarTypeStr = iterationDeclarator.get_type().get_typeStr();
                             }
                             else
                             {
-                                CheckValidTypeForForeachCollection((XplDeclarator)((XplDeclaratorlist)initContent).Children().FirstNode(), condExpRes, conditionExp, currentScope);
+                                iterationVarTypeStr = (initContent.Children().FirstNode() as XplExpression).get_typeStr();
                             }
+                            CheckValidTypeForForeachCollection(iterationVarTypeStr, condExpRes, conditionExp, currentScope);
                         }
                     }
+
+                    //}
                 }
                 else
                 {
@@ -523,7 +543,7 @@ namespace LayerD.ZOECompiler
                     CheckForBoolExpression(conditionExp, currentScope, "On for/foreach block.", xplForStatement);
                 }
             }
-            //4°) Proceso el bloque
+            //4) Proceso el bloque
             XplFunctionBody block = xplForStatement.get_forblock();
             if (block == null)
                 AddNewError(
@@ -536,10 +556,9 @@ namespace LayerD.ZOECompiler
             if (!flag) currentScope.set_IsOnBucleStatement(false);
             currentScope.LeaveScope();
         }
-        private void CheckValidTypeForForeachCollection(XplDeclarator xplDeclarator, ExpressionResult condExpRes, XplExpression conditionExp, Scope currentScope)
+        private void CheckValidTypeForForeachCollection(string declaratorTypeStr, ExpressionResult condExpRes, XplExpression conditionExp, Scope currentScope)
         {
-            //Primero chequeo que el tipo de la expresion de condicion sea de un tipo matriz o de un tipo
-            //coleccion permitido
+            // Check that collection expression is an array or iterable collection type
             string condExpTypeStr = condExpRes.get_TypeStr();
             string elementTypeStr = null;
             bool flagError = false;
@@ -549,17 +568,17 @@ namespace LayerD.ZOECompiler
             }
             else
             {
-                if (IsArrayType(condExpTypeStr))
+                if (TypeString.IsArrayType(condExpTypeStr))
                 {
-                    elementTypeStr = RemoveArrayTypeFromType(condExpTypeStr);
+                    elementTypeStr = TypeString.RemoveArrayTypeFromType(condExpTypeStr);
                 }
-                else if (IsPointerType(condExpTypeStr) && IsPointerToArrayType(condExpTypeStr))
+                else if (TypeString.IsPointerType(condExpTypeStr) && TypeString.IsPointerToArrayType(condExpTypeStr))
                 {
-                    elementTypeStr = RemoveArrayTypeFromType(RemovePointerIndirectionsFromType(condExpTypeStr, 1));
+                    elementTypeStr = TypeString.RemoveArrayTypeFromType(TypeString.RemovePointerIndirectionsFromType(condExpTypeStr, 1));
                 }
                 else
                 {
-                    //PENDIENTE : Debe ser un tipo colección valido
+                    // TODO : Check that it must be a valid collection type
                 }
             }
             if (flagError)
@@ -568,16 +587,16 @@ namespace LayerD.ZOECompiler
                     SemanticError.New(SemanticErrorCode.ArrayOrCollectionExpressionRequiredOnForeach,
                     conditionExp));
             }
-            //Luego controlo que el tipo de los elementos de matriz o retornados por la colección sean
-            //de un tipo convertible al tipo de la variable declarada
-            if (xplDeclarator.get_type() != null && xplDeclarator.get_type().get_typeStr() != "" && elementTypeStr != null)
+
+            // Check that type of items from collection to be iterated are the same or convertible to the type of iteration variable
+            if (declaratorTypeStr != null && declaratorTypeStr != "" && elementTypeStr != null)
             {
-                if (!IsSameStringType(elementTypeStr, xplDeclarator.get_type().get_typeStr()))
-                    if (ExistsExplicitConversion(elementTypeStr, xplDeclarator.get_type().get_typeStr(), currentScope) == null)
+                if (!IsSameStringType(elementTypeStr, declaratorTypeStr))
+                    if (ExistsExplicitConversion(elementTypeStr, declaratorTypeStr, null, currentScope) == null)
                     {
                         AddNewError(
                             SemanticError.New(SemanticErrorCode.AdecuateConversionDoesnotExistsOnForeach,
-                            conditionExp, elementTypeStr, xplDeclarator.get_type().get_typeStr()));
+                            conditionExp, elementTypeStr, declaratorTypeStr));
                     }
             }
         }
@@ -639,39 +658,39 @@ namespace LayerD.ZOECompiler
                             break;
                         }
                         // Si es tipo string o convertible implicitamente a un tipo entero o un tipo string
-                        if (!IsSameStringType(MakePointerTypeTo(NativeTypes.String), switchExpResStr) &&
-                            !IsSameStringType(MakePointerTypeTo(NativeTypes.ASCIIString), switchExpResStr))
+                        if (!IsSameStringType(TypeString.MakePointerTypeTo(NativeTypes.String), switchExpResStr) &&
+                            !IsSameStringType(TypeString.MakePointerTypeTo(NativeTypes.ASCIIString), switchExpResStr))
                         {
                             //Aqui debo intentar convertir a alguno de los tipos validos
                             string toTypeStr = null;
                             ConversionData cdata = null;
-                            cdata = ExistsImplicitConversion(switchExpResStr, toTypeStr = NativeTypes.Byte, currentScope);
+                            cdata = ExistsImplicitConversion(switchExpResStr, toTypeStr = NativeTypes.Byte, switchExp, currentScope);
                             if (cdata == null)
-                                cdata = ExistsImplicitConversion(switchExpResStr, toTypeStr = NativeTypes.SByte, currentScope);
+                                cdata = ExistsImplicitConversion(switchExpResStr, toTypeStr = NativeTypes.SByte, switchExp, currentScope);
                             if (cdata == null)
-                                cdata = ExistsImplicitConversion(switchExpResStr, toTypeStr = NativeTypes.Short, currentScope);
+                                cdata = ExistsImplicitConversion(switchExpResStr, toTypeStr = NativeTypes.Short, switchExp, currentScope);
                             if (cdata == null)
-                                cdata = ExistsImplicitConversion(switchExpResStr, toTypeStr = NativeTypes.UShort, currentScope);
+                                cdata = ExistsImplicitConversion(switchExpResStr, toTypeStr = NativeTypes.UShort, switchExp, currentScope);
                             if (cdata == null)
-                                cdata = ExistsImplicitConversion(switchExpResStr, toTypeStr = NativeTypes.Integer, currentScope);
+                                cdata = ExistsImplicitConversion(switchExpResStr, toTypeStr = NativeTypes.Integer, switchExp, currentScope);
                             if (cdata == null)
-                                cdata = ExistsImplicitConversion(switchExpResStr, toTypeStr = NativeTypes.Unsigned, currentScope);
+                                cdata = ExistsImplicitConversion(switchExpResStr, toTypeStr = NativeTypes.Unsigned, switchExp, currentScope);
                             if (cdata == null)
-                                cdata = ExistsImplicitConversion(switchExpResStr, toTypeStr = NativeTypes.Long, currentScope);
+                                cdata = ExistsImplicitConversion(switchExpResStr, toTypeStr = NativeTypes.Long, switchExp, currentScope);
                             if (cdata == null)
-                                cdata = ExistsImplicitConversion(switchExpResStr, toTypeStr = NativeTypes.ULong, currentScope);
+                                cdata = ExistsImplicitConversion(switchExpResStr, toTypeStr = NativeTypes.ULong, switchExp, currentScope);
                             if (cdata == null)
-                                cdata = ExistsImplicitConversion(switchExpResStr, toTypeStr = NativeTypes.Char, currentScope);
+                                cdata = ExistsImplicitConversion(switchExpResStr, toTypeStr = NativeTypes.Char, switchExp, currentScope);
                             if (cdata == null)
-                                cdata = ExistsImplicitConversion(switchExpResStr, toTypeStr = NativeTypes.ASCIIChar, currentScope);
+                                cdata = ExistsImplicitConversion(switchExpResStr, toTypeStr = NativeTypes.ASCIIChar, switchExp, currentScope);
                             if (cdata == null)
-                                cdata = ExistsImplicitConversion(switchExpResStr, toTypeStr = NativeTypes.String, currentScope);
+                                cdata = ExistsImplicitConversion(switchExpResStr, toTypeStr = NativeTypes.String, switchExp, currentScope);
                             if (cdata == null)
-                                cdata = ExistsImplicitConversion(switchExpResStr, toTypeStr = NativeTypes.ASCIIString, currentScope);
+                                cdata = ExistsImplicitConversion(switchExpResStr, toTypeStr = NativeTypes.ASCIIString, switchExp, currentScope);
                             if (cdata == null)
-                                cdata = ExistsImplicitConversion(switchExpResStr, toTypeStr = MakePointerTypeTo(NativeTypes.String), currentScope);
+                                cdata = ExistsImplicitConversion(switchExpResStr, toTypeStr = TypeString.MakePointerTypeTo(NativeTypes.String), switchExp, currentScope);
                             if (cdata == null)
-                                cdata = ExistsImplicitConversion(switchExpResStr, toTypeStr = MakePointerTypeTo(NativeTypes.ASCIIString), currentScope);
+                                cdata = ExistsImplicitConversion(switchExpResStr, toTypeStr = TypeString.MakePointerTypeTo(NativeTypes.ASCIIString), switchExp, currentScope);
                             if (cdata == null)
                                 AddNewError(
                                     SemanticError.New(SemanticErrorCode.InvalidTypeOfSwitchExpression, switchExp));
@@ -714,7 +733,7 @@ namespace LayerD.ZOECompiler
                             caseExpResStr = caseRes.get_TypeStr();
                             if (!IsSameStringType(switchExpResStr, caseExpResStr))
                             {
-                                ConversionData cdata = ExistsImplicitConversion(caseExpResStr, switchExpResStr, currentScope);
+                                ConversionData cdata = ExistsImplicitConversion(caseExpResStr, switchExpResStr, caseExp, currentScope);
                                 if (cdata == null)
                                     AddNewError(SemanticError.New(SemanticErrorCode.InvalidTypeOfCaseExpression, caseExp,
                                         caseExpResStr, switchExpResStr));
@@ -801,18 +820,53 @@ namespace LayerD.ZOECompiler
             else if (init != null && init.get_array())
             {
                 CheckExpressionsOnInitializer(init.Children(), scope);
+                // TODO check items are convertible to array items type
             }
         }
         private void CheckInitializer(XplDeclarator decl, TypeInfo classType, Scope currentScope)
         {
-            //PENDIENTE : Chequear las expresiones de inicialización.
-            //ESTO Q ESTA HECHO ESTA MAL, SOLO PROCESA LAS EXPRESIONES SIMPLES DE 
-            //INICIALIZACIÓN Y NO CHEQUEA QUE EL TIPO SEA CONVERTIBLE A LA VARIABLE
+            //TODO complete this method
             XplInitializerList list = decl.get_i();
-            if (list != null)
+            if (list == null) return;
+
+            CheckExpressionsOnInitializer(list.Children(), currentScope);
+
+            string requiredTypeStr = decl.get_type().get_typeStr();
+            // if typestr is null or empty it means unresolved type for declarator; can't check initialization correctness
+            if(String.IsNullOrEmpty(requiredTypeStr)) return;
+
+            if (list.get_array())
             {
-                CheckExpressionsOnInitializer(list.Children(), currentScope);
+                if (TypeString.IsPointerToArrayType(requiredTypeStr)) requiredTypeStr = TypeString.RemovePointerIndirectionsFromType(requiredTypeStr, 1);
+                if (TypeString.IsArrayType(requiredTypeStr)) requiredTypeStr = TypeString.RemoveArrayTypeFromType(requiredTypeStr);
+                // TODO check array
             }
+            else{
+                // check if type is the same than declaration
+                XplExpression initExp = list.Children().FirstNode() as XplExpression;
+                if (initExp != null)
+                {
+                    string currentTypeStr = initExp.get_typeStr();
+                    if (!String.IsNullOrEmpty(currentTypeStr) && !IsSameStringType(currentTypeStr, requiredTypeStr))
+                    {
+                        var conversionResult = ExistsImplicitConversion(currentTypeStr, requiredTypeStr, initExp, currentScope);
+                        if (conversionResult == null)
+                        {
+                            AddNewError(SemanticError.New(SemanticErrorCode.IncompatibleTypesForAssignmentInInitialization,
+                                list, currentTypeStr, requiredTypeStr, "In function \"" + decl.CurrentFunction.get_name() + "\" of class \"" + classType.get_FullName() + "\"."));
+                        }
+                        else
+                        {
+                            // TODO mark implicit conversion in zoe
+                        }
+                    }
+                }
+                else
+                {
+                    // TODO consider when it isn't a simple initialization
+                }
+            }
+
         }
         private void CheckInitializer(XplField decl, TypeInfo classType, Scope currentScope)
         {

@@ -1,3 +1,13 @@
+/*******************************************************************************
+* Copyright (c) 20011, 2012 Intel Corporation.
+* All rights reserved. This program and the accompanying materials
+* are made available under the terms of the Eclipse Public License v1.0
+* which accompanies this distribution, and is available at
+* http://www.eclipse.org/legal/epl-v10.html
+*
+* Contributors:
+*       Alexis Ferreyra (Intel Corporation) - bug fixing
+*******************************************************************************/
 /*-
  * Copyright (c) 2008 Alexis Ferreyra
  * All rights reserved.
@@ -42,7 +52,7 @@
 
 #line 1 "layerd_dpp_parser_rutines.cpp"
 
-#include <stdio.h>
+#include <io.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>, 
@@ -50,6 +60,9 @@
 #define CD_COUT cout
 //CT(n) : Macro para constantes de texto en la interfaz del compilador, diferente de DT(n) que es la macro para constantes del CodeDOM.
 #define CT(n) n 
+
+#define FALSE 1
+#define TRUE 0
 
 void OutFooter(){
 	CD_COUT<<endl<<CT("Meta D++ Compiler (Version ")<<LAYERD_COMPILER_VERSION<<CT(") 2005(R).")<<endl;
@@ -219,12 +232,12 @@ void printErrors(){
 }
 void AddError(const char*error){
 	char buf[10];
-	sprintf(buf, "%i", yylineno);
+	itoa(yylineno,buf,10);
 	pErrors.push_back((std::string)command.filename+(std::string)"("+(std::string)buf+(std::string)") : error : "+(std::string)error);
 }
 void AddWarning(const char*error){
 	char buf[10];
-	sprintf(buf, "%i", yylineno);
+	itoa(yylineno,buf,10);
 	pWarnings.push_back((std::string)command.filename+(std::string)"("+(std::string)buf+(std::string)") : warning : "+(std::string)error);
 }
 
@@ -242,7 +255,6 @@ CodeDOM::XplNodeList* NewErrorResumeXplNodeList(){
 	return tempList;
 }
 
-#define FALSE 0
 
 int main(int argc, char*argv[])
 {
@@ -261,7 +273,7 @@ int main(int argc, char*argv[])
 			ExitWithHelp();
 		}
 		std::wfstream outFile;
-		//int outFile2=0;
+		int outFile2=0;
 		//Tengo que usar la libreria estandar de C para el archivo de entrada por flex!
 		FILE* inFile;
 		inFile=fopen(command.filename,"r");
@@ -305,8 +317,10 @@ int main(int argc, char*argv[])
 			mbstowcs(fileNameBuffer,command.filename,strlen(command.filename)+1);
 			body->set_ldsrc( (CodeDOM::string)DT("1,1,")+(CodeDOM::string)fileNameBuffer );
 			
-			outFile.open(command.outputFilename,ios_base::trunc | ios_base::out );
-			if(outFile.fail() || !outFile.is_open()){
+			outFile2=_open( command.outputFilename, _O_WRONLY | _O_CREAT | _O_U8TEXT | _O_TRUNC, _S_IWRITE ); 
+			//outFile.open(command.outputFilename,ios_base::trunc | ios_base::out );
+			//if(outFile.fail() || !outFile.is_open()){
+			if(outFile2==-1){
 				CD_COUT<<CT("ERROR: Output file: \"")<<command.outputFilename<<CT("\" couldn't be opened.")<<endl;
 				OutFooter();
 				return FALSE;
@@ -321,7 +335,8 @@ int main(int argc, char*argv[])
 				doc->Write(writer);
 				CD_COUT<<endl<<endl;
 			}
-       		writer=new CodeDOM::XplWriter((std::wiostream*)&outFile);
+       		writer=new CodeDOM::XplWriter(outFile2);
+       		//writer=new CodeDOM::XplWriter((std::wiostream*)&outFile);
 			doc->Write(writer);
 			//Elimino el documento de la memoria
 			delete doc;
@@ -336,7 +351,8 @@ int main(int argc, char*argv[])
 		}
 		//Cierro los archivos
 		fclose(inFile);
-		outFile.close();
+		//outFile.close();
+		_close(outFile2);
 		delete writer;
 		if(!command.silent)CD_COUT<<endl<<CT("Finalized.")<<endl;
 	} // argc>1
@@ -587,6 +603,7 @@ CodeDOM::XplFunction* CreateFunction(unsigned int p_storage /*Storage*/,
 	f->set_BaseInitializers(p_base_initializers);
 	return f;
 }
+
 void SetDeclaratorMod(CodeDOM::XplClass* c,unsigned int num){
 	unsigned int flags=0;
 	if(c==NULL)return;
@@ -1055,6 +1072,7 @@ CodeDOM::XplForStatement* CreateFor(CodeDOM::XplNode* p_forinit,CodeDOM::XplNode
 	if(p_update!=NULL)fs->set_repeat((CodeDOM::XplExpressionlist*)p_update);
 	return fs;
 }
+
 wchar_t* get_nativeType(unsigned num){
 	switch(num){
 		case PC_VOID:

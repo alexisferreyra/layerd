@@ -1,16 +1,13 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 10.00
-# Visual Studio 2008
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "zoec_net", "layerdxplc_net\zoec_net.csproj", "{8EE53024-1041-4D77-9114-35228E569D74}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CodeDOM", "CodeDOM\CodeDOM.vcproj", "{3F45B085-BB45-43D1-A0C5-21A27750199E}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CodeDOM", "CodeDOM\CodeDOM.vcxproj", "{3F45B085-BB45-43D1-A0C5-21A27750199E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DOMGenerator", "DOMGenerator\DOMGenerator.csproj", "{CCB5A92C-34E5-43F3-B03C-05C70C3E870B}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "metadppc", "layerddpp\layerddpp.vcproj", "{5F9DA547-AD19-49EF-BB78-72FA6063B70B}"
-	ProjectSection(ProjectDependencies) = postProject
-		{3F45B085-BB45-43D1-A0C5-21A27750199E} = {3F45B085-BB45-43D1-A0C5-21A27750199E}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "metadppc", "layerddpp\layerddpp.vcxproj", "{5F9DA547-AD19-49EF-BB78-72FA6063B70B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "lib_layerd_xpl_codedom_net", "lib_layerd_xpl_codedom_cs\lib_layerd_xpl_codedom_net.csproj", "{A5E96AAA-E255-452C-9F58-AD31D588DEFE}"
 EndProject

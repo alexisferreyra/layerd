@@ -1,4 +1,14 @@
 %{
+/*******************************************************************************
+* Copyright (c) 2011, 2012 Intel Corporation.
+* All rights reserved. This program and the accompanying materials
+* are made available under the terms of the Eclipse Public License v1.0
+* which accompanies this distribution, and is available at
+* http://www.eclipse.org/legal/epl-v10.html
+*
+* Contributors:
+*       Alexis Ferreyra (Intel Corporation) - bug fixing
+*******************************************************************************/
 /*-
  * Copyright (c) 2008 Alexis Ferreyra
  * All rights reserved.
@@ -47,7 +57,7 @@
 #ifdef WIN32
 #include "..\\CodeDOM\\CDOM_IncludeAll.h"
 #else
-#include "../CodeDOM/CDOM_IncludeAll.h"
+#include <layerd/CDOM_IncludeAll.h>
 #endif
 #include "layerd_dpp_parser_beta_tab.h"
 
@@ -95,21 +105,21 @@ int counter=0;
 <COMILLA>\n					{LEXER_RETURN(ERROR_COMILLA);BEGIN(0);}
 
  /*	LITERALES NULL Y BOOLEAN */
-"null"						{//NULL_LITERAL
+"null"|"NULL"				{//NULL_LITERAL
 								yylval.literal=new CodeDOM::XplLiteral();
 								yylval.literal->set_type(CodeDOM::ZOELITERALTYPE_ENUM_NULL);
 								yylval.literal->set_str(DT("0"));
 								yyposn=yylineno;
 								LEXER_RETURN(NULL_LITERAL);
 							}
-"true"						{//BOOLEAN_LITERAL_TRUE
+"TRUE"|"true"				{//BOOLEAN_LITERAL_TRUE
 								yylval.literal=new CodeDOM::XplLiteral();
 								yylval.literal->set_type(CodeDOM::ZOELITERALTYPE_ENUM_BOOL);
 								yylval.literal->set_str(DT("true"));
 								yyposn=yylineno;
 								LEXER_RETURN(BOOLEAN_LITERAL_TRUE);
 							}
-"false"						{//BOOLEAN_LITERAL_FALSE
+"FALSE"|"false"				{//BOOLEAN_LITERAL_FALSE
 								yylval.literal=new CodeDOM::XplLiteral();
 								yylval.literal->set_type(CodeDOM::ZOELITERALTYPE_ENUM_BOOL);
 								yylval.literal->set_str(DT("false"));
@@ -253,7 +263,7 @@ int counter=0;
 
  /* ESPACIO EN BLANCO */
 
-[ \t\n\r\b]+					;//LEXER_RETURN(WHITE_SPACE);
+[ \t\n\b]+					;//LEXER_RETURN(WHITE_SPACE);
 
 
  /* SEPARADORES O PUNCTUATORS */
@@ -320,6 +330,8 @@ int counter=0;
 
 "import"					LEXER_RETURN(PC_IMPORT);
 "using"						LEXER_RETURN(PC_USING);
+"identifiers"				LEXER_RETURN(PC_IDENTIFIERS);
+"alias"						LEXER_RETURN(PC_ALIAS);
 "namespace"					LEXER_RETURN(PC_NAMESPACE);
 "class"						LEXER_RETURN(PC_CLASS);
 "enum"						LEXER_RETURN(PC_ENUM);
@@ -329,6 +341,13 @@ int counter=0;
 "implements"				LEXER_RETURN(PC_IMPLEMENTS);
 "virtual"					LEXER_RETURN(PC_VIRTUAL);
 "nonvirtual"				LEXER_RETURN(PC_NONVIRTUAL);
+"like"						LEXER_RETURN(PC_LIKE);
+"setplatforms"				LEXER_RETURN(PC_SETPLATFORMS);
+"autoinstance"				LEXER_RETURN(PC_AUTOINSTANCE);
+"bycall"					LEXER_RETURN(PC_BYCALL);
+"byclass"					LEXER_RETURN(PC_BYCLASS);
+"bynamespace"				LEXER_RETURN(PC_BYNAMESPACE);
+"bycallto"					LEXER_RETURN(PC_BYCALLTO);
 "fp"						LEXER_RETURN(PC_FPOINTER);
 
 "public"					LEXER_RETURN(PC_PUBLIC);
@@ -366,8 +385,8 @@ int counter=0;
 "get"						LEXER_RETURN(PC_GET);
 
 "readonly"					LEXER_RETURN(PC_READONLY);
- /*"blocktofactorys"			LEXER_RETURN(PC_BLOCKTOFACTORYS);*/
- /*"except"					LEXER_RETURN(PC_EXCEPT);*/
+"blocktofactorys"			LEXER_RETURN(PC_BLOCKTOFACTORYS);
+"except"					LEXER_RETURN(PC_EXCEPT);
 "set"						LEXER_RETURN(PC_SET);
 "resume"					LEXER_RETURN(PC_RESUME);
 "break"						LEXER_RETURN(PC_BREAK);
@@ -409,11 +428,11 @@ int counter=0;
 "ASCIIString"				LEXER_RETURN(PC_ASCII_STRING);
 "type"						LEXER_RETURN(PC_TYPE);
 "block"						LEXER_RETURN(PC_BLOCK);
- /*"expression"				LEXER_RETURN(PC_EXPRESSION);*/
+"expression"				LEXER_RETURN(PC_EXPRESSION);
 "exp"             	        LEXER_RETURN(PC_EXPRESSION);
- /*"expressionlist"			LEXER_RETURN(PC_EXPRESSIONLIST);*/
+"expressionlist"			LEXER_RETURN(PC_EXPRESSIONLIST);
 "iname"						LEXER_RETURN(PC_INAME);
- /*"statement"					LEXER_RETURN(PC_STATEMENT);*/
+"statement"					LEXER_RETURN(PC_STATEMENT);
 "sizeof"					LEXER_RETURN(PC_SIZEOF);
 "typeof"					LEXER_RETURN(PC_TYPEOF);
 "gettype"                   LEXER_RETURN(PC_GETTYPE);

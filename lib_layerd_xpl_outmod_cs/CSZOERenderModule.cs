@@ -1,12 +1,23 @@
+/*******************************************************************************
+* Copyright (c) 2008, 2012 Alexis Ferreyra, Intel Corporation.
+* All rights reserved. This program and the accompanying materials
+* are made available under the terms of the Eclipse Public License v1.0
+* which accompanies this distribution, and is available at
+* http://www.eclipse.org/legal/epl-v10.html
+*
+* Contributors:
+*       Alexis Ferreyra - initial API and implementation
+*       Alexis Ferreyra (Intel Corporation)
+*******************************************************************************/
 /****************************************************************************
  
-  C# Output Module for Zoe compiler
+C# Output Module for Zoe compiler
   
-  Original Author: Alexis Ferreyra
-  Contact: alexis.ferreyra@layerd.net
+Original Author: Alexis Ferreyra
+Contact: alexis.ferreyra@layerd.net
   
-  Please visit http://layerd.net to get the last version
-  of the software and information about LayerD technology.
+Please visit http://layerd.net to get the last version
+of the software and information about LayerD technology.
 
 ****************************************************************************/
 /*-
@@ -370,20 +381,20 @@ namespace LayerD.OutputModules
             switch (data.Length)
             {
                 case 1:
-                    minLine=maxLine=Int32.Parse(data[0]);
+                    minLine=maxLine=Int32.Parse(data[0], CultureInfo.InvariantCulture);
                     break;
                 case 2:
-                    minLine=Int32.Parse(data[0]);
-                    maxLine=Int32.Parse(data[1]);
+                    minLine = Int32.Parse(data[0], CultureInfo.InvariantCulture);
+                    maxLine = Int32.Parse(data[1], CultureInfo.InvariantCulture);
                     break;
                 case 3:
-                    minLine = Int32.Parse(data[0]);
-                    maxLine = Int32.Parse(data[1]);
+                    minLine = Int32.Parse(data[0], CultureInfo.InvariantCulture);
+                    maxLine = Int32.Parse(data[1], CultureInfo.InvariantCulture);
                     currentFile = data[2];
                     break;
                 case 5:
-                    minLine = Int32.Parse(data[0]);
-                    maxLine = Int32.Parse(data[2]);
+                    minLine = Int32.Parse(data[0], CultureInfo.InvariantCulture);
+                    maxLine = Int32.Parse(data[2], CultureInfo.InvariantCulture);
                     currentFile = data[4];
                     break;
             }
@@ -561,7 +572,7 @@ namespace LayerD.OutputModules
                     typeName = p_keywordsToReplace[typeName];
             }
 
-            if (p_namespaceToRemove != "" && typeName.StartsWith(p_namespaceToRemove))
+            if (p_namespaceToRemove != "" && typeName.StartsWith(p_namespaceToRemove,StringComparison.InvariantCulture))
                 if (typeName.Length == p_namespaceToRemove.Length) return String.Empty;
                 else typeName = typeName.Remove(0, p_namespaceToRemove.Length + 1);
 
@@ -590,7 +601,7 @@ namespace LayerD.OutputModules
                 for (int n = p_usings.Count - 1; n >= 0; n--)
                 {
                     string usingStr = (string)p_usings.GetByIndex(n);
-                    if (typeName.StartsWith(usingStr))
+                    if (typeName.StartsWith(usingStr,StringComparison.InvariantCulture))
                     {
                         typeName = typeName.Substring(usingStr.Length + 1);
                         if (p_currentClassInfo.Usings[usingStr] == null)
@@ -600,7 +611,7 @@ namespace LayerD.OutputModules
                 }
             }
 
-            if (typeName.StartsWith("zoe.lang.DateTime")) typeName = typeName.Replace("zoe.lang.DateTime", "System.DateTime");
+            if (typeName.StartsWith("zoe.lang.DateTime", StringComparison.InvariantCulture)) typeName = typeName.Replace("zoe.lang.DateTime", "System.DateTime");
 
             return typeName;
 		}
@@ -613,7 +624,7 @@ namespace LayerD.OutputModules
         {
             typeName = typeName.Replace("::", ".");
 
-            if (p_namespaceToRemove != "" && typeName.StartsWith(p_namespaceToRemove))
+            if (p_namespaceToRemove != "" && typeName.StartsWith(p_namespaceToRemove, StringComparison.InvariantCulture))
                 typeName = typeName.Remove(0, p_namespaceToRemove.Length + 1);
 
             return typeName;
@@ -1088,8 +1099,14 @@ namespace LayerD.OutputModules
             writeLineDirective(importDirective.get_ldsrc(), false);
             string usingString = null;
             bool flag = false;
+
             foreach (XplNode node in importDirective.Children())
             {
+                if (!GetImportPlatform(importDirective).Contains("DotNET"))
+                {
+                    continue;
+                }
+
 				tempStr=node.get_StringValue();
                 if (tempStr.IndexOf('=') == -1)
                 {
@@ -1099,7 +1116,7 @@ namespace LayerD.OutputModules
                 else
                 {
                     flag = true;
-                    string parameterName = tempStr.Substring(0, tempStr.IndexOf('=')).ToLower();
+                    string parameterName = tempStr.Substring(0, tempStr.IndexOf('=')).ToLower(CultureInfo.InvariantCulture);
                     string parameterValue = tempStr.Substring(tempStr.IndexOf('=') + 1);
                     switch (parameterName)
                     {
@@ -1108,12 +1125,12 @@ namespace LayerD.OutputModules
                                 p_namespaceToRemove = parameterValue;
                             break;
                         case "assembly":
-                            if(!parameterValue.EndsWith(".dll")) parameterValue += ".dll";
-                            if (parameterValue.ToLower() != "mscorlib" && !p_assemblyList.Contains(parameterValue.ToLower()))
-                                p_assemblyList.Add(parameterValue.ToLower());
+                            if (!parameterValue.EndsWith(".dll", StringComparison.InvariantCulture)) parameterValue += ".dll";
+                            if (parameterValue.ToLower(CultureInfo.InvariantCulture) != "mscorlib" && !p_assemblyList.Contains(parameterValue.ToLower(CultureInfo.InvariantCulture)))
+                                p_assemblyList.Add(parameterValue.ToLower(CultureInfo.InvariantCulture));
                             break;
                         case "assemblyfilename":
-                            string assemblyFilename = parameterValue.ToLower();
+                            string assemblyFilename = parameterValue.ToLower(CultureInfo.InvariantCulture);
                             if (!Path.IsPathRooted(assemblyFilename))
                             {
                                 // If supplied filename doesn't exists try to search with relative path to source
@@ -1138,6 +1155,16 @@ namespace LayerD.OutputModules
                 //writeNewLine();
             }
 		}
+
+        private string GetImportPlatform(XplName importDirective)
+        {
+            foreach (XplNode node in importDirective.Children())
+            {
+                string value = node.get_StringValue();
+                if (value.StartsWith("platform=", StringComparison.OrdinalIgnoreCase)) return value.Substring(9);
+            }
+            return String.Empty;
+        }
         /// <summary>
         /// Renders the begin namespace.
         /// </summary>
@@ -1213,7 +1240,7 @@ namespace LayerD.OutputModules
                 //Para clases que simulan instancias de genericos
                 //asumo el formato $NET_GENERIC[ZoeClassName|NetGenericName<With,Generic,Params>]$
                 string lddata = classDecl.get_lddata();
-                int index = lddata.IndexOf("$NET_GENERIC"), index2;
+                int index = lddata.IndexOf("$NET_GENERIC", StringComparison.InvariantCulture), index2;
                 if (index >= 0)
                 {
                     string netGenericName;
@@ -1432,12 +1459,14 @@ namespace LayerD.OutputModules
 			if(isFp){ //Declaro un delegate
 				writeOut(DelegatePC);
 			}
-			if(functionName.IndexOf("%indexer%")>=0){
+            if (functionName.IndexOf("%indexer%", StringComparison.InvariantCulture) >= 0)
+            {
 				functionName=functionName.Replace("%indexer%","");
 				functionName+=IndexerPC;
 				currentFunctionType=FunctionType.Indexer;
 			}
-			else if(functionName.IndexOf("%op_")>=0){
+            else if (functionName.IndexOf("%op_", StringComparison.InvariantCulture) >= 0)
+            {
 				currentFunctionType=FunctionType.Operator;
 				#region Nombres de Operadores
 				switch(functionName){
@@ -1518,12 +1547,16 @@ namespace LayerD.OutputModules
 						functionName=OperatorPC+"_delete";
 						break;
 					case "%op_explicit%":
+                        // TODO explicit operator breaks the compilation process
 						AddWarning("Operadores de conversion no implementados en el modulo de salida.");
-						functionName=ExplicitPC+OperatorPC+"T";
+                        functionName = "operator_explicit_NotSupported";
+                        // functionName = ExplicitPC + OperatorPC + "T";
 						break;
 					case "%op_implicit%":
-						AddWarning("Operadores de conversion no implementados en el modulo de salida.");
-						functionName=ImplicitPC+OperatorPC+"T";
+                        // TODO implicit operator breaks the compilation process
+                        AddWarning("Operadores de conversion no implementados en el modulo de salida.");
+                        functionName = "operator_implicit_NotSupported";
+                        // functionName = ImplicitPC + OperatorPC + "T";
 						break;
 					default:
                         AddError("No se pudo identificar el operador \"" + functionName + "\" utilizado.");
@@ -2489,7 +2522,18 @@ namespace LayerD.OutputModules
         /// <param name="context">The context.</param>
         /// <returns>A string with the rendered item.</returns>
 		protected override string renderExpressionListItem(XplExpression expNode, string expStr, int expNumber, int expCount, EZOEContext context){
-			if(expNumber!=expCount)return expStr+", ";
+            if (expNode.get_Parent().get_Parent().IsA(CodeDOMTypes.XplFunctioncall))
+            {
+                if (expNode.get_lddata().Contains("$INOUT_ARG$"))
+                {
+                    expStr = InoutPC + expStr;
+                }
+                else if (expNode.get_lddata().Contains("$OUT_ARG$"))
+                {
+                    expStr = OutPC + expStr;
+                }
+            }
+            if(expNumber!=expCount)return expStr+", ";
 			else return expStr;
 		}
         /// <summary>
@@ -2507,7 +2551,8 @@ namespace LayerD.OutputModules
         /// <param name="name">The name.</param>
         /// <param name="context">The context.</param>
         /// <returns>A string with the rendered item.</returns>
-		protected override string renderSimpleName(string name, EZOEContext context){
+        protected override string renderSimpleName(XplNode node, string name, EZOEContext context)
+        {
 			//Simplemente asumo que todo es correcto y debo reemplazar "::" por "."
             if (name == "this" || name == "base") return name;
 			return processUserTypeName(name);
@@ -2539,7 +2584,7 @@ namespace LayerD.OutputModules
                     tempStr = litStr;
 					break;
                 case XplLiteraltype_enum.FLOAT:
-                    tempStr = litStr + ( litStr.EndsWith("f") ? "" : "f" );
+                    tempStr = litStr + (litStr.EndsWith("f", StringComparison.InvariantCulture) ? "" : "f");
                     break;
                 case XplLiteraltype_enum.DATETIME:
 				case XplLiteraltype_enum.ASCIISTRING:
@@ -2765,7 +2810,15 @@ namespace LayerD.OutputModules
 				case XplBinaryoperators_enum.XOR: //Xor de Bits
                     tempStr = leftExpStr + " ^ " + rightExpStr;
 					break;
-			}
+                case XplBinaryoperators_enum.COMMA:
+                    tempStr = leftExpStr + "+" + rightExpStr;
+                    AddError("Comma operator not supported in .NET.");
+                    break;
+                default:
+                    tempStr = leftExpStr + "+" + rightExpStr;
+                    AddError("Unrecognized binary operator in expression.");
+                    break;
+            }
 			#endregion
 			if(p_OptimiseParenthesis){
 				if(!flag && requireParenthesis(bopExp))tempStr="("+tempStr+")";
@@ -2813,11 +2866,12 @@ namespace LayerD.OutputModules
                     XplExpression parentExp = (XplExpression)uopExp.get_Parent();
                     if(parentExp.get_lddata().Contains("$INOUT_ARG$"))
                     {
-                        tempStr = InoutPC + expStr;
+                        // do nothing, this is added in expression list item render
+                        // tempStr = InoutPC + expStr;
                     }
                     else if (parentExp.get_lddata().Contains("$OUT_ARG$"))
                     {
-                        tempStr = OutPC + expStr;
+                        // tempStr = OutPC + expStr;
                     }
                     else
                     {
@@ -2861,8 +2915,7 @@ namespace LayerD.OutputModules
 					tempStr="sizeof("+expStr+")";
 					break;
 				case XplUnaryoperators_enum.TYPEOF:
-					AddWarning("Operador unario 'Tipo de' ('typeof') posiblemente no implementado correctamente por el Modulo de Salida. Se requiere un tipo, no una expresión.");
-					tempStr="typeof("+expStr+")";
+                    tempStr = "(" + expStr + ").GetType()";
 					break;
 			}
 			#endregion
@@ -2900,7 +2953,7 @@ namespace LayerD.OutputModules
                 }
                 else
                 {
-                    index = leftExpStr.LastIndexOf("->");
+                    index = leftExpStr.LastIndexOf("->", StringComparison.InvariantCulture);
                     if (index > 0)
                     {
                         //La expresion izquierda es un acceso a miembro de puntero
@@ -2914,13 +2967,13 @@ namespace LayerD.OutputModules
             //PENDIENTE : mejorar esto urgente para controlar eventos
             //no puede ser tan choto!!!!            
             if (internalName.Length>3 &&
-                internalName.StartsWith("add_")
+                internalName.StartsWith("add_", StringComparison.InvariantCulture)
             ){
                 return leftExpStr.Replace("add_","") + "+=" + argsStr;
             }
             else if (
                 internalName.Length > 6 &&
-                internalName.StartsWith("remove_")
+                internalName.StartsWith("remove_", StringComparison.InvariantCulture)
             )
             {
                 return leftExpStr.Replace("remove_", "") + "-=" + argsStr;
@@ -3166,7 +3219,7 @@ namespace LayerD.OutputModules
                     {
                         //Proceso los argumentos de renderizacion
                         //Por ahora solo considero la grabación del código recibido
-                        if (renderArgument.ToLower() == "save_ezoe" && p_XplDocument != null)
+                        if (renderArgument.ToLower(CultureInfo.InvariantCulture) == "save_ezoe" && p_XplDocument != null)
                         {
                             XplWriter writer = null;
                             try
@@ -3181,7 +3234,7 @@ namespace LayerD.OutputModules
                             }
                         }
                     }
-                    if (renderArguments.ToLower() == "pretty")
+                    if (renderArguments.ToLower(CultureInfo.InvariantCulture) == "pretty")
                     {
                         p_prettyOutput = true;
                         p_dontWriteLineDirecties = true;
@@ -3214,6 +3267,7 @@ namespace LayerD.OutputModules
             }
             return parseResult;
         }
+        
 
         private void RenderPrettyOutput()
         {
@@ -3222,6 +3276,7 @@ namespace LayerD.OutputModules
                 RenderClassInfo(classInfo);
             }
         }
+
 
         private void RenderClassInfo(ClassInfo classInfo)
         {
@@ -3240,7 +3295,7 @@ namespace LayerD.OutputModules
                 foreach (string usingStr in classInfo.Usings.Keys)
                 {
                     string usingStr2 = usingStr;
-                    if (usingStr2.StartsWith(p_namespaceToRemove)) usingStr2 = usingStr2.Substring(p_namespaceToRemove.Length + 1);
+                    if (usingStr2.StartsWith(p_namespaceToRemove, StringComparison.InvariantCulture)) usingStr2 = usingStr2.Substring(p_namespaceToRemove.Length + 1);
                     currentWriter.WriteLine(UsingPC + usingStr2 + ";");
                 }
                 currentWriter.WriteLine();
@@ -3388,10 +3443,20 @@ namespace LayerD.OutputModules
                     string errStr = ce.FileName + "(" + ce.Line + "):" + ce.ErrorNumber + " - " + ce.ErrorText;
                     if (ce.IsWarning)
                         AddWarning(errStr);
-                    else
-                        AddError(errStr);
+                    else{
+						if(!errStr.Contains("Location of the symbol related to previous warning"))
+                        	AddError(errStr);
+					}
                 }
-                return p_errors.get_ErrorsCount()==0;
+                if (p_errors.get_ErrorsCount() == 0)
+                {
+                    p_lastInMemoryCompiledAssembly = cr.CompiledAssembly;
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
             }
             else{
                 p_lastInMemoryCompiledAssembly = cr.CompiledAssembly;                
@@ -3461,10 +3526,10 @@ namespace LayerD.OutputModules
             if (p_prettyOutput)
             {
                 string usingStr = xplName.Children().FirstNode().get_StringValue();
-                if (usingStr.StartsWith(p_namespaceToRemove))
+                if (usingStr.StartsWith(p_namespaceToRemove, StringComparison.InvariantCulture))
                 {
                     usingStr = usingStr.Replace("::",".");
-                    if (p_namespaceToRemove != "" && usingStr.StartsWith(p_namespaceToRemove))
+                    if (p_namespaceToRemove != "" && usingStr.StartsWith(p_namespaceToRemove, StringComparison.InvariantCulture))
                         usingStr = usingStr.Remove(0, p_namespaceToRemove.Length + 1);
 
                     if (!p_usings.ContainsValue(usingStr))
@@ -3536,6 +3601,12 @@ namespace LayerD.OutputModules
                 }                
             }
             return "(" + expStr + " is " + typeStr + ")";
+        }
+
+        protected override string renderSizeofExp(XplType xplType, string typeStr, EZOEContext eZOEContext)
+        {
+            AddError("sizeof(type) expression not supported by this output module. ");
+            return "__error_sizeof_not_supported";
         }
 
     }

@@ -1,12 +1,13 @@
 ﻿/*******************************************************************************
-* Copyright (c) 2007, 2008 Alexis Ferreyra.
+* Copyright (c) 2007, 2012 Alexis Ferreyra, Intel Corporation.
 * All rights reserved. This program and the accompanying materials
 * are made available under the terms of the Eclipse Public License v1.0
 * which accompanies this distribution, and is available at
 * http://www.eclipse.org/legal/epl-v10.html
 *
 * Contributors:
-*     Alexis Ferreyra - initial API and implementation
+*       Alexis Ferreyra - initial API and implementation
+*       Alexis Ferreyra (Intel Corporation)
 *******************************************************************************/
 /****************************************************************************
 * 
@@ -36,6 +37,7 @@ namespace LayerD.ZOECompiler
 {
     partial class SemanticAnalizer
     {
+        const string ZOE_INVALID_IDENTIFIER = "_____zoe__invalid__identifier_____";
         #region Process para Expresiones
         /// <summary>
         /// Llama a "ProcessExpression" por cada expresión 
@@ -75,7 +77,7 @@ namespace LayerD.ZOECompiler
                     string expTypeStr = boolExpRes.get_TypeStr();
                     if (!NativeTypes.IsNativeBoolean(expTypeStr))
                     {
-                        ConversionData cdata = ExistsImplicitConversion(expTypeStr, NativeTypes.Boolean, currentScope);
+                        ConversionData cdata = ExistsImplicitConversion(expTypeStr, NativeTypes.Boolean, boolExp, currentScope);
                         if (cdata == null)
                             AddNewError(
                                 SemanticError.New(SemanticErrorCode.BooleanValueRequiredOnBooleanExpression,
@@ -173,6 +175,9 @@ namespace LayerD.ZOECompiler
                     case "is":      //exp IS type
                         expResult = ProcessIsExpression((XplCastexpression)exp, currentScope);
                         break;
+                    case "sizeof":
+                        expResult = ProcessSizeofExpression((XplType)exp, currentScope);
+                        break;
                     case "writecode":
                         expResult = ProcessWritecodeExpression((XplWriteCodeBody)exp, currentScope);
                         break;
@@ -187,8 +192,8 @@ namespace LayerD.ZOECompiler
                     if (expResult.get_IsValue() || expResult.get_IsLValue())
                     {
                         // remove references
-                        if (!currentScope.get_IsOnPointerScope() && IsReferencePointerType(expResult.get_TypeStr()))
-                            expResult.set_TypeStr(RemoveReferencesFromType(expResult.get_TypeStr(), RemoveReferenciesType.SimpleExpression));
+                        if (!currentScope.get_IsOnPointerScope() && TypeString.IsReferencePointerType(expResult.get_TypeStr()))
+                            expResult.set_TypeStr(TypeString.RemoveReferencesFromType(expResult.get_TypeStr(), TypeString.RemoveReferenciesType.SimpleExpression));
                         xplExpression.set_typeStr(expResult.get_TypeStr());
                         // save constant value on expression node
                         if (expResult.get_IsConstant())
@@ -200,6 +205,27 @@ namespace LayerD.ZOECompiler
                 return expResult;
             }
             return null;
+        }
+
+        private ExpressionResult ProcessSizeofExpression(XplType xplType, Scope currentScope)
+        {
+            ExpressionResult res = null;
+            int backErrorCount = p_errorCollection.Count;
+            CheckType(xplType, xplType, currentScope, true, "On \"sizeof\" expression.");
+
+            if (backErrorCount == p_errorCollection.Count)
+            {
+                // build return result
+                res = new ExpressionResult(NativeTypes.Integer);
+                // check for type constructors
+                CheckForTypeConstructorCallOrSymbol(xplType, currentScope, null);
+            }
+            else
+            {
+                res = null;
+            }
+ 
+            return res;
         }
 
         private ExpressionResult ProcessTernaryOperatorExpression(XplTernaryoperator xplTernaryoperator, Scope currentScope)
@@ -221,6 +247,12 @@ namespace LayerD.ZOECompiler
                 // evaluate second and third operands
                 ExpressionResult o2Res = ProcessExpression(xplTernaryoperator.get_o2(), currentScope);
                 ExpressionResult o3Res = ProcessExpression(xplTernaryoperator.get_o3(), currentScope);
+                // check that both operands are values and have the same type or implicit convertible type
+                if (o2Res == null || o3Res == null)
+                {
+                    AddNewError(SemanticError.New(SemanticErrorCode.BooleanTernaryOperatorRequireValues, xplTernaryoperator));
+                    return null;
+                }
                 // try to convert results to value if they aren't already
                 if (!o2Res.get_IsValue()) TryConvertTypeMembersToValueOrLValue(o2Res, currentScope, xplTernaryoperator.get_o2().get_Content());
                 if (!o3Res.get_IsValue()) TryConvertTypeMembersToValueOrLValue(o3Res, currentScope, xplTernaryoperator.get_o3().get_Content());
@@ -235,8 +267,8 @@ namespace LayerD.ZOECompiler
                 if (!IsSameStringType(o2TypeStr, o3TypeStr))
                 {
                     // try implicit conversions
-                    ConversionData convFromO2ToO3 = ExistsImplicitConversion(o2TypeStr, o3TypeStr, currentScope);
-                    ConversionData convFromO3ToO2 = ExistsImplicitConversion(o3TypeStr, o2TypeStr, currentScope);
+                    ConversionData convFromO2ToO3 = ExistsImplicitConversion(o2TypeStr, o3TypeStr, xplTernaryoperator.get_o2(), currentScope);
+                    ConversionData convFromO3ToO2 = ExistsImplicitConversion(o3TypeStr, o2TypeStr, xplTernaryoperator.get_o3(), currentScope);
                     if (convFromO2ToO3 != null && convFromO3ToO2 != null || convFromO3ToO2 == null && convFromO2ToO3 == null)
                     {
                         // don't exists conversion between types or it's ambiguous
@@ -317,7 +349,7 @@ namespace LayerD.ZOECompiler
             // ya que no deberia ser incumbencia de Zoe
             // 
             //2)Determino q tipo voy a devolver
-            ExpressionResult res = new ExpressionResult(MakeReferenceTypeTo(
+            ExpressionResult res = new ExpressionResult(TypeString.MakeReferenceTypeTo(
                     CODEDOM_NAMESPACE + "." + wcContent.get_TypeName()),
                     ExpressionResultType.Value);
             //PENDIENTE : REVISAR ESTOOOOOO, VER CON LA ESPECIFICACION META D++
@@ -388,7 +420,7 @@ namespace LayerD.ZOECompiler
         {
             if (name != null && name.Length > 1 && name.IndexOf('$') >= 0 && name[name.Length - 1] != '$')
             {
-                if (IsQualifiedName(name))
+                if (TypeString.IsQualifiedName(name))
                 {
                     int initIndex = name.IndexOf('$');
                     int endIndex = name.IndexOfAny(new char[] { '.', ':' }, initIndex);
@@ -429,7 +461,7 @@ namespace LayerD.ZOECompiler
         private bool CheckForValidWritecodeReemplazement(string symbolName, XplNode xplNode, Scope currentScope)
         {
             ExpressionResult expRes =
-                ProcessSimpleNameExpression(new XplNode("n", symbolName), currentScope);
+                ProcessSimpleNameExpression(new XplExpression(new XplNode("n", symbolName)).get_Content(), currentScope);
             if (expRes != null)
             {
                 if (expRes.get_IsTypeMembers())
@@ -447,7 +479,7 @@ namespace LayerD.ZOECompiler
                 string symTypeStr = expRes.get_TypeStr();
 
                 if (NativeTypes.IsNativeType(symTypeStr) ||
-                    IsSameStringType(symTypeStr, MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".XplType")) /*||
+                    IsSameStringType(symTypeStr, TypeString.MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".XplType")) /*||
                     IsSameStringType(symTypeStr, MakeReferenceTypeTo("XplType"))/*1*/
                                                                                       )
                 {
@@ -459,7 +491,7 @@ namespace LayerD.ZOECompiler
                     return true;
                 }
                 else if (NativeTypes.IsNativeBlock(symTypeStr) ||
-                    IsSameStringType(symTypeStr, MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".XplFunctionBody")) /*||
+                    IsSameStringType(symTypeStr, TypeString.MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".XplFunctionBody")) /*||
                     IsSameStringType(symTypeStr, MakeReferenceTypeTo("XplFunctionBody"))/*1*/
                                                                                               )
                 {
@@ -470,7 +502,7 @@ namespace LayerD.ZOECompiler
                     }
                 }
                 else if (expRes.get_TypeNode() != null && expRes.get_TypeNode().get_ftype() == XplFactorytype_enum.EXPRESSION ||
-                    IsSameStringType(symTypeStr, MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".XplExpression")) /*||
+                    IsSameStringType(symTypeStr, TypeString.MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".XplExpression")) /*||
                     IsSameStringType(symTypeStr, MakeReferenceTypeTo("XplExpression"))/*1*/
                                                                                             )
                 {
@@ -481,7 +513,7 @@ namespace LayerD.ZOECompiler
                     }
                 }
                 else if (expRes.get_TypeNode() != null && expRes.get_TypeNode().get_ftype() == XplFactorytype_enum.INAME ||
-                   IsSameStringType(symTypeStr, MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".XplIName")) /*||
+                   IsSameStringType(symTypeStr, TypeString.MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".XplIName")) /*||
                    IsSameStringType(symTypeStr, MakeReferenceTypeTo("XplIName"))/*1*/
                                                                                       )
                 {
@@ -495,8 +527,8 @@ namespace LayerD.ZOECompiler
                     //}
                 }
                 else if (NativeTypes.IsValidNativeLiteralType(symTypeStr) ||
-                    IsSameStringType(symTypeStr, MakeReferenceTypeTo(NativeTypes.String)) ||
-                    IsSameStringType(symTypeStr, MakeReferenceTypeTo(NativeTypes.ASCIIString)))
+                    IsSameStringType(symTypeStr, TypeString.MakeReferenceTypeTo(NativeTypes.String)) ||
+                    IsSameStringType(symTypeStr, TypeString.MakeReferenceTypeTo(NativeTypes.ASCIIString)))
                 {
                     if (xplNode.get_Parent().get_TypeName() != CodeDOMTypes.XplExpression)
                     {
@@ -550,18 +582,18 @@ namespace LayerD.ZOECompiler
             if (symType.get_ftype() != XplFactorytype_enum.NONE ||
                 NativeTypes.IsNativeType(symType.get_typeStr()) ||
                 NativeTypes.IsNativeBlock(symType.get_typeStr()) ||
-                IsSameStringType(symType.get_typeStr(), MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".XplExpression")) ||
-                IsSameStringType(symType.get_typeStr(), MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".XplType")) ||
-                IsSameStringType(symType.get_typeStr(), MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".XplFunctionBody")) ||
-                IsSameStringType(symType.get_typeStr(), MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".XplIName")) ||
+                IsSameStringType(symType.get_typeStr(), TypeString.MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".XplExpression")) ||
+                IsSameStringType(symType.get_typeStr(), TypeString.MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".XplType")) ||
+                IsSameStringType(symType.get_typeStr(), TypeString.MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".XplFunctionBody")) ||
+                IsSameStringType(symType.get_typeStr(), TypeString.MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".XplIName")) ||
                 //Esto es por una limitacion en el writecode
                 //que deberia implementarse fuera del analizador semantico
                 //luego de todos los ciclos de compilacion, o bien 
                 //en el ultimo ciclo de compilacion.
-                IsSameStringType(symType.get_typeStr(), MakeReferenceTypeTo("XplExpression")) ||
-                IsSameStringType(symType.get_typeStr(), MakeReferenceTypeTo("XplType")) ||
-                IsSameStringType(symType.get_typeStr(), MakeReferenceTypeTo("XplIName")) ||
-                IsSameStringType(symType.get_typeStr(), MakeReferenceTypeTo("XplFunctionBody")))
+                IsSameStringType(symType.get_typeStr(), TypeString.MakeReferenceTypeTo("XplExpression")) ||
+                IsSameStringType(symType.get_typeStr(), TypeString.MakeReferenceTypeTo("XplType")) ||
+                IsSameStringType(symType.get_typeStr(), TypeString.MakeReferenceTypeTo("XplIName")) ||
+                IsSameStringType(symType.get_typeStr(), TypeString.MakeReferenceTypeTo("XplFunctionBody")))
                 return true;
             return false;
         }
@@ -708,7 +740,7 @@ namespace LayerD.ZOECompiler
             }
             else
             {
-                ConversionData cdata = ExistsExplicitConversion(castFromType, castToType, currentScope);
+                ConversionData cdata = ExistsExplicitConversion(castFromType, castToType, xplCastexpression.get_e(), currentScope);
                 if (cdata != null)
                     MarkConversion(cdata, castFromType, castToType, xplCastexpression.get_e(), currentScope);
                 else
@@ -740,7 +772,8 @@ namespace LayerD.ZOECompiler
 
                     string memberName = members[0].get_MemberName();
                     if (leftResult.get_ExpType() == ExpressionResultType.TypeMembers)
-                        members = FilterStaticMembers(members, currentScope);
+                        members = FilterStaticMembers(members, currentScope, false);
+
                     if (members == null)
                     {
                         AddNewError(
@@ -769,7 +802,7 @@ namespace LayerD.ZOECompiler
                     else
                     {
                         if (members[0].IsFactory() || members[0].get_ClassType().get_IsFactory())
-                            AddCandidateStructure(members[0], xplComplexfunctioncall, currentScope);
+                            this.p_candidateStructures.AddCandidateStructure(members[0], xplComplexfunctioncall, currentScope);
                         //PENDIENTE : controlar si en los requerimientos del modulo de salida
                         //es necesario marcar la clase de llamada y el miembro objetivo o no.
                         //xplFunctioncall.set_targetClass(members[0].get_DeclarationClassTypeFullName());
@@ -799,26 +832,26 @@ namespace LayerD.ZOECompiler
                     //- Una operación de indización en un puntero.
                     //- Una llamada a un indexador.
                     string typeStr = leftResult.get_TypeStr();
-                    if (IsPointerType(typeStr) && !IsReferencePointerType(typeStr) ||
-                        IsPointerType(typeStr) && currentScope.get_IsOnPointerScope())
+                    if (TypeString.IsPointerType(typeStr) && !TypeString.IsReferencePointerType(typeStr) ||
+                        TypeString.IsPointerType(typeStr) && currentScope.get_IsOnPointerScope())
                     {
                         //Aquí es una indización en un puntero
                         //PENDIENTE : chequear si el modulo de salida permite aritmetica
                         //de puntero y emitir errores.
                         if (CheckValidArgumentForArrayAccessOrPointerIndexing(xplFunctioncall, currentScope))
-                            return new ExpressionResult(RemovePointerIndirectionsFromType(typeStr, 1)
+                            return new ExpressionResult(TypeString.RemovePointerIndirectionsFromType(typeStr, 1)
                                 , ExpressionResultType.ValueOrLValue);
                     }
                     else
                     {
-                        if (IsReferencePointerType(typeStr))
-                            typeStr = RemoveReferencesFromType(typeStr, RemoveReferenciesType.ArrayAccess);
-                        if (IsArrayType(typeStr))
+                        if (TypeString.IsReferencePointerType(typeStr))
+                            typeStr = TypeString.RemoveReferencesFromType(typeStr, TypeString.RemoveReferenciesType.ArrayAccess);
+                        if (TypeString.IsArrayType(typeStr))
                         {
                             //Es una matriz, debo devolver el tipo de elemento de la matriz y chequear que
                             //exista un único argumento y sea de tipo entero o long, o convertible.
                             //PENDIENTE : chequear accesos fuera de rango con matrices estaticas??
-                            typeStr = RemoveArrayTypeFromType(typeStr);
+                            typeStr = TypeString.RemoveArrayTypeFromType(typeStr);
                             if (CheckValidArgumentForArrayAccessOrPointerIndexing(xplFunctioncall, currentScope))
                                 return new ExpressionResult(typeStr, ExpressionResultType.ValueOrLValue);
                         }
@@ -934,8 +967,8 @@ namespace LayerD.ZOECompiler
                     //Remuevo la referencia automatica del tipo
                     if (expRes.get_ExpType() == ExpressionResultType.Value || expRes.get_ExpType() == ExpressionResultType.ValueOrLValue)
                     {
-                        if (!currentScope.get_IsOnPointerScope() && IsReferencePointerType(expRes.get_TypeStr()))
-                            expRes.set_TypeStr(RemoveReferencesFromType(expRes.get_TypeStr(), RemoveReferenciesType.SimpleExpression));
+                        if (!currentScope.get_IsOnPointerScope() && TypeString.IsReferencePointerType(expRes.get_TypeStr()))
+                            expRes.set_TypeStr(TypeString.RemoveReferencesFromType(expRes.get_TypeStr(), TypeString.RemoveReferenciesType.SimpleExpression));
                         argExp.set_typeStr(expRes.get_TypeStr());
                     }
                 }
@@ -969,7 +1002,7 @@ namespace LayerD.ZOECompiler
                         string argTypeStr = argResult.get_TypeStr();
                         if (!NativeTypes.IsNativeLong(argTypeStr) && !NativeTypes.IsNativeInteger(argTypeStr))
                         {
-                            if (ExistsImplicitConversion(argTypeStr, NativeTypes.Long, scope) == null)
+                            if (ExistsImplicitConversion(argTypeStr, NativeTypes.Long, arg, scope) == null)
                             {
                                 AddNewError(
                                     SemanticError.New(SemanticErrorCode.InvalidExpressionTypeForArrayAccess,
@@ -996,6 +1029,7 @@ namespace LayerD.ZOECompiler
             }
             return true;
         }
+
         private ExpressionResult ProcessFunctioncallExpression(XplFunctioncall xplFunctioncall, Scope scope)
         {
             ExpressionResult leftResult = ProcessExpression(xplFunctioncall.get_l(), scope);
@@ -1007,61 +1041,100 @@ namespace LayerD.ZOECompiler
                 ProcessArguments(xplFunctioncall, scope);
             }
             if (leftResult != null)
+            {
+                MemberInfo[] members = leftResult.get_Members();
+
                 if (leftResult.get_ExpType() != ExpressionResultType.TypeMembers &&
                     leftResult.get_ExpType() != ExpressionResultType.TypeMembersFromValue)
-                    //PENDIENTE : chequear cuando la expresión izquierda es un valor de tipo puntero a función.
-                    AddNewError(
-                        SemanticError.New(SemanticErrorCode.InvalidLeftExpressionOnFunctionCallOperator, xplFunctioncall));
-                else
                 {
-                    MemberInfo[] members = leftResult.get_Members();
-                    //Seteo info provisoria
-                    xplFunctioncall.set_targetClass(members[0].get_DeclarationClassTypeFullName());
-                    xplFunctioncall.set_targetMember("?");
+                    if (leftResult.get_ExpType() == ExpressionResultType.Type)
+                    {
+                        // find constructors for type
+                        members = leftResult.get_Type().get_MemberInfoCollection().get_MembersInfo(
+                            leftResult.get_Type().get_Name());
 
-                    string memberName = members[0].get_MemberName();
-                    if (leftResult.get_ExpType() == ExpressionResultType.TypeMembers)
-                        members = FilterStaticMembers(members, scope);
+                        // if it's a call to default constructor - for a class that don't explicitly define default contructor -
+                        // then it's ok, otherwise is an error
+                        if (members == null && (xplFunctioncall.get_args() == null || xplFunctioncall.get_args().Children().GetLength() == 0))
+                        {
+                            xplFunctioncall.set_targetClass(leftResult.get_Type().get_FullName());
+                            xplFunctioncall.set_targetMember(leftResult.get_Type().get_Name());
+                            return new ExpressionResult(leftResult.get_Type().get_FullName());
+                        }
+                        else if (members == null)
+                        {
+                            // this is an error
+                            AddNewError(
+                                SemanticError.New(SemanticErrorCode.InvalidLeftExpressionOnFunctionCallOperator, xplFunctioncall));
+                            return null;
+                        }
+                    }
+                    else
+                    {
+                        TypeInfo typeInfo = p_types.get_TypeInfo(leftResult.get_TypeStr());
+                        if (typeInfo != null && typeInfo.get_IsFPType())
+                        {
+                            members = new MemberInfo[] { typeInfo.get_FpMemberInfo() };
+                        }
+                        else
+                        {
+                            //PENDIENTE : chequear cuando la expresión izquierda es un valor de tipo puntero a función.
+                            AddNewError(
+                                SemanticError.New(SemanticErrorCode.InvalidLeftExpressionOnFunctionCallOperator, xplFunctioncall));
+                            return null;
+                        }
+                    }
+                }
+
+                //Seteo info provisoria
+                xplFunctioncall.set_targetClass(members[0].get_DeclarationClassTypeFullName());
+                xplFunctioncall.set_targetMember("?");
+
+                string memberName = members[0].get_MemberName();
+                if (leftResult.get_ExpType() == ExpressionResultType.TypeMembers)
+                    members = FilterStaticMembers(members, scope, true);
+
+                if (members == null)
+                {
+                    AddNewError(
+                        SemanticError.New(SemanticErrorCode.AValueIsRequiredToInvoqueInstanceMember,
+                        xplFunctioncall, memberName, "On function call expression."));
+                    return null;
+                }
+
+                if (members.Length > 1)
+                {
+                    //Tengo sobrecarga, debo resolver
+                    members = ResolveFunctionOverload(xplFunctioncall, members, scope, null);
+                    //Si no obtengo como respuesta ningun miembro es un error
                     if (members == null)
                     {
                         AddNewError(
-                            SemanticError.New(SemanticErrorCode.AValueIsRequiredToInvoqueInstanceMember,
-                            xplFunctioncall, memberName, "On function call expression."));
+                            SemanticError.New(SemanticErrorCode.BestOverloadedFunctionHasSomeInvalidArguments,
+                            xplFunctioncall, memberName));
                         return null;
                     }
+                    //Si luego de resolver sigo teniendo varios miembros es ambiguo
                     if (members.Length > 1)
                     {
-                        //Tengo sobrecarga, debo resolver
-                        members = ResolveFunctionOverload(xplFunctioncall, members, scope, null);
-                        //Si no obtengo como respuesta ningun miembro es un error
-                        if (members == null)
-                        {
-                            AddNewError(
-                                SemanticError.New(SemanticErrorCode.BestOverloadedFunctionHasSomeInvalidArguments,
-                                xplFunctioncall, memberName));
-                            return null;
-                        }
-                        //Si luego de resolver sigo teniendo varios miembros es ambiguo
-                        if (members.Length > 1)
-                        {
-                            AddNewError(
-                                SemanticError.New(SemanticErrorCode.AmbiguousFunctionCall, xplFunctioncall, MemberInfo.ToString(members)));
-                            return null;
-                        }
-                    }
-                    else
-                    {
-                        if (members[0].IsMethod())
-                            if (!CheckArgumentsForFunction(xplFunctioncall, members[0], scope, true, false, xplFunctioncall)) return null;
-                    }
-                    if (!members[0].IsMethod())
                         AddNewError(
-                            SemanticError.New(SemanticErrorCode.InvalidMemberTypeUsedAsMethod, xplFunctioncall, members[0].get_MemberName()));
-                    else
-                    {
-                        return ProcessFunctioncallExpressionCommonEnd(xplFunctioncall, scope, members[0]);
+                            SemanticError.New(SemanticErrorCode.AmbiguousFunctionCall, xplFunctioncall, MemberInfo.ToString(members)));
+                        return null;
                     }
                 }
+                else
+                {
+                    if (members[0].IsMethod())
+                        if (!CheckArgumentsForFunction(xplFunctioncall, members[0], scope, true, false, null)) return null;
+                }
+                if (!members[0].IsMethod())
+                    AddNewError(
+                        SemanticError.New(SemanticErrorCode.InvalidMemberTypeUsedAsMethod, xplFunctioncall, members[0].get_MemberName()));
+                else
+                {
+                    return ProcessFunctioncallExpressionCommonEnd(xplFunctioncall, scope, members[0]);
+                }
+            }
             return null;
         }
 
@@ -1073,73 +1146,37 @@ namespace LayerD.ZOECompiler
                 //estatica ni una función que se llame usando this, lo q puedo hacer es q directamente
                 //al declarar el puntero this utilice el modificador exec.
                 if (member.get_ClassTypeFullName() != scope.get_FullClassName())
-                    AddCandidateStructure(member, xplFunctioncall, scope);
+                    this.p_candidateStructures.AddCandidateStructure(member, xplFunctioncall, scope);
             }
             else if (member.get_DeclarationClassType().get_IsFactory())
             {
                 if (member.get_DeclarationClassTypeFullName() != scope.get_FullClassName())
-                    AddCandidateStructure(member, xplFunctioncall, scope);
+                    this.p_candidateStructures.AddCandidateStructure(member, xplFunctioncall, scope);
             }
             //PENDIENTE : controlar si en los requerimientos del modulo de salida
             //es necesario marcar la clase de llamada y el miembro objetivo o no.
             xplFunctioncall.set_targetClass(member.get_DeclarationClassTypeFullName());
             xplFunctioncall.set_targetMember(member.get_MemberInternalName());
             xplFunctioncall.set_targetMemberExternalName(member.get_MemberExternalName());
-            return new ExpressionResult(((XplFunction)member.get_MemberNode()).get_ReturnType().get_typeStr());
-        }
 
-        /// <summary>
-        /// Adds a new candidate structure for a property or indexer
-        /// </summary>
-        /// <param name="memberInfo">Member info that must be a property or an indexer</param>
-        /// <param name="xplNode">Node that reference to a left expression of an assignment, to a simple name expression, or to a member access expression</param>
-        /// <param name="scope">scope information</param>
-        private void AddCandidateStructure(MemberInfo memberInfo, XplNode xplNode, Scope scope)
-        {
-            if (memberInfo.get_IsExternal()) return;
-            if (p_interactiveOnly && !memberInfo.get_DeclarationClassType().get_IsInteractive()) return;
-            CandidateStructure cs = null;
-            if (memberInfo.get_ClassType().get_IsFactory())
-                cs = new CandidateStructure(xplNode, memberInfo.get_ClassType(), memberInfo);
+            if (member.IsConstructor())
+            {
+                return new ExpressionResult(member.get_ClassTypeFullName());
+            }
             else
-                cs = new CandidateStructure(xplNode, memberInfo.get_DeclarationClassType(), memberInfo);
-            p_candidateStructures.Add(cs);
-        }
-        /// <summary>
-        /// Agrega una estructura candidata a la colección.
-        /// 
-        /// memberInfo: miembro de classfactory llamado
-        /// xplFunctioncall: la llamada a función
-        /// scope: el alcance actual
-        /// </summary>
-        private void AddCandidateStructure(MemberInfo memberInfo, XplFunctioncall xplFunctioncall, Scope scope)
-        {
-            if (memberInfo.get_IsExternal()) return;
-            if (p_interactiveOnly && !memberInfo.get_DeclarationClassType().get_IsInteractive()) return;
-            CandidateStructure cs = null;
-            if (memberInfo.get_ClassType().get_IsFactory())
-                cs = new CandidateStructure(xplFunctioncall, memberInfo.get_ClassType(), memberInfo);
-            else
-                cs = new CandidateStructure(xplFunctioncall, memberInfo.get_DeclarationClassType(), memberInfo);
-            p_candidateStructures.Add(cs);
-        }
-        /// <summary>
-        /// Agrega una estructura candidata a la colección.
-        /// </summary>
-        private void AddCandidateStructure(MemberInfo memberInfo, XplNewExpression xplNewExpression, Scope scope)
-        {
-            if (p_interactiveOnly && !memberInfo.get_DeclarationClassType().get_IsInteractive()) return;
-            CandidateStructure cs = new CandidateStructure(xplNewExpression, memberInfo.get_ClassType(), memberInfo);
-            p_candidateStructures.Add(cs);
-        }
-        /// <summary>
-        /// Agrega una estructura candidata a la colección.
-        /// </summary>
-        private void AddCandidateStructure(MemberInfo memberInfo, XplComplexfunctioncall xplFunctioncall, Scope scope)
-        {
-            if (p_interactiveOnly && !memberInfo.get_DeclarationClassType().get_IsInteractive()) return;
-            CandidateStructure cs = new CandidateStructure(xplFunctioncall, memberInfo.get_ClassType(), memberInfo);
-            p_candidateStructures.Add(cs);
+            {
+                string typeStr = member.get_ReturnType().get_typeStr();
+                if (String.IsNullOrEmpty(typeStr))
+                {
+                    AddNewError(
+                        SemanticError.New(SemanticErrorCode.UnspecifiedSemanticError, xplFunctioncall, " Member \"" + member.ToString() + "\" with invalid return type found."));
+                    return null;
+                }
+                else
+                {
+                    return new ExpressionResult(typeStr);
+                }
+            }
         }
 
         #region Sobrecarga de Funciones, Chequeo de Argumentos, Conversiones Implicitas
@@ -1233,10 +1270,10 @@ namespace LayerD.ZOECompiler
             if (IsSameStringType(FromTypeA, FromTypeB)) return 2;
             if (IsSameStringType(FromTypeA, ToType)) return 1;
             if (IsSameStringType(FromTypeB, ToType)) return 0;
-            if (ExistsImplicitConversion(FromTypeA, FromTypeB, scope) != null
-                && ExistsImplicitConversion(FromTypeB, FromTypeA, scope) == null) return 1;
-            if (ExistsImplicitConversion(FromTypeB, FromTypeA, scope) != null
-                && ExistsImplicitConversion(FromTypeA, FromTypeB, scope) == null) return 0;
+            if (ExistsImplicitConversion(FromTypeA, FromTypeB, null, scope) != null
+                && ExistsImplicitConversion(FromTypeB, FromTypeA, null, scope) == null) return 1;
+            if (ExistsImplicitConversion(FromTypeB, FromTypeA, null, scope) != null
+                && ExistsImplicitConversion(FromTypeA, FromTypeB, null, scope) == null) return 0;
             //PENDIENTE : revisar el tema de las conversiones implicitas entre
             //tipos nativos con signo y sin signo.
             return 2;
@@ -1300,14 +1337,14 @@ namespace LayerD.ZOECompiler
                         {
                             if (emitErrors) AddNewError(
                                 SemanticError.New(SemanticErrorCode.InvalidNumberOfArgumentsInFunctionCall, errorNode != null ? errorNode : xplFunctioncall,
-                                  memberInfo.get_MemberName(), "More arguments than expected."));
+                                  memberInfo.ToString(), "More arguments than expected."));
                             return false;
                         }
                         if (!CheckValidArgumentForParameter(arg, lastParam, isVarArgs && maxArgs >= maxParams && currentArg >= maxParams, isVarArgs && maxArgs == maxParams && currentArg == maxParams, scope))
                         {
                             if (emitErrors) AddNewError(
                                 SemanticError.New(SemanticErrorCode.InvalidArgumentTypeForActualParameter, errorNode != null ? errorNode : arg,
-                                lastParam.get_name(), arg.get_typeStr(), lastParam.get_type().get_typeStr()));
+                                lastParam.get_name(), arg.get_typeStr(), lastParam.get_type().get_typeStr(), memberInfo.ToString()));
                             return false;
                         }
                     }
@@ -1351,9 +1388,7 @@ namespace LayerD.ZOECompiler
             }
             else
             {
-                //Argumentos Nombrados
-                #region Argumentos Nombrados
-                #endregion
+                // Named arguments
             }
             return true;
         }
@@ -1386,15 +1421,15 @@ namespace LayerD.ZOECompiler
                 XplParameterdirection_enum paramDirection = param.get_direction();
                 if (paramDirection == XplParameterdirection_enum.INOUT)
                 {
-                    argument.set_lddata(argument.get_lddata() + "$INOUT_ARG$");
+                    if (!argument.get_lddata().Contains("$INOUT_ARG$")) argument.set_lddata(argument.get_lddata() + "$INOUT_ARG$");
                 }
                 else if (paramDirection == XplParameterdirection_enum.OUT)
                 {
-                    argument.set_lddata(argument.get_lddata() + "$OUT_ARG$");
+                    if (!argument.get_lddata().Contains("$OUT_ARG$")) argument.set_lddata(argument.get_lddata() + "$OUT_ARG$");
                 }
                 //PENDIENTE : procesaro correctamente cuando el parametro es de tipo factory
                 //bool isIname, isIn, isOut, isBlock, isExec;
-                if (ft != XplFactorytype_enum.NONE)
+                if (ft != XplFactorytype_enum.NONE && !p_isExtensionModule)
                 {
                     //Si es un iname se requiere q la expresion sea un nombre simple
                     if (ft == XplFactorytype_enum.INAME && argument.get_Content().get_ElementName() != "n")
@@ -1408,10 +1443,10 @@ namespace LayerD.ZOECompiler
                 //Si el parametro es varParam (y el argumento debe funcionar como el tipo del elemento)
                 if (isVarParam && allowTypeOfArray)
                     if (IsSameStringType(argTypeStr, paramTypeStr)) return true;
-                if (isVarParam) paramTypeStr = RemoveArrayTypeFromType(paramTypeStr);
+                if (isVarParam) paramTypeStr = TypeString.RemoveArrayTypeFromType(paramTypeStr);
                 if (IsSameStringType(argTypeStr, paramTypeStr)) return true;
                 //No es el mismo tipo, debo verificar si existe una conversion implicita
-                if (ExistsImplicitConversion(argTypeStr, paramTypeStr, scope) != null) return true;
+                if (ExistsImplicitConversion(argTypeStr, paramTypeStr, argument, scope) != null) return true;
                 else return false;
             }
             else if (ft != XplFactorytype_enum.NONE)
@@ -1439,21 +1474,26 @@ namespace LayerD.ZOECompiler
         /// No tiene en cuenta la conversion identidad, es decir no identificara como correcta
         /// una conversion de un tipo a si mismo.
         /// </summary>
-        private ConversionData ExistsExplicitConversion(string fromType, string toType, Scope scope)
+        private ConversionData ExistsExplicitConversion(string fromType, string toType, XplNode convertedExpression, Scope scope)
         {
             ConversionData res = null;
-            //1°) Primero busco en las conversiones implicitas nativas
+            //1) Lookfor native implicit conversion
             res = ExistNativeImplicitConversion(fromType, toType, scope);
             if (res != null)
             {
                 res.ConversionType = ConversionType.NativeExplicitConversion;
                 return res;
             }
-            //2º) Busco en conversion implicitas inversamente :-)
+
+            //2) Lookfor inverse native implicit conversion :-)
             res = ExistNativeImplicitConversion(toType, fromType, scope);
             if (res != null)
+            {
                 res.ConversionType = ConversionType.NativeExplicitConversion;
-            //3°) Busco si es una conversion de enumeracion a entero o de enumeracion a otro tipo enumeracion
+                return res;
+            }
+            
+            //3) Look for a conversion between enumeration and integer types
             TypeInfo fromTypeInfo = (TypeInfo)p_types[fromType];
             if (fromTypeInfo != null && fromTypeInfo.get_IsEnum())
             {
@@ -1483,35 +1523,177 @@ namespace LayerD.ZOECompiler
                         break;
                 }
             }
-            //4°) Busco conversión implicita definida por el usuario
-            if (res == null)
-                res = ExistUserExplicitConversion(fromType, toType, scope);
+
+            //4) Lookfor  conversion between function pointer types
+            // TODO : check by output platform that
+            // this kind of conversion is supported
+            if (fromTypeInfo != null && fromTypeInfo.get_IsFPType())
+            {
+                TypeInfo toTypeInfo = (TypeInfo)p_types[toType];
+                if (toTypeInfo != null && toTypeInfo.get_IsFPType())
+                {
+                    if (IsSameSignature(fromTypeInfo.get_FpMemberInfo(), toTypeInfo.get_FpMemberInfo(), scope))
+                    {
+                        res = new ConversionData(ConversionType.NativeExplicitConversion, false, false, null);
+                        return res;
+                    }
+                }
+            }
+
+            //5) Lookfor conversion between pointer and integer types
+            res = IsConversionBetweenPointerAndIntegerTypes(fromType, toType);
+            if (res != null) return res;
+
+            //6) Lookfor a user defined explicit conversion
+            return ExistUserExplicitConversion(fromType, toType, convertedExpression, scope);;
+        }
+
+        /// <summary>
+        /// Check if there is a valid conversion integer/pointer conversion between "fromType" and "toType" arguments.
+        /// </summary>
+        /// <param name="fromType">Type string that denotes the source type.</param>
+        /// <param name="toType">Type string that denotes the target type.</param>
+        /// <returns>Null if there isn't a conversion, a ConversionData if there is a valid conversion.</returns>
+        private ConversionData IsConversionBetweenPointerAndIntegerTypes(string fromType, string toType)
+        {
+            ConversionData res = null;
+            // Lookfor a conversion from integer type to pointer type
+            if (TypeString.IsPointerType(toType) && !TypeString.IsReferencePointerType(toType))
+            {
+                switch (fromType)
+                {
+                    case NativeTypes.Byte:
+                    case NativeTypes.SByte:
+                    case NativeTypes.UShort:
+                    case NativeTypes.Short:
+                    case NativeTypes.Unsigned:
+                    case NativeTypes.Integer:
+                    case NativeTypes.ULong:
+                    case NativeTypes.Long:
+                        // integer to pointer conversion
+                        // TODO : add warning about insecure conversion
+                        res = new ConversionData(ConversionType.NativeExplicitConversion, false, false, null);
+                        return res;
+                }
+            }
+
+            // Lookfor a conversion from pointer to integer type
+            if (TypeString.IsPointerType(fromType) && !TypeString.IsReferencePointerType(fromType))
+            {
+                switch (toType)
+                {
+                    case NativeTypes.Byte:
+                    case NativeTypes.SByte:
+                    case NativeTypes.UShort:
+                    case NativeTypes.Short:
+                    case NativeTypes.Unsigned:
+                    case NativeTypes.Integer:
+                    case NativeTypes.ULong:
+                    case NativeTypes.Long:
+                        // pointer to integer conversion
+                        // TODO : add warning when converting to small integer types
+                        res = new ConversionData(ConversionType.NativeExplicitConversion, false, false, null);
+                        return res;
+                }
+            }
+
             return res;
         }
-        private ConversionData ExistUserExplicitConversion(string fromType, string toType, Scope scope)
+        private ConversionData ExistUserExplicitConversion(string fromType, string toType, XplNode convertedExpression, Scope scope)
         {
-            //PENDIENTE : Conversiones Explicitas definidas por el usuario
+            ConversionData result = ExistsSimpleUserExplicitConversion(fromType, toType);
+            if (result != null)
+            {
+                this.p_candidateStructures.AddCandidateStructure(result.UserDefinedConversionUsed, convertedExpression, scope);
+                return result;
+            }
+
+            // if there isn't a direct conversion, check for a posible conversion using
+            // a native implicit conversion first
+            // TODO this is not correct, it must check for all possible conversions and verify that it's not ambiguous
+            ConversionData intermediateConversionData = null;
+            foreach (string customConversion in p_customExplicitConversions.Keys)
+            {
+                string toCType = customConversion.Substring(0, customConversion.IndexOf('¿'));
+                intermediateConversionData = ExistNativeImplicitConversion(fromType, toCType, scope);
+                if (intermediateConversionData != null)
+                {
+                    // TODO intermediate conversion data is lost
+                    result = ExistsSimpleUserExplicitConversion(toCType, toType);
+                    if (result != null)
+                    {
+                        this.p_candidateStructures.AddCandidateStructure(result.UserDefinedConversionUsed, convertedExpression, scope);
+                        return result;
+                    }
+                }
+            }
             return null;
         }
+
+        private ConversionData ExistsSimpleUserExplicitConversion(string fromType, string toType)
+        {
+            string conversionKey = fromType + "¿TO?" + toType;
+            if (p_customExplicitConversions.ContainsKey(conversionKey))
+            {
+                return new ConversionData(ConversionType.UserDefinedExplicitConversion, false, false, (MemberInfo)p_customExplicitConversions[conversionKey]);
+            }
+            return null;
+        }
+
         /// <summary>
         /// Indica si existe una conversion implicita en el alcance desde el tipo "fromType" al
         /// tipo "toType".
         /// 
         /// No llamar con cadenas nulas o vacias!!
         /// </summary>
-        private ConversionData ExistsImplicitConversion(string fromType, string toType, Scope scope)
+        private ConversionData ExistsImplicitConversion(string fromType, string toType, XplNode convertedExpression, Scope scope)
         {
             ConversionData res = null;
             //1°) Primero busco en las conversiones implicitas nativas
             res = ExistNativeImplicitConversion(fromType, toType, scope);
             //2°) Busco conversión implicita definida por el usuario
             if (res == null)
-                res = ExistUserImplicitConversion(fromType, toType, scope);
+                res = ExistUserImplicitConversion(fromType, toType, convertedExpression, scope);
             return res;
         }
-        private ConversionData ExistUserImplicitConversion(string fromType, string toType, Scope scope)
+        private ConversionData ExistUserImplicitConversion(string fromType, string toType, XplNode convertedExpression, Scope scope)
         {
-            //PENDIENTE : Conversiones Implicitas definidas por el usuario
+            ConversionData result = ExistsSimpleUserImplicitConversion(fromType, toType);
+            if (result != null)
+            {
+                this.p_candidateStructures.AddCandidateStructure(result.UserDefinedConversionUsed, convertedExpression, scope);
+                return result;
+            }
+
+            // if there isn't a direct conversion, check for a posible conversion using
+            // a native implicit conversion first
+            // TODO this is not correct, it must check for all possible conversions and verify that it's not ambiguous
+            ConversionData intermediateConversionData = null;
+            foreach (string customConversion in p_customImplicitConversions.Keys)
+            {
+                string toCType = customConversion.Substring(0, customConversion.IndexOf('¿'));
+                intermediateConversionData = ExistNativeImplicitConversion(fromType, toCType, scope);
+                if (intermediateConversionData != null)
+                {
+                    // TODO intermediate conversion data is lost
+                    result = ExistsSimpleUserImplicitConversion(toCType, toType);
+                    if (result != null)
+                    {
+                        this.p_candidateStructures.AddCandidateStructure(result.UserDefinedConversionUsed, convertedExpression, scope);
+                        return result;
+                    }
+                }
+            }
+            return null;
+        }
+
+        private ConversionData ExistsSimpleUserImplicitConversion(string fromType, string toType)
+        {
+            string conversionKey = fromType + "¿TO?" + toType;
+            if (p_customImplicitConversions.ContainsKey(conversionKey))
+            {
+                return new ConversionData(ConversionType.UserDefinedImplicitConversion, false, false, (MemberInfo)p_customImplicitConversions[conversionKey]);
+            }
             return null;
         }
         private ConversionData ExistNativeImplicitConversion(string fromType, string toType, Scope scope)
@@ -1526,23 +1708,23 @@ namespace LayerD.ZOECompiler
                 return new ConversionData(ConversionType.NativeImplicitConversion,
                     conversionString != String.Empty, false, null);
             }
-            if (NativeTypes.IsNativeNull(fromType) && IsPointerType(toType))
+            if (NativeTypes.IsNativeNull(fromType) && TypeString.IsPointerType(toType))
                 return new ConversionData(ConversionType.NativeImplicitConversion,
                     conversionString != String.Empty, false, null);
             //2º) Busco si es una conversion de referencia nativa (*Derivada -> *Base)
-            if (IsPointerType(fromType) && IsPointerType(toType))
+            if (TypeString.IsPointerType(fromType) && TypeString.IsPointerType(toType))
             {
-                if (IsPointerToArrayType(fromType) && IsPointerToArrayType(toType))
+                if (TypeString.IsPointerToArrayType(fromType) && TypeString.IsPointerToArrayType(toType))
                 {
-                    string fromTypeClass = RemovePointerIndirectionsFromType(fromType, 1);
-                    string toTypeClass = RemovePointerIndirectionsFromType(toType, 1);
+                    string fromTypeClass = TypeString.RemovePointerIndirectionsFromType(fromType, 1);
+                    string toTypeClass = TypeString.RemovePointerIndirectionsFromType(toType, 1);
                     //Chequeo si se puede convertir implicitamente de un tipo puntero de matriz
                     //a otro.
-                    if (GetArrayDimensions(fromTypeClass) == GetArrayDimensions(toTypeClass))
+                    if (TypeString.GetArrayDimensions(fromTypeClass) == TypeString.GetArrayDimensions(toTypeClass))
                     {
-                        fromTypeClass = RemoveAllDimensionsFromArrayType(fromTypeClass);
-                        toTypeClass = RemoveAllDimensionsFromArrayType(toTypeClass);
-                        if (IsPointerType(fromTypeClass) && IsPointerType(toTypeClass))
+                        fromTypeClass = TypeString.RemoveAllDimensionsFromArrayType(fromTypeClass);
+                        toTypeClass = TypeString.RemoveAllDimensionsFromArrayType(toTypeClass);
+                        if (TypeString.IsPointerType(fromTypeClass) && TypeString.IsPointerType(toTypeClass))
                             if (IsPointerToBaseOrInterfaceOf(toTypeClass, fromTypeClass))
                                 return new ConversionData(ConversionType.NativeImplicitConversion,
                                     false, false, null);
@@ -1555,17 +1737,17 @@ namespace LayerD.ZOECompiler
             }
             //3°) Busco si es una conversion entre punteros a funciones
             //PENDIENTE : Chequear esto y mejorar velocidad :-)
-            if (!IsPointerType(toType) && !IsArrayType(toType) && IsExplicitPointerToMember(fromType))
+            if (!TypeString.IsPointerType(toType) && !TypeString.IsArrayType(toType) && IsExplicitPointerToMember(fromType))
             {
                 TypeInfo fpType = p_types.get_TypeInfo(toType);
                 if (fpType != null && fpType.get_IsFPType())
                 {
-                    if (ExistsConversionBetweenFP(fpType, RemovePointerIndirectionsFromType(fromType, 1)))
+                    if (ExistsConversionBetweenFP(fpType, TypeString.RemovePointerIndirectionsFromType(fromType, 1)))
                         return new ConversionData(ConversionType.NativeImplicitConversion, false, false, null);
                 }
             }
             //4°) Determino si es una conversión de empaquetado
-            if (IsSameStringType(toType, MakePointerTypeTo(NativeTypes.Object))
+            if (IsSameStringType(toType, TypeString.MakePointerTypeTo(NativeTypes.Object))
                 && !p_programRequirements.get_DisableUnifiedTypeSystem())
             {
                 //Los empaquetados posibles son de un tipo Enum o Struct a ^_object y
@@ -1576,32 +1758,31 @@ namespace LayerD.ZOECompiler
                 //en dicho caso podría emitir un warning informando de la penalidad en performance
                 //por copiar clases y matrices, pero así lograria realmente tener un sistema de tipos
                 //unificados real y completo.
-                if (IsPointerToArrayType(fromType))
+                if (TypeString.IsPointerToArrayType(fromType))
                 {
                     //PENDIENTE : Debo chequear que la clase base usada para matrices sea derivada 
                     //de object.¿¿???
                     return new ConversionData(ConversionType.NativeImplicitConversion,
                         false, false, null);
                 }
-                else if (IsPointerType(fromType))
+                else if (TypeString.IsPointerType(fromType))
                 {
                     //Debo ver si es de más de un nivel para que sea valido
-                    if (IsPointerType(RemovePointerIndirectionsFromType(fromType, 1)))
+                    if (TypeString.IsPointerType(TypeString.RemovePointerIndirectionsFromType(fromType, 1)))
                         return new ConversionData(ConversionType.NativeImplicitConversion,
                             true, false, null);
                 }
-                else if (!IsArrayType(fromType))
+                else if (!TypeString.IsArrayType(fromType))
                 {
-                    //Es un valor, ya sea una structura o enumeracion, tipo basico no
-                    //porque debe de haber encontrado la conversión implicita antes.
+                    // its a value of class, struct, enum, union or function pointer
                     TypeInfo type = (TypeInfo)p_types[fromType];
-                    if (type != null && (type.get_IsEnum() || type.get_IsStruct()))
+                    if (type != null && (type.get_IsEnum() || type.get_IsStruct() || type.get_IsClass() || type.get_IsUnion() || type.get_IsFPType()))
                         return new ConversionData(ConversionType.NativeImplicitConversion,
                             true, false, null);
                 }
             }
             //5°) Es una conversión de un puntero a *void?
-            if (IsPointerType(fromType) && IsSameStringType(MakePointerTypeTo(NativeTypes.Void), toType)
+            if (TypeString.IsPointerType(fromType) && IsSameStringType(TypeString.MakePointerTypeTo(NativeTypes.Void), toType)
                 && !p_programRequirements.get_DisableAllPointerConversionsToVoid())
             {
                 //Conversion a void*
@@ -1636,9 +1817,9 @@ namespace LayerD.ZOECompiler
         /// <returns></returns>
         private bool IsExplicitPointerToMember(string typeStr)
         {
-            if (!IsPointerType(typeStr)) return false;
-            string toTypeStr = RemovePointerIndirectionsFromType(typeStr, 1);
-            if (IsPointerType(toTypeStr) || IsArrayType(toTypeStr)) return false;
+            if (!TypeString.IsPointerType(typeStr)) return false;
+            string toTypeStr = TypeString.RemovePointerIndirectionsFromType(typeStr, 1);
+            if (TypeString.IsPointerType(toTypeStr) || TypeString.IsArrayType(toTypeStr)) return false;
             //PENDIENTE : mejorar esto para q solo busque un caracter no una cadena
             return toTypeStr.Contains("/");
         }
@@ -1653,13 +1834,13 @@ namespace LayerD.ZOECompiler
         /// </summary>
         private bool IsPointerToBaseOrInterfaceOf(string pointerToBase, string pointerToDerived)
         {
-            Debug.Assert(IsPointerType(pointerToBase) && IsPointerType(pointerToDerived), "ERROR INTERNO: mal uso de IsPointerToBaseOrInterfaceOf.");
-            pointerToBase = RemovePointerIndirectionsFromType(pointerToBase, 1);
-            pointerToDerived = RemovePointerIndirectionsFromType(pointerToDerived, 1);
+            Debug.Assert(TypeString.IsPointerType(pointerToBase) && TypeString.IsPointerType(pointerToDerived), "ERROR INTERNO: mal uso de IsPointerToBaseOrInterfaceOf.");
+            pointerToBase = TypeString.RemovePointerIndirectionsFromType(pointerToBase, 1);
+            pointerToDerived = TypeString.RemovePointerIndirectionsFromType(pointerToDerived, 1);
             //PENDIENTE : Aca debo considerar cuando quiero convertir un puntero a una matriz
             //a un puntero a "object"
-            if (IsPointerType(pointerToBase) || IsPointerType(pointerToDerived)
-                || IsArrayType(pointerToBase) || IsArrayType(pointerToDerived)) return false;
+            if (TypeString.IsPointerType(pointerToBase) || TypeString.IsPointerType(pointerToDerived)
+                || TypeString.IsArrayType(pointerToBase) || TypeString.IsArrayType(pointerToDerived)) return false;
 
 
             TypeInfo baseType = (TypeInfo)p_types[pointerToBase];
@@ -1681,6 +1862,11 @@ namespace LayerD.ZOECompiler
         /// </summary>
         private bool IsNamedArgument(XplExpression xplExpression)
         {
+            if (xplExpression.get_Content() == null)
+            {
+                AddNewError(SemanticError.New(SemanticErrorCode.InvalidEmptyExpressionNode, xplExpression));                
+                return false;
+            }
             if (xplExpression.get_Content().get_ElementName() == "bo" && ((XplBinaryoperator)xplExpression.get_Content()).get_op() == XplBinaryoperators_enum.IMP)
                 return true;
             return false;
@@ -1740,13 +1926,13 @@ namespace LayerD.ZOECompiler
         /// Quita del grupo de miembros los miembros que no sean estáticos,
         /// es decir los miembros de instancia.
         /// </summary>
-        private MemberInfo[] FilterStaticMembers(MemberInfo[] members, Scope scope)
+        private MemberInfo[] FilterStaticMembers(MemberInfo[] members, Scope scope, bool allowConstructors)
         {
             if (members == null) return null;
             int index = 0, currentIndex = 0;
             foreach (MemberInfo member in members)
             {
-                if (member.IsStatic())
+                if (member.IsStatic() || allowConstructors && member.IsConstructor())
                 {
                     if (index != currentIndex) members[index] = member;
                     index++;
@@ -1825,6 +2011,9 @@ namespace LayerD.ZOECompiler
             object constantValue = null;
 
             #region Establecimiento del String del Tipo
+            double doubleValue = 0;
+            bool parseResult = false;
+
             typeOfExp = "$" + xplLiteral.get_type().ToString() + "$";
             switch (xplLiteral.get_type())
             {
@@ -1885,13 +2074,15 @@ namespace LayerD.ZOECompiler
                             break;
                         default:
                             constantValue = Int64.Parse(literalStr, NumberStyles.Integer, NumberFormatInfo.InvariantInfo);
-                            typeOfExp = NativeTypes.Integer;
+                            typeOfExp = GetTypeForIntegerLiteral((long)constantValue);
                             break;
                     }
                     break;
                 case XplLiteraltype_enum.REAL:
                     if (!Char.IsDigit(lastLetter) && lastLetter != REFERENCE_CHAR)
+                    {
                         literalStr = literalStr.Substring(0, literalLength - 1);
+                    }
                     typeOfExp = NativeTypes.Double;
                     switch (lastLetter)
                     {
@@ -1912,14 +2103,26 @@ namespace LayerD.ZOECompiler
                             typeOfExp = NativeTypes.Double;
                             break;
                     }
-                    constantValue = Double.Parse(literalStr, NumberStyles.Number | NumberStyles.AllowExponent, NumberFormatInfo.InvariantInfo);
+                    parseResult = Double.TryParse(literalStr, NumberStyles.Number | NumberStyles.AllowExponent, NumberFormatInfo.InvariantInfo, out doubleValue);
+                    constantValue = parseResult ? doubleValue : 0;
+                    if (!parseResult)
+                    {
+                        AddNewError(LexicalError.New(LexicalErrorCode.InvalidFloatConstant, xplLiteral, literalStr));
+                    }
                     break;
                 case XplLiteraltype_enum.FLOAT:
                 case XplLiteraltype_enum.DOUBLE:
                 case XplLiteraltype_enum.DECIMAL:
                     if (!Char.IsDigit(lastLetter) && lastLetter != REFERENCE_CHAR)
+                    {
                         literalStr = literalStr.Substring(0, literalLength - 1);
-                    constantValue = Double.Parse(literalStr, NumberStyles.Number | NumberStyles.AllowExponent, NumberFormatInfo.InvariantInfo);
+                    }
+                    parseResult = Double.TryParse(literalStr, NumberStyles.Number | NumberStyles.AllowExponent, NumberFormatInfo.InvariantInfo, out doubleValue);
+                    constantValue = parseResult ? doubleValue : 0;
+                    if (!parseResult)
+                    {
+                        AddNewError(LexicalError.New(LexicalErrorCode.InvalidDecimalConstant, xplLiteral, literalStr));
+                    }
                     break;
                 case XplLiteraltype_enum.OCT:
                     //PENDIENTE : parseo de constantes octales
@@ -1948,159 +2151,204 @@ namespace LayerD.ZOECompiler
             result.set_ExpType(ExpressionResultType.Value);
             return result;
         }
+
+        /// <summary>
+        /// Returns the shortest integer type for provided constant value
+        /// </summary>
+        /// <param name="constantValue">Constant value</param>
+        /// <returns>The native shortest integer type that can contain the provided value.</returns>
+        private string GetTypeForIntegerLiteral(long constantValue)
+        {
+            // TODO : implement using target output module numeric limits
+            if (constantValue <= Byte.MaxValue) return NativeTypes.Byte;
+            else if (constantValue <= Int16.MaxValue) return NativeTypes.Short;
+            else if (constantValue <= Int32.MaxValue) return NativeTypes.Integer;
+            else if (constantValue <= Int64.MaxValue) return NativeTypes.Long;
+            else
+            {
+                // TODO : warning, possible overflow of literal
+                return NativeTypes.Long;
+            }
+        }
+
         private ExpressionResult ProcessSimpleNameExpression(XplNode xplNode, Scope scope)
         {
-
             string nameToSearch = xplNode.get_StringValue();
-            if (IsQualifiedName(nameToSearch))
+
+            if (!this.CheckValidIdentifier(nameToSearch, xplNode, "In simple expression."))
             {
-                #region Cuando es un Nombre Calificado
-                nameToSearch = GetInternalQualifiedName(nameToSearch);
-                string memberOrTypeToSearch = GetSimpleNameFromQualified(nameToSearch);
-                string typeToSearch = RemoveSimpleNameFromQualified(nameToSearch);
-                string fullTypeName = p_types.get_ExistingTypeName(typeToSearch, scope);
-                // if type was not found try outer types
-                if (fullTypeName == null)
-                {
-                    Scope searchScope = (Scope)scope.Clone();
-                    while (searchScope.LeaveScope())
-                    {
-                        fullTypeName = p_types.get_ExistingTypeName(typeToSearch, searchScope);
-                        if (fullTypeName != null || searchScope.get_ScopeLevel() <= 1) break;
-                    }
-                }
-                // search members into the type (if type was found)
-                if (fullTypeName != null)
-                {
-                    //Actualizo el nombre en código para q corresponda con un
-                    //el nombre de tipos completo
-                    xplNode.set_Value(fullTypeName.Replace(".", "::") + "::" + memberOrTypeToSearch);
-                    TypeInfo type = (TypeInfo)p_types[fullTypeName];
-                    //Primero busco un tipo anidado
-                    string typeName = Scope.MakeFullTypeName(fullTypeName, memberOrTypeToSearch);
-                    typeName = p_types.get_ExistingTypeName(typeName, scope);
-                    if (typeName != null)
-                    {
-                        type = (TypeInfo)p_types[typeName];
-                        if (TypeInfo.IsAccesible(type, scope))
-                        {
+                // provide some name to allow compilation to continue
+                xplNode.set_lddata(xplNode.get_lddata() + "$ORIGINAL_CONTENT(" + nameToSearch != null ? nameToSearch : String.Empty + ")$");
+                xplNode.set_Value(ZOE_INVALID_IDENTIFIER);
 
-                            return new ExpressionResult(type);
-                        }
-                        else
-                        {
-                            AddNewError(
-                                SemanticError.New(SemanticErrorCode.InaccesibleType,
-                                xplNode, nameToSearch, "On simple name expression."));
+                // return null exp result
+                return null;
+            }
 
-                            return null;
-                        }
+            if (TypeString.IsQualifiedName(nameToSearch))
+            {
+                return ProcessSimpleNameExpressionForQualifiedName(xplNode, scope, nameToSearch);
+            }
+            else
+            {
+                return ProcessSimpleNameExpressionForSimpleName(xplNode, scope, nameToSearch);
+            }
+        }
+
+        private ExpressionResult ProcessSimpleNameExpressionForSimpleName(XplNode xplNode, Scope scope, string nameToSearch)
+        {
+            Symbol symbol = scope.get_Symbol(nameToSearch);
+            XplExpression expNode = xplNode.get_Parent() as XplExpression;
+            // 1) Search symbols on scope
+            if (symbol != null)
+            {
+                expNode.set_targetMember(symbol.get_SymbolName());
+
+                XplType symType = symbol.get_SymbolType();
+                string expTypeStr;
+                expTypeStr = symType.get_typeStr();
+                if (String.IsNullOrEmpty(expTypeStr)) return null;
+                else return new ExpressionResult(expTypeStr, ExpressionResultType.ValueOrLValue, symbol.get_SymbolType());
+            }
+            // 2) search members of current class
+            TypeInfo type = (TypeInfo)p_types[scope.get_FullClassName()];
+            ExpressionResult expRes = ProcessSimpleNameOnScope(xplNode, scope, nameToSearch, type, true);
+            if (expRes != null)
+            {
+                return expRes;
+            }
+            else
+            {
+                // try members on outer types
+                Scope searchScope = (Scope)scope.Clone();
+                while (searchScope.IsBlock()) searchScope.LeaveScope();
+                while (searchScope.get_ScopeLevel() > 0)
+                {
+                    type = (TypeInfo)p_types[searchScope.get_FullClassName()];
+                    expRes = ProcessSimpleNameOnScope(xplNode, searchScope, nameToSearch, type, false);
+                    if (expRes != null)
+                    {
+                        return expRes;
                     }
                     else
-                    {   //Si no busco miembros dentro del tipo obtenido
-                        MemberInfo[] members = type.get_MemberInfoCollection().get_MembersInfo(memberOrTypeToSearch);
-                        if (members != null && members.Length > 0)
+                    {
+                        // 3) finally, search if it's a type in current scope
+                        string fullTypeName = p_types.get_ExistingTypeName(nameToSearch, searchScope);
+                        if (fullTypeName != null)
                         {
-                            //Filtro los miembros inaccesibles por el nivel de acceso.
-                            members = FilterAccesibleMembers(members, scope);
-                            if (members == null)
+                            // Actualizo el nombre en código para q corresponda con un
+                            // el nombre de tipos completo
+                            xplNode.set_Value(fullTypeName);
+                            type = (TypeInfo)p_types[fullTypeName];
+                            // Chequeo que el tipo sea accesible en el alcance actual
+                            if (TypeInfo.IsAccesible(type, scope))
+                            {
+                                expNode.set_targetClass(fullTypeName);
+
+                                return new ExpressionResult(type);
+                            }
+                            else
                             {
                                 AddNewError(
-                                    SemanticError.New(SemanticErrorCode.InaccesibleTypeMember,
-                                    xplNode, memberOrTypeToSearch));
-
-                                return null;
-                            }
-                            if (members != null)
-                            {
-                                return new ExpressionResult(members);
+                                    SemanticError.New(SemanticErrorCode.InaccesibleType,
+                                    xplNode, nameToSearch, "On simple name expression."));
                             }
                         }
+                    }
+                    searchScope.LeaveScope();
+                }
+            }
+
+            AddNewError(SemanticError.New(SemanticErrorCode.UnresolvedNameOnExpression,
+                xplNode, nameToSearch));
+
+            return null;
+        }
+
+        private ExpressionResult ProcessSimpleNameExpressionForQualifiedName(XplNode xplNode, Scope scope, string nameToSearch)
+        {
+            nameToSearch = GetInternalQualifiedName(nameToSearch);
+            string memberOrTypeToSearch = GetSimpleNameFromQualified(nameToSearch);
+            string typeToSearch = RemoveSimpleNameFromQualified(nameToSearch);
+            string fullTypeName = p_types.get_ExistingTypeName(typeToSearch, scope);
+            XplExpression simpleExp = xplNode.get_Parent() as XplExpression;
+
+            // if type was not found try outer types
+            if (fullTypeName == null)
+            {
+                Scope searchScope = (Scope)scope.Clone();
+                while (searchScope.LeaveScope())
+                {
+                    fullTypeName = p_types.get_ExistingTypeName(typeToSearch, searchScope);
+                    if (fullTypeName != null || searchScope.get_ScopeLevel() <= 1) break;
+                }
+            }
+            // search members into the type (if type was found)
+            if (fullTypeName != null)
+            {
+                // update the name in the code to corresponding full type name
+                xplNode.set_Value(fullTypeName.Replace(".", "::") + "::" + memberOrTypeToSearch);
+                TypeInfo type = (TypeInfo)p_types[fullTypeName];
+                // first, search an inner type
+                string typeName = Scope.MakeFullTypeName(fullTypeName, memberOrTypeToSearch);
+                typeName = p_types.get_ExistingTypeName(typeName, scope);
+                if (typeName != null)
+                {
+                    simpleExp.set_targetClass(typeName);
+
+                    type = (TypeInfo)p_types[typeName];
+                    if (TypeInfo.IsAccesible(type, scope))
+                    {
+                        return new ExpressionResult(type);
+                    }
+                    else
+                    {
                         AddNewError(
-                            SemanticError.New(SemanticErrorCode.NonexistentMemberOfType, xplNode,
-                            memberOrTypeToSearch, fullTypeName, GetSimilarMembersNames(type, memberOrTypeToSearch) + " On primary expression."));
+                            SemanticError.New(SemanticErrorCode.InaccesibleType,
+                            xplNode, nameToSearch, "On simple name expression."));
 
                         return null;
                     }
                 }
                 else
                 {
+                    simpleExp.set_targetClass(fullTypeName);
+                    simpleExp.set_targetMember("?");
+                    // find members inside resolved type
+                    MemberInfo[] members = type.get_MemberInfoCollection().get_MembersInfo(memberOrTypeToSearch);
+                    if (members != null && members.Length > 0)
+                    {
+                        simpleExp.set_targetMember(memberOrTypeToSearch);
+                        // filter inaccesible member
+                        members = FilterAccesibleMembers(members, scope);
+                        if (members == null)
+                        {
+                            AddNewError(
+                                SemanticError.New(SemanticErrorCode.InaccesibleTypeMember,
+                                xplNode, memberOrTypeToSearch));
+
+                            return null;
+                        }
+                        if (members != null)
+                        {
+                            return new ExpressionResult(members);
+                        }
+                    }
+
                     AddNewError(
-                        SemanticError.New(SemanticErrorCode.DeclaredTypeDoesnotExist, xplNode,
-                        typeToSearch, "On primary expression."));
+                        SemanticError.New(SemanticErrorCode.NonexistentMemberOfType, xplNode,
+                        memberOrTypeToSearch, fullTypeName, GetSimilarMembersNames(type, memberOrTypeToSearch) + " On primary expression."));
 
                     return null;
                 }
-                #endregion
             }
             else
             {
-                #region Cuando es un Nombre Simple
-                Symbol symbol = scope.get_Symbol(nameToSearch);
-                // 1) Primero busco en los simbolos en el alcance
-                if (symbol != null)
-                {
-                    XplType symType = symbol.get_SymbolType();
-                    string expTypeStr;
-                    expTypeStr = symType.get_typeStr();
-                    if (String.IsNullOrEmpty(expTypeStr)) return null;
-                    else return new ExpressionResult(expTypeStr, ExpressionResultType.ValueOrLValue, symbol.get_SymbolType());
-                }
-                // 2) luego busco si es un miembro de la clase actual
-                TypeInfo type = (TypeInfo)p_types[scope.get_FullClassName()];
-                ExpressionResult expRes = ProcessSimpleNameOnScope(xplNode, scope, nameToSearch, type, true);
-                if (expRes != null)
-                {
-                    return expRes;
-                }
-                else
-                {
-                    // try members on outer types
-                    Scope searchScope = (Scope)scope.Clone();
-                    while (searchScope.IsBlock()) searchScope.LeaveScope();
-                    while (searchScope.get_ScopeLevel() > 0)
-                    {
-                        type = (TypeInfo)p_types[searchScope.get_FullClassName()];
-                        expRes = ProcessSimpleNameOnScope(xplNode, searchScope, nameToSearch, type, false);
-                        if (expRes != null)
-                        {
-                            return expRes;
-                        }
-                        else
-                        {
-                            // 3) Finalmente buscar si se trata de un tipo en el alcance
-                            string fullTypeName = p_types.get_ExistingTypeName(nameToSearch, searchScope);
-                            if (fullTypeName != null)
-                            {
-                                // Actualizo el nombre en código para q corresponda con un
-                                // el nombre de tipos completo
-                                xplNode.set_Value(fullTypeName);
-                                type = (TypeInfo)p_types[fullTypeName];
-                                // Chequeo que el tipo sea accesible en el alcance actual
-                                if (TypeInfo.IsAccesible(type, scope))
-                                {
-                                    return new ExpressionResult(type);
-                                }
-                                else
-                                {
-                                    AddNewError(
-                                        SemanticError.New(SemanticErrorCode.InaccesibleType,
-                                        xplNode, nameToSearch, "On simple name expression."));
-                                }
-                            }
-                        }
-                        searchScope.LeaveScope();
-                    }
-                }
-
-                // PENDIENTE : falta controlar cuando tengo por ejemplo A(12) y
-                // "A" es una clase q tiene un constructor q toma un entero :-)
-                // debo en este caso retornar los constructores accesibles de A.
-                AddNewError(SemanticError.New(SemanticErrorCode.UnresolvedNameOnExpression,
-                    xplNode, nameToSearch));
+                AddNewError(
+                    SemanticError.New(SemanticErrorCode.DeclaredTypeDoesnotExist, xplNode,
+                    typeToSearch, "On primary expression."));
 
                 return null;
-                #endregion
             }
         }
 
@@ -2117,7 +2365,7 @@ namespace LayerD.ZOECompiler
                     Symbol pThis = tryThis ? scope.get_Symbol("this") : null;
                     if (pThis == null)
                     {
-                        members = FilterStaticMembers(members, scope);
+                        members = FilterStaticMembers(members, scope, true);
                         if (members == null)
                         {
                             AddNewError(
@@ -2141,6 +2389,10 @@ namespace LayerD.ZOECompiler
                         members = FilterNonHiddenMembers(members, scope);
                         if (members != null)
                         {
+                            // set meta info
+                            XplExpression expNode = xplNode.get_Parent() as XplExpression;
+                            expNode.set_targetClass(members[0].get_DeclarationClassTypeFullName());
+                            expNode.set_targetMember(members[0].get_MemberName());
 
                             return pThis != null ? new ExpressionResult(members, true)
                                 : new ExpressionResult(members);
@@ -2164,13 +2416,13 @@ namespace LayerD.ZOECompiler
                 case XplFactorytype_enum.NONE:
                     break;
                 case XplFactorytype_enum.INAME:
-                    return MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".IName");
+                    return TypeString.MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".IName");
                 case XplFactorytype_enum.EXPRESSION:
-                    return MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".XplExpression");
+                    return TypeString.MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".XplExpression");
                 case XplFactorytype_enum.EXPRESSIONLIST:
-                    return MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".XplExpressionlist");
+                    return TypeString.MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".XplExpressionlist");
                 case XplFactorytype_enum.STATEMENT:
-                    return MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".XplFunctionBody");
+                    return TypeString.MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".XplFunctionBody");
                 default:
                     break;
             }
@@ -2211,10 +2463,10 @@ namespace LayerD.ZOECompiler
                     opStr = "dec";
                     break;
                 case XplUnaryoperators_enum.PREINC:
-                    opStr = "preinc";
+                    opStr = "inc";
                     break;
                 case XplUnaryoperators_enum.PREDEC:
-                    opStr = "predec";
+                    opStr = "dec";
                     break;
                 case XplUnaryoperators_enum.ONECOMP:
                     opStr = "comp";
@@ -2242,54 +2494,54 @@ namespace LayerD.ZOECompiler
                         return res;
                     }
                     typeStr = expRes.get_TypeStr();
-                    if (!IsPointerType(typeStr))
+                    if (!TypeString.IsPointerType(typeStr))
                     {
                         AddNewError(
                             SemanticError.New(SemanticErrorCode.InvalidPointerDereference,
                             xplUnaryoperator, "A Pointer or Reference value required to apply dereference.", errorStr));
                         return res;
                     }
-                    if (IsReferencePointerType(typeStr) && !scope.get_IsOnPointerScope())
-                        typeStr = RemoveReferencesFromType(typeStr, RemoveReferenciesType.IndirectionOperator);
+                    if (TypeString.IsReferencePointerType(typeStr) && !scope.get_IsOnPointerScope())
+                        typeStr = TypeString.RemoveReferencesFromType(typeStr, TypeString.RemoveReferenciesType.IndirectionOperator);
                     else
-                        typeStr = RemovePointerIndirectionsFromType(typeStr, 1);
+                        typeStr = TypeString.RemovePointerIndirectionsFromType(typeStr, 1);
                     res = new ExpressionResult(typeStr, ExpressionResultType.LValue);
                     break;
                 #endregion
 
                 #region Address Of
                 case XplUnaryoperators_enum.AOF:
-                    //PENDIENTE : revisar aqui todo el funcionamiento, se
-                    //realizo rápidamente sin controlarlo demasiado, comparar
-                    //con C++.
+                    // if expression is typemembers, try to convert to value
                     if (expResType == ExpressionResultType.TypeMembers ||
                         expResType == ExpressionResultType.TypeMembersFromValue)
                     {
-                        if (expRes.get_Members().Length == 1)
+                        expRes = TryConvertTypeMembersToValueOrLValue(expRes, scope, unaryExp.get_Content());
+                        expResType = expRes.get_ExpType();
+                    }
+                    if (expResType != ExpressionResultType.LValue &&
+                        expResType != ExpressionResultType.ValueOrLValue)
+                    {
+                        // if it's not a value, it's only valid if it denotes a member of a class
+                        if (expRes.get_IsTypeMembers() && expRes.get_Members().Length == 1)
                         {
-                            //Aqui devuelvo un puntero a funcion
+                            // a pointer to a class member
                             typeStr = MakePointerTypeToMember(expRes.get_Members()[0], expResType == ExpressionResultType.TypeMembersFromValue);
                             res = new ExpressionResult(typeStr);
                             break;
                         }
                         else
                         {
-                            expRes = TryConvertTypeMembersToValueOrLValue(expRes, scope, unaryExp.get_Content());
-                            expResType = expRes.get_ExpType();
+                            AddNewError(
+                                SemanticError.New(SemanticErrorCode.LValueRequiredAsOperandOfAddressOfOperator,
+                                xplUnaryoperator));
+                            return res;
                         }
                     }
-                    if (expResType != ExpressionResultType.LValue &&
-                        expResType != ExpressionResultType.ValueOrLValue)
-                    {
-                        AddNewError(
-                            SemanticError.New(SemanticErrorCode.LValueRequiredAsOperandOfAddressOfOperator,
-                            xplUnaryoperator));
-                        return res;
-                    }
+                    
                     typeStr = expRes.get_TypeStr();
-                    if (IsReferencePointerType(typeStr) && !scope.get_IsOnPointerScope())
-                        typeStr = RemoveReferencesFromType(typeStr, RemoveReferenciesType.SimpleExpression);
-                    typeStr = MakePointerTypeTo(typeStr);
+                    if (TypeString.IsReferencePointerType(typeStr) && !scope.get_IsOnPointerScope())
+                        typeStr = TypeString.RemoveReferencesFromType(typeStr, TypeString.RemoveReferenciesType.SimpleExpression);
+                    typeStr = TypeString.MakePointerTypeTo(typeStr);
                     res = new ExpressionResult(typeStr);
                     break;
                 #endregion
@@ -2329,10 +2581,10 @@ namespace LayerD.ZOECompiler
                     {
                         typeName = expRes.get_TypeStr();
                         //Aqui chequeo si es una referencia o un puntero elimino dicha referencia o puntero
-                        if (IsReferencePointerType(typeName) && !scope.get_IsOnPointerScope()) typeName = RemoveReferencesFromType(typeName, RemoveReferenciesType.ExtractType);
-                        else if (IsPointerType(typeName) && !scope.get_IsOnPointerScope()) typeName = RemovePointerIndirectionsFromType(typeName, 1);
+                        if (TypeString.IsReferencePointerType(typeName) && !scope.get_IsOnPointerScope()) typeName = TypeString.RemoveReferencesFromType(typeName, TypeString.RemoveReferenciesType.ExtractType);
+                        else if (TypeString.IsPointerType(typeName) && !scope.get_IsOnPointerScope()) typeName = TypeString.RemovePointerIndirectionsFromType(typeName, 1);
 
-                        typeRequired = !IsPointerType(typeName) && !IsArrayType(typeName);
+                        typeRequired = !TypeString.IsPointerType(typeName) && !TypeString.IsArrayType(typeName);
                         typeName = p_types.get_ExistingTypeName(typeName, scope);
                         //Si no se encontro el tipo quiere decir que no exite el tipo del valor
                         if (typeName == null && typeRequired)
@@ -2367,7 +2619,7 @@ namespace LayerD.ZOECompiler
                 if (candidateMembers == null)
                 {
                     //Primero cheque si ambos son punteros
-                    if (IsPointerType(expRes.get_TypeStr()))
+                    if (TypeString.IsPointerType(expRes.get_TypeStr()))
                     {
                         //PENDIENTE : obtener los miembros cuando se aplican los operadores a punteros
                     }
@@ -2438,10 +2690,13 @@ namespace LayerD.ZOECompiler
                         return res;
                 }
                 //PENDIENTE : convertir a llamadas a funcion cuando es necesario.
-                xplUnaryoperator.set_targetClass(candidateMembers[0].get_DeclarationClassTypeFullName());
-                xplUnaryoperator.set_targetMember(candidateMembers[0].get_MemberInternalName());
+                MemberInfo selectedMember = candidateMembers[0];
+                xplUnaryoperator.set_targetClass(selectedMember.get_DeclarationClassTypeFullName());
+                xplUnaryoperator.set_targetMember(selectedMember.get_MemberInternalName());
 
-                res = new ExpressionResult(((XplFunction)candidateMembers[0].get_MemberNode()).get_ReturnType().get_typeStr());
+                this.p_candidateStructures.AddCandidateStructure(selectedMember, xplUnaryoperator, scope);
+
+                res = new ExpressionResult(((XplFunction)selectedMember.get_MemberNode()).get_ReturnType().get_typeStr());
 
                 #endregion
 
@@ -2453,10 +2708,10 @@ namespace LayerD.ZOECompiler
 
         private ExpressionResult ProcessBinaryOperatorExpression(XplBinaryoperator xplBinaryoperator, Scope scope)
         {
-
             ExpressionResult res = null;
             XplExpression rightExp = xplBinaryoperator.get_r();
             XplExpression leftExp = xplBinaryoperator.get_l();
+
             if (rightExp == null || leftExp == null)
             {
                 AddNewError(
@@ -2465,8 +2720,8 @@ namespace LayerD.ZOECompiler
 
                 return res;
             }
-            ExpressionResult leftRes = ProcessExpression(leftExp, scope), rightRes = null;
 
+            ExpressionResult leftRes = ProcessExpression(leftExp, scope), rightRes = null;
             //ExpressionResult rightRes = ProcessExpression(xplBinaryoperator.get_r(), scope);
 
             string opStr = ""; //Indica el operador binario que debera procesarse
@@ -2545,422 +2800,20 @@ namespace LayerD.ZOECompiler
                     #region Acceso a Miembro
                     case XplBinaryoperators_enum.M:      //"." Acceso a miembro 
                         //Si es un TypeMembers intento resolverlo a un campo o propiedad
-                        if (leftRes.get_ExpType() == ExpressionResultType.TypeMembers
-                            || leftRes.get_ExpType() == ExpressionResultType.TypeMembersFromValue)
-                            leftRes = TryConvertTypeMembersToValueOrLValue(leftRes, scope, leftExp.get_Content());
+                        return ProcessSimpleMemberAccessBinaryOperator(xplBinaryoperator, scope, rightExp, leftExp, leftRes);
 
-                        if (leftRes.get_ExpType() == ExpressionResultType.TypeMembers
-                            || leftRes.get_ExpType() == ExpressionResultType.TypeMembersFromValue)
-                        {
-                            //Error no se permite una expresion de este tipo como operando izq                            
-                            AddNewError(
-                                SemanticError.New(SemanticErrorCode.InvalidLeftExpressionOnSimpleMemberAccess,
-                                xplBinaryoperator, "A value or type required as left operand of simple member access operator."));
-
-                            return res;
-                        }
-                        else if (leftRes.get_ExpType() == ExpressionResultType.Type)
-                        {
-                            //Solo se permite un tipo del lado Izq si el lenguaje permite utilizar "." como "::"
-                            #region Tipo
-
-                            if (p_programRequirements.get_UseSimpleMemberAccessAsNamespaceSeparator())
-                            {
-                                if (rightExp.get_Content().get_ElementName() != "n")
-                                {
-                                    AddNewError(
-                                        SemanticError.New(SemanticErrorCode.ANameRequiredAsRightExpression,
-                                        xplBinaryoperator, "On simple member access expression."));
-
-                                    return res;
-                                }
-                                #region VIEJO
-                                ///PENDIENTE : chequear esto!
-                                TypeInfo type = leftRes.get_Type();
-                                xplBinaryoperator.set_targetClass(type.get_FullName());
-                                xplBinaryoperator.set_targetMember("?");
-
-                                string memberName = rightExp.get_Content().get_StringValue();
-                                string className, simpleName;
-                                if (IsQualifiedName(memberName))
-                                {
-                                    className = RemoveSimpleNameFromQualified(GetInternalQualifiedName(memberName));
-                                    simpleName = GetSimpleNameFromQualified(memberName);
-                                }
-                                else
-                                {
-                                    className = String.Empty;
-                                }
-                                MemberInfo[] members = null;
-                                if (type.get_IsNamespace())
-                                {
-                                    string typeNameToSearch = Scope.MakeFullTypeName(type.get_FullName(), memberName);
-                                    typeNameToSearch = p_types.get_ExistingTypeName(typeNameToSearch, scope);
-                                    if (typeNameToSearch != null)
-                                    {
-                                        // TODO : check that the type is accesible
-                                        // return the type found
-                                        return new ExpressionResult((TypeInfo)p_types[typeNameToSearch]);
-                                    }
-                                    else
-                                    {
-                                        // name not resolved
-                                        AddNewError(SemanticError.New(SemanticErrorCode.UnresolvedNameOnExpression, xplBinaryoperator,
-                                        "Member '" + memberName + "' was not found on type '" + type.get_FullName() + "'.", GetSimilarMembersNames(type, memberName)));
-                                        return null;
-                                    }
-                                }
-                                else
-                                {
-                                    if (className != String.Empty)
-                                        members = type.get_MemberInfoCollection().get_MembersInfo(memberName, className);
-                                    else
-                                        members = type.get_MemberInfoCollection().get_MembersInfo(memberName);
-                                }
-
-                                if (members == null)
-                                {
-                                    // maybe an inner class
-                                    if (!type.get_IsNamespace())
-                                    {
-                                        string typeNameToSearch = Scope.MakeFullTypeName(type.get_FullName(), memberName);
-                                        typeNameToSearch = p_types.get_ExistingTypeName(typeNameToSearch, scope);
-                                        if (typeNameToSearch != null)
-                                        {
-                                            // TODO : check that the type is accesible
-                                            // return the type found
-                                            return new ExpressionResult((TypeInfo)p_types[typeNameToSearch]);
-                                        }
-                                    }
-                                    AddNewError(
-                                    SemanticError.New(SemanticErrorCode.UnresolvedNameOnExpression, xplBinaryoperator,
-                                    "Member '" + memberName + "' was not found on type '" + type.get_FullName() + "'.", GetSimilarMembersNames(type, memberName)));
-                                }
-                                else
-                                {
-                                    // filter instance members
-                                    members = FilterStaticMembers(members, scope);
-                                    if (members == null)
-                                    {
-                                        AddNewError(
-                                            SemanticError.New(SemanticErrorCode.CannotAccessInstanceMemberFromStatic,
-                                            xplBinaryoperator, memberName));
-                                        return res;
-                                    }
-                                    //Filtro los miembros inaccesibles por el nivel de acceso.
-                                    members = FilterAccesibleMembers(members, scope);
-                                    if (members == null)
-                                    {
-                                        AddNewError(
-                                            SemanticError.New(SemanticErrorCode.InaccesibleTypeMember,
-                                            xplBinaryoperator, memberName));
-                                        return res;
-                                    }
-                                }
-                                if (members != null)
-                                {
-                                    xplBinaryoperator.set_targetMember(memberName);
-                                    //xplBinaryoperator.set_targetMemberExternalName(selectedMember.get_MemberExternalName());
-                                    res = new ExpressionResult(members);
-                                }
-                                #endregion
-                            }
-                            else
-                            {
-                                //Es un error si el lenguaje no soporta "." como "::".
-                                AddNewError(
-                                    SemanticError.New(SemanticErrorCode.InvalidSimpleMemberAccessUsedAsScopeAccess,
-                                    xplBinaryoperator));
-
-                                return res;
-                            }
-
-                            #endregion
-                        }
-                        else
-                        {
-                            //Es un Value o Value, cualquiera de los dos es aceptable
-                            #region Value Or LValue
-                            string typeStr = leftRes.get_TypeStr(), backType;
-                            //Verifico si es una referencia o un valor
-                            if (IsPointerType(typeStr) && !IsReferencePointerType(typeStr))
-                            {
-                                AddNewError(
-                                    SemanticError.New(SemanticErrorCode.InvalidLeftExpressionOnSimpleMemberAccess,
-                                    xplBinaryoperator, "You can not use simple member access with pointers types, instead use pointer member access or a pointer type with reference semantic."));
-
-                                return res;
-                            }
-                            else if (IsReferencePointerType(typeStr))
-                            {
-                                typeStr = RemoveReferencesFromType(typeStr, RemoveReferenciesType.MemberAccess);
-                            }
-                            if (IsArrayType(typeStr))
-                            {
-                                //PENDIENTE : considerar cuando el array es declarado como
-                                //un array nativo de C sin encapsular (o bien debo usar
-                                //punteros directamente en ese caso?)
-                                typeStr = NativeTypes.ArrayClassTypeName;
-                            }
-                            backType = typeStr;
-                            typeStr = p_types.get_ExistingTypeName(typeStr, scope);
-                            if (typeStr != null)
-                            {
-                                if (rightExp.get_Content().get_ElementName() != "n")
-                                {
-                                    AddNewError(
-                                        SemanticError.New(SemanticErrorCode.ANameRequiredAsRightExpression,
-                                        xplBinaryoperator, "On simple member access expression."));
-
-                                    return res;
-                                }
-                                TypeInfo type = (TypeInfo)p_types[typeStr];
-                                xplBinaryoperator.set_targetClass(typeStr);
-                                xplBinaryoperator.set_targetMember("?");
-                                string memberName = rightExp.get_Content().get_StringValue();
-                                string memberAccessCacheStr = type.get_FullName() + "." + memberName;
-
-                                string className;
-                                MemberInfo[] members = null;
-
-                                // PENDIENTE : Revisar el funcionamiento del chache de acceso a miembros,
-                                // en algunos casos no funciona bien posiblemente pq algun cliente sobreescribe
-                                // la matriz de miembros al obtenerlo. Adicionalmente verificar si se gana
-                                // tiempo relevante en el procesamiento de programas tipicos y no casos
-                                // especiales algunas pruebas con DataModel.dpp (proyecto Janus) no se
-                                // nota ganancias medibles.
-                                //if (!p_memberAccessCache.ContainsKey(memberAccessCacheStr))
-                                //{
-                                if (memberName == null)
-                                {
-                                    AddNewError(
-                                        SemanticError.New(SemanticErrorCode.ExpressionRequired,
-                                        rightExp));
-                                    return null;
-                                }
-                                if (IsQualifiedName(memberName))
-                                {
-                                    className = RemoveSimpleNameFromQualified(GetInternalQualifiedName(memberName));
-                                    memberName = GetSimpleNameFromQualified(memberName);
-                                }
-                                else
-                                {
-                                    className = String.Empty;
-                                }
-                                if (className != String.Empty)
-                                    members = type.get_MemberInfoCollection().get_MembersInfo(memberName, className);
-                                else
-                                {
-                                    members = type.get_MemberInfoCollection().get_MembersInfo(memberName);
-                                    members = FilterNonHiddenMembers(members, scope);
-                                }
-
-                                //p_memberAccessCache.Add(memberAccessCacheStr, members);
-                                //}
-                                //else
-                                //{
-                                //    members = (MemberInfo[])p_memberAccessCache[memberAccessCacheStr];
-                                //}
-                                if (members != null && members.Length > 0)
-                                {
-                                    members = FilterInstanceMembers(members, scope);
-                                    if (members == null)
-                                    {
-                                        AddNewError(
-                                            SemanticError.New(SemanticErrorCode.CannotAccessStaticMemberUsingInstanceValue,
-                                            xplBinaryoperator, memberName));
-
-                                        return res;
-                                    }
-                                    members = FilterAccesibleMembers(members, scope);
-                                    if (members == null)
-                                    {
-                                        AddNewError(
-                                            SemanticError.New(SemanticErrorCode.InaccesibleTypeMember,
-                                            xplBinaryoperator, memberName));
-
-                                        return res;
-                                    }
-                                    xplBinaryoperator.set_targetMember(memberName);
-                                    res = new ExpressionResult(members, true);
-                                }
-                                else
-                                {
-                                    AddNewError(
-                                        SemanticError.New(SemanticErrorCode.NonexistentMemberOfType, xplBinaryoperator,
-                                        memberName, typeStr, GetSimilarMembersNames(type, memberName)));
-
-                                    return res;
-                                }
-                            }
-                            else
-                            {
-                                AddNewError(
-                                    SemanticError.New(SemanticErrorCode.TypeRequired, xplBinaryoperator,
-                                    "The type '" + backType + "' was not found on simple member access expression."));
-
-                                return res;
-                            }
-
-                            return res;
-
-                            #endregion
-                        }
-                        break;
                     case XplBinaryoperators_enum.PM:     //"->" Acceso a miembro 
                         //Esto deberia ser igual que el acceso a miembro pero aplicando
                         //primero una dereferencia, por lo cual el miembro izquierdo debe ser de
                         //tipo puntero, de lo contrario si es otro tipo es un error.
-
-                        if (leftRes.get_ExpType() == ExpressionResultType.TypeMembers
-                            || leftRes.get_ExpType() == ExpressionResultType.TypeMembersFromValue)
-                            leftRes = TryConvertTypeMembersToValueOrLValue(leftRes, scope, leftExp.get_Content());
-
-                        if (leftRes.get_ExpType() == ExpressionResultType.TypeMembers
-                            || leftRes.get_ExpType() == ExpressionResultType.TypeMembersFromValue)
-                        {   //Error no se permite una expresion de este tipo como operando izq                            
-                            AddNewError(
-                                SemanticError.New(SemanticErrorCode.InvalidLeftExpressionOnPointerMemberAccess,
-                                xplBinaryoperator));
-
-                            return res;
-                        }
-                        else if (leftRes.get_ExpType() == ExpressionResultType.Type)
-                        {   //No se permite un tipo del lado Izq.
-                            AddNewError(
-                                SemanticError.New(SemanticErrorCode.TypeNotAllowedAsLeftExpOnPointerMemberAccess,
-                                xplBinaryoperator));
-
-                            return res;
-                        }
-                        else
-                        {   //Es un Value o LValue, cualquiera de los dos es aceptable
-                            #region Value Or LValue
-                            string typeStr = leftRes.get_TypeStr(), backType;
-
-                            //Verifico si es un puntero
-                            if (!IsPointerType(typeStr))
-                            {
-                                AddNewError(
-                                    SemanticError.New(SemanticErrorCode.InvalidLeftExpressionOnPointerMemberAccess,
-                                    xplBinaryoperator));
-
-                                return res;
-                            }
-                            else if (IsReferencePointerType(typeStr))
-                            {
-                                AddNewError(
-                                    SemanticError.New(SemanticErrorCode.InvalidLeftExpressionOnPointerMemberAccess,
-                                    xplBinaryoperator, "You can not use pointer member access with referencies, instead use simple member access."));
-
-                                return res;
-                            }
-                            else
-                            {
-                                //Es un puntero el tipo, hago una indirección
-                                typeStr = RemovePointerIndirectionsFromType(typeStr, 1);
-                                if (IsPointerType(typeStr))
-                                {
-                                    AddNewError(
-                                        SemanticError.New(SemanticErrorCode.MoreIndirectionsRequiredOnPointerMemberAccess,
-                                        xplBinaryoperator));
-
-                                    return res;
-                                }
-                            }
-                            if (IsArrayType(typeStr))
-                            {
-                                //PENDIENTE : considerar cuando el array es declarado como
-                                //un array nativo de C sin encapsular (o bien debo usar
-                                //punteros directamente en ese caso?)
-                                typeStr = NativeTypes.ArrayClassTypeName;
-                            }
-                            backType = typeStr;
-                            typeStr = p_types.get_ExistingTypeName(typeStr, scope);
-                            if (typeStr != null)
-                            {
-                                if (rightExp.get_Content().get_ElementName() != "n")
-                                {
-                                    AddNewError(
-                                        SemanticError.New(SemanticErrorCode.ANameRequiredAsRightExpression,
-                                        xplBinaryoperator, "On pointer member access expression."));
-
-                                    return res;
-                                }
-                                TypeInfo type = (TypeInfo)p_types[typeStr];
-                                xplBinaryoperator.set_targetClass(typeStr);
-                                xplBinaryoperator.set_targetMember("?");
-                                string memberName = rightExp.get_Content().get_StringValue();
-                                string className;
-                                if (IsQualifiedName(memberName))
-                                {
-                                    className = RemoveSimpleNameFromQualified(GetInternalQualifiedName(memberName));
-                                    memberName = GetSimpleNameFromQualified(memberName);
-                                }
-                                else
-                                {
-                                    className = String.Empty;
-                                }
-                                MemberInfo[] members = null;
-                                if (className != String.Empty)
-                                    members = type.get_MemberInfoCollection().get_MembersInfo(memberName, className);
-                                else
-                                {
-                                    members = type.get_MemberInfoCollection().get_MembersInfo(memberName);
-                                    members = FilterNonHiddenMembers(members, scope);
-                                }
-                                if (members != null && members.Length > 0)
-                                {
-                                    members = FilterInstanceMembers(members, scope);
-                                    if (members == null)
-                                    {
-                                        AddNewError(
-                                            SemanticError.New(SemanticErrorCode.CannotAccessStaticMemberUsingInstanceValue,
-                                            xplBinaryoperator, memberName));
-
-                                        return res;
-                                    }
-                                    members = FilterAccesibleMembers(members, scope);
-                                    if (members == null)
-                                    {
-                                        AddNewError(
-                                            SemanticError.New(SemanticErrorCode.InaccesibleTypeMember,
-                                            xplBinaryoperator, memberName));
-
-                                        return res;
-                                    }
-                                    xplBinaryoperator.set_targetMember(memberName);
-                                    res = new ExpressionResult(members, true);
-                                }
-                                else
-                                {
-                                    AddNewError(
-                                        SemanticError.New(SemanticErrorCode.NonexistentMemberOfType, xplBinaryoperator,
-                                        memberName, typeStr));
-
-                                    return res;
-                                }
-                            }
-                            else
-                            {
-                                AddNewError(
-                                    SemanticError.New(SemanticErrorCode.TypeRequired, xplBinaryoperator,
-                                    "The type '" + backType + "' was not found on pointer member access expression."));
-
-                                return res;
-                            }
-
-                            return res;
-
-                            #endregion
-                        }
+                        return ProcessPointerMemberAccessBinaryOperator(xplBinaryoperator, scope, rightExp, leftExp, leftRes);
 
                     case XplBinaryoperators_enum.MP:     //".*" Acceso a miembro 
                         break;
                     case XplBinaryoperators_enum.PMP:    //"->*" Acceso a miembro 
                         break;
                     case XplBinaryoperators_enum.RM:     //"Reservado" Acceso a miembro 
-                        break;
+                        return ProcessReservedMemberAccessBinaryOperator(xplBinaryoperator, scope, leftExp, leftRes);
                     #endregion
 
                     #region Operadores "=>"
@@ -2970,6 +2823,9 @@ namespace LayerD.ZOECompiler
                         return ProcessExpression(rightExp, scope);
                     #endregion
 
+                    case XplBinaryoperators_enum.COMMA:
+                        // return the result from right operator
+                        return ProcessExpression(xplBinaryoperator.get_r(), scope);
                     default:
                         break;
                 }
@@ -3002,6 +2858,515 @@ namespace LayerD.ZOECompiler
             return res;
         }
 
+        private ExpressionResult ProcessPointerMemberAccessBinaryOperator(XplBinaryoperator xplBinaryoperator, Scope scope, XplExpression rightExp, XplExpression leftExp, ExpressionResult leftRes)
+        {
+            ExpressionResult res = null;
+
+            if (leftRes.get_ExpType() == ExpressionResultType.TypeMembers
+                || leftRes.get_ExpType() == ExpressionResultType.TypeMembersFromValue)
+                leftRes = TryConvertTypeMembersToValueOrLValue(leftRes, scope, leftExp.get_Content());
+
+            if (leftRes.get_ExpType() == ExpressionResultType.TypeMembers
+                || leftRes.get_ExpType() == ExpressionResultType.TypeMembersFromValue)
+            {   //Error no se permite una expresion de este tipo como operando izq                            
+                AddNewError(
+                    SemanticError.New(SemanticErrorCode.InvalidLeftExpressionOnPointerMemberAccess,
+                    xplBinaryoperator));
+
+                return res;
+            }
+            else if (leftRes.get_ExpType() == ExpressionResultType.Type)
+            {   //No se permite un tipo del lado Izq.
+                AddNewError(
+                    SemanticError.New(SemanticErrorCode.TypeNotAllowedAsLeftExpOnPointerMemberAccess,
+                    xplBinaryoperator));
+
+                return res;
+            }
+            else
+            {   //Es un Value o LValue, cualquiera de los dos es aceptable
+                #region Value Or LValue
+                string typeStr = leftRes.get_TypeStr(), backType;
+
+                //Verifico si es un puntero
+                if (!TypeString.IsPointerType(typeStr))
+                {
+                    AddNewError(
+                        SemanticError.New(SemanticErrorCode.InvalidLeftExpressionOnPointerMemberAccess,
+                        xplBinaryoperator));
+
+                    return res;
+                }
+                else if (TypeString.IsReferencePointerType(typeStr))
+                {
+                    AddNewError(
+                        SemanticError.New(SemanticErrorCode.InvalidLeftExpressionOnPointerMemberAccess,
+                        xplBinaryoperator, "You can not use pointer member access with referencies, instead use simple member access."));
+
+                    return res;
+                }
+                else
+                {
+                    //Es un puntero el tipo, hago una indirección
+                    typeStr = TypeString.RemovePointerIndirectionsFromType(typeStr, 1);
+                    if (TypeString.IsPointerType(typeStr))
+                    {
+                        AddNewError(
+                            SemanticError.New(SemanticErrorCode.MoreIndirectionsRequiredOnPointerMemberAccess,
+                            xplBinaryoperator));
+
+                        return res;
+                    }
+                }
+                if (TypeString.IsArrayType(typeStr))
+                {
+                    //PENDIENTE : considerar cuando el array es declarado como
+                    //un array nativo de C sin encapsular (o bien debo usar
+                    //punteros directamente en ese caso?)
+                    typeStr = NativeTypes.ArrayClassTypeName;
+                }
+                backType = typeStr;
+                typeStr = p_types.get_ExistingTypeName(typeStr, scope);
+                if (typeStr != null)
+                {
+                    XplNode rightNode = rightExp.get_Content();
+
+                    if (rightNode == null)
+                    {
+                        AddNewError(
+                            SemanticError.New(SemanticErrorCode.ExpressionRequired,
+                            rightExp));
+                        return null;
+                    }
+
+                    if (rightNode.get_ElementName() != "n")
+                    {
+                        AddNewError(
+                            SemanticError.New(SemanticErrorCode.ANameRequiredAsRightExpression,
+                            xplBinaryoperator, "On pointer member access expression."));
+
+                        return res;
+                    }
+                    TypeInfo type = (TypeInfo)p_types[typeStr];
+                    xplBinaryoperator.set_targetClass(typeStr);
+                    xplBinaryoperator.set_targetMember("?");
+                    string memberName = rightNode.get_StringValue();
+
+                    if (!this.CheckValidIdentifier(memberName, rightNode, "In member access expression."))
+                    {
+                        // provide some name to allow compilation to continue
+                        rightNode.set_lddata(rightNode.get_lddata() + "$ORIGINAL_CONTENT(" + memberName != null ? memberName : String.Empty + ")$");
+                        rightNode.set_Value(ZOE_INVALID_IDENTIFIER);
+
+                        // return null exp result
+                        return null;
+                    }
+
+                    string className;
+                    if (TypeString.IsQualifiedName(memberName))
+                    {
+                        className = RemoveSimpleNameFromQualified(GetInternalQualifiedName(memberName));
+                        memberName = GetSimpleNameFromQualified(memberName);
+                    }
+                    else
+                    {
+                        className = String.Empty;
+                    }
+                    MemberInfo[] members = null;
+                    if (className != String.Empty)
+                        members = type.get_MemberInfoCollection().get_MembersInfo(memberName, className);
+                    else
+                    {
+                        members = type.get_MemberInfoCollection().get_MembersInfo(memberName);
+                        members = FilterNonHiddenMembers(members, scope);
+                    }
+                    if (members != null && members.Length > 0)
+                    {
+                        members = FilterInstanceMembers(members, scope);
+                        if (members == null)
+                        {
+                            AddNewError(
+                                SemanticError.New(SemanticErrorCode.CannotAccessStaticMemberUsingInstanceValue,
+                                xplBinaryoperator, memberName));
+
+                            return res;
+                        }
+                        members = FilterAccesibleMembers(members, scope);
+                        if (members == null)
+                        {
+                            AddNewError(
+                                SemanticError.New(SemanticErrorCode.InaccesibleTypeMember,
+                                xplBinaryoperator, memberName));
+
+                            return res;
+                        }
+                        xplBinaryoperator.set_targetMember(memberName);
+                        res = new ExpressionResult(members, true);
+                    }
+                    else
+                    {
+                        AddNewError(
+                            SemanticError.New(SemanticErrorCode.NonexistentMemberOfType, xplBinaryoperator,
+                            memberName, typeStr));
+
+                        return res;
+                    }
+                }
+                else
+                {
+                    AddNewError(
+                        SemanticError.New(SemanticErrorCode.TypeRequired, xplBinaryoperator,
+                        "The type '" + backType + "' was not found on pointer member access expression."));
+
+                    return res;
+                }
+
+                return res;
+
+                #endregion
+            }
+        }
+
+        private ExpressionResult ProcessReservedMemberAccessBinaryOperator(XplBinaryoperator xplBinaryoperator, Scope scope, XplExpression leftExp, ExpressionResult leftRes)
+        {
+            if (leftRes.get_ExpType() == ExpressionResultType.TypeMembers
+                || leftRes.get_ExpType() == ExpressionResultType.TypeMembersFromValue)
+                leftRes = TryConvertTypeMembersToValueOrLValue(leftRes, scope, leftExp.get_Content());
+
+            // a value is required
+            if (leftRes.get_ExpType() == ExpressionResultType.TypeMembers
+                || leftRes.get_ExpType() == ExpressionResultType.TypeMembersFromValue)
+            {
+                AddNewError(
+                    SemanticError.New(SemanticErrorCode.ValueOrLValueRequiredAsOperand,
+                    xplBinaryoperator));
+                return null;
+            }
+            else if (leftRes.get_ExpType() == ExpressionResultType.Type)
+            {
+                AddNewError(
+                    SemanticError.New(SemanticErrorCode.TypeNotAllowedAsLeftExpOnPointerMemberAccess,
+                    xplBinaryoperator));
+                return null;
+            }
+            else
+            {
+                // left exp its a value
+                string leftTypeStr = leftRes.get_TypeStr();
+                if (String.IsNullOrEmpty(leftTypeStr))
+                {
+                    // TODO : add new error code for this
+                    AddNewError(
+                        SemanticError.New(SemanticErrorCode.ValueOrLValueRequiredAsOperand,
+                        xplBinaryoperator, "Value type is not known on special member access."));
+                    return null;
+                }
+                if (TypeString.IsPointerType(leftTypeStr) && !TypeString.IsReferencePointerType(leftTypeStr))
+                {
+                    xplBinaryoperator.set_op(XplBinaryoperators_enum.PM);
+                }
+                else
+                {
+                    xplBinaryoperator.set_op(XplBinaryoperators_enum.M);
+                }
+                return ProcessBinaryOperatorExpression(xplBinaryoperator, scope);
+            }
+        }
+
+        private ExpressionResult ProcessSimpleMemberAccessBinaryOperator(XplBinaryoperator xplBinaryoperator, Scope scope, XplExpression rightExp, XplExpression leftExp, ExpressionResult leftRes)
+        {
+            ExpressionResult res = null;
+
+            if (leftRes.get_ExpType() == ExpressionResultType.TypeMembers
+                || leftRes.get_ExpType() == ExpressionResultType.TypeMembersFromValue)
+                leftRes = TryConvertTypeMembersToValueOrLValue(leftRes, scope, leftExp.get_Content());
+
+            if (leftRes.get_ExpType() == ExpressionResultType.TypeMembers
+                || leftRes.get_ExpType() == ExpressionResultType.TypeMembersFromValue)
+            {
+                //Error no se permite una expresion de este tipo como operando izq                            
+                AddNewError(
+                    SemanticError.New(SemanticErrorCode.InvalidLeftExpressionOnSimpleMemberAccess,
+                    xplBinaryoperator, "A value or type required as left operand of simple member access operator."));
+
+                return res;
+            }
+            else if (leftRes.get_ExpType() == ExpressionResultType.Type)
+            {
+                //Solo se permite un tipo del lado Izq si el lenguaje permite utilizar "." como "::"
+                #region Tipo
+
+                if (p_programRequirements.get_UseSimpleMemberAccessAsNamespaceSeparator())
+                {
+                    XplNode rightNode = rightExp.get_Content();
+                    if (rightNode == null || rightNode.get_ElementName() != "n")
+                    {
+                        AddNewError(
+                            SemanticError.New(SemanticErrorCode.ANameRequiredAsRightExpression,
+                            xplBinaryoperator, "On simple member access expression."));
+
+                        return res;
+                    }
+
+                    #region OLD CODE
+                    // TODO : Check this!
+                    TypeInfo type = leftRes.get_Type();
+                    xplBinaryoperator.set_targetClass(type.get_FullName());
+                    xplBinaryoperator.set_targetMember("?");
+
+                    string memberName = rightNode.get_StringValue();
+                    if (!this.CheckValidIdentifier(memberName, rightNode, "In member access expression."))
+                    {
+                        // provide some name to allow compilation to continue
+                        rightNode.set_lddata(rightNode.get_lddata() + "$ORIGINAL_CONTENT(" + memberName != null ? memberName : String.Empty + ")$");
+                        rightNode.set_Value("___zoe_invalid_identifier___");
+
+                        // return null exp result
+                        return null;
+                    }
+
+                    string className, simpleName;
+                    if (TypeString.IsQualifiedName(memberName))
+                    {
+                        className = RemoveSimpleNameFromQualified(GetInternalQualifiedName(memberName));
+                        simpleName = GetSimpleNameFromQualified(memberName);
+                    }
+                    else
+                    {
+                        className = String.Empty;
+                    }
+                    MemberInfo[] members = null;
+                    if (type.get_IsNamespace())
+                    {
+                        string typeNameToSearch = Scope.MakeFullTypeName(type.get_FullName(), memberName);
+                        typeNameToSearch = p_types.get_ExistingTypeName(typeNameToSearch, scope);
+                        if (typeNameToSearch != null)
+                        {
+                            // TODO : check that the type is accesible
+                            // return the type found
+                            return new ExpressionResult((TypeInfo)p_types[typeNameToSearch]);
+                        }
+                        else
+                        {
+                            // name not resolved
+                            AddNewError(SemanticError.New(SemanticErrorCode.UnresolvedNameOnExpression, xplBinaryoperator,
+                            "Member '" + memberName + "' was not found on type '" + type.get_FullName() + "'.", GetSimilarMembersNames(type, memberName)));
+                            return null;
+                        }
+                    }
+                    else
+                    {
+                        if (className != String.Empty)
+                            members = type.get_MemberInfoCollection().get_MembersInfo(memberName, className);
+                        else
+                            members = type.get_MemberInfoCollection().get_MembersInfo(memberName);
+                    }
+
+                    if (members == null)
+                    {
+                        // maybe an inner class
+                        if (!type.get_IsNamespace())
+                        {
+                            string typeNameToSearch = Scope.MakeFullTypeName(type.get_FullName(), memberName);
+                            typeNameToSearch = p_types.get_ExistingTypeName(typeNameToSearch, scope);
+                            if (typeNameToSearch != null)
+                            {
+                                // TODO : check that the type is accesible
+                                // return the type found
+                                return new ExpressionResult((TypeInfo)p_types[typeNameToSearch]);
+                            }
+                        }
+                        AddNewError(
+                        SemanticError.New(SemanticErrorCode.UnresolvedNameOnExpression, xplBinaryoperator,
+                        "Member '" + memberName + "' was not found on type '" + type.get_FullName() + "'.", GetSimilarMembersNames(type, memberName)));
+                    }
+                    else
+                    {
+                        // filter instance members
+                        members = FilterStaticMembers(members, scope, false);
+                        if (members == null)
+                        {
+                            AddNewError(
+                                SemanticError.New(SemanticErrorCode.CannotAccessInstanceMemberFromStatic,
+                                xplBinaryoperator, memberName));
+                            return res;
+                        }
+                        //Filtro los miembros inaccesibles por el nivel de acceso.
+                        members = FilterAccesibleMembers(members, scope);
+                        if (members == null)
+                        {
+                            AddNewError(
+                                SemanticError.New(SemanticErrorCode.InaccesibleTypeMember,
+                                xplBinaryoperator, memberName));
+                            return res;
+                        }
+                    }
+                    if (members != null)
+                    {
+                        xplBinaryoperator.set_targetMember(memberName);
+                        //xplBinaryoperator.set_targetMemberExternalName(selectedMember.get_MemberExternalName());
+                        res = new ExpressionResult(members);
+                    }
+                    #endregion
+                }
+                else
+                {
+                    //Es un error si el lenguaje no soporta "." como "::".
+                    AddNewError(
+                        SemanticError.New(SemanticErrorCode.InvalidSimpleMemberAccessUsedAsScopeAccess,
+                        xplBinaryoperator));
+
+                    return res;
+                }
+
+                #endregion
+            }
+            else
+            {
+                //Es un Value o Value, cualquiera de los dos es aceptable
+                #region Value Or LValue
+                string typeStr = leftRes.get_TypeStr(), backType;
+                //Verifico si es una referencia o un valor
+                if (TypeString.IsPointerType(typeStr) && !TypeString.IsReferencePointerType(typeStr))
+                {
+                    AddNewError(
+                        SemanticError.New(SemanticErrorCode.InvalidLeftExpressionOnSimpleMemberAccess,
+                        xplBinaryoperator, "You can not use simple member access with pointers types, instead use pointer member access or a pointer type with reference semantic."));
+
+                    return res;
+                }
+                else if (TypeString.IsReferencePointerType(typeStr))
+                {
+                    typeStr = TypeString.RemoveReferencesFromType(typeStr, TypeString.RemoveReferenciesType.MemberAccess);
+                }
+                if (TypeString.IsArrayType(typeStr))
+                {
+                    //PENDIENTE : considerar cuando el array es declarado como
+                    //un array nativo de C sin encapsular (o bien debo usar
+                    //punteros directamente en ese caso?)
+                    typeStr = NativeTypes.ArrayClassTypeName;
+                }
+                backType = typeStr;
+                typeStr = p_types.get_ExistingTypeName(typeStr, scope);
+                if (typeStr != null)
+                {
+                    XplNode rightNode = rightExp.get_Content();
+
+                    if (rightNode == null)
+                    {
+                        AddNewError(
+                            SemanticError.New(SemanticErrorCode.ExpressionRequired,
+                            rightExp));
+                        return null;
+                    }
+
+                    if (rightNode.get_ElementName() != "n")
+                    {
+                        AddNewError(
+                            SemanticError.New(SemanticErrorCode.ANameRequiredAsRightExpression,
+                            xplBinaryoperator, "On simple member access expression."));
+
+                        return res;
+                    }
+                    TypeInfo type = (TypeInfo)p_types[typeStr];
+                    xplBinaryoperator.set_targetClass(typeStr);
+                    xplBinaryoperator.set_targetMember("?");
+
+                    string memberName = rightNode.get_StringValue();
+                    string memberAccessCacheStr = type.get_FullName() + "." + memberName;
+
+                    string className;
+                    MemberInfo[] members = null;
+
+                    // PENDIENTE : Revisar el funcionamiento del chache de acceso a miembros,
+                    // en algunos casos no funciona bien posiblemente pq algun cliente sobreescribe
+                    // la matriz de miembros al obtenerlo. Adicionalmente verificar si se gana
+                    // tiempo relevante en el procesamiento de programas tipicos y no casos
+                    // especiales algunas pruebas con DataModel.dpp (proyecto Janus) no se
+                    // nota ganancias medibles.
+                    //if (!p_memberAccessCache.ContainsKey(memberAccessCacheStr))
+                    //{
+                    if (!this.CheckValidIdentifier(memberName, rightNode, "In member access expression."))
+                    {
+                        // provide some name to allow compilation to continue
+                        rightNode.set_lddata(rightNode.get_lddata() + "$ORIGINAL_CONTENT(" + memberName != null ? memberName : String.Empty + ")$");
+                        rightNode.set_Value(ZOE_INVALID_IDENTIFIER);
+
+                        // return null exp result
+                        return null;
+                    }
+                    if (TypeString.IsQualifiedName(memberName))
+                    {
+                        className = RemoveSimpleNameFromQualified(GetInternalQualifiedName(memberName));
+                        memberName = GetSimpleNameFromQualified(memberName);
+                    }
+                    else
+                    {
+                        className = String.Empty;
+                    }
+                    if (className != String.Empty)
+                        members = type.get_MemberInfoCollection().get_MembersInfo(memberName, className);
+                    else
+                    {
+                        members = type.get_MemberInfoCollection().get_MembersInfo(memberName);
+                        members = FilterNonHiddenMembers(members, scope);
+                    }
+
+                    //p_memberAccessCache.Add(memberAccessCacheStr, members);
+                    //}
+                    //else
+                    //{
+                    //    members = (MemberInfo[])p_memberAccessCache[memberAccessCacheStr];
+                    //}
+                    if (members != null && members.Length > 0)
+                    {
+                        members = FilterInstanceMembers(members, scope);
+                        if (members == null)
+                        {
+                            AddNewError(
+                                SemanticError.New(SemanticErrorCode.CannotAccessStaticMemberUsingInstanceValue,
+                                xplBinaryoperator, memberName));
+
+                            return res;
+                        }
+                        members = FilterAccesibleMembers(members, scope);
+                        if (members == null)
+                        {
+                            AddNewError(
+                                SemanticError.New(SemanticErrorCode.InaccesibleTypeMember,
+                                xplBinaryoperator, memberName));
+
+                            return res;
+                        }
+                        if (members.Length == 1) xplBinaryoperator.set_targetClass(members[0].get_DeclarationClassTypeFullName());
+                        xplBinaryoperator.set_targetMember(memberName);
+                        res = new ExpressionResult(members, true);
+                    }
+                    else
+                    {
+                        AddNewError(
+                            SemanticError.New(SemanticErrorCode.NonexistentMemberOfType, xplBinaryoperator,
+                            memberName, typeStr, GetSimilarMembersNames(type, memberName)));
+
+                        return res;
+                    }
+                }
+                else
+                {
+                    AddNewError(
+                        SemanticError.New(SemanticErrorCode.TypeRequired, xplBinaryoperator,
+                        "The type '" + backType + "' was not found on simple member access expression."));
+
+                    return res;
+                }
+
+                return res;
+
+                #endregion
+            }
+            return res;
+        }
+
         private ExpressionResult ProcessBinaryOperatorExpressionForOperator(XplBinaryoperator xplBinaryoperator, string opStr, ExpressionResult rightRes, ExpressionResult leftRes, XplExpression rightExp, XplExpression leftExp, Scope scope)
         {
             ExpressionResult res = null;
@@ -3024,20 +3389,26 @@ namespace LayerD.ZOECompiler
             //o una "void exp".
 
             #region Obtención de Tipos de Operandos Izquierdo y Derecho
+
             TypeInfo leftType = null, rightType = null;
             string typeName = "", functionName = "%op_" + opStr + "%";
-            bool typeRequired = true;
+
             if (leftRes != null)
             {
                 if (leftRes.get_ExpType() == ExpressionResultType.TypeMembers
                     || leftRes.get_ExpType() == ExpressionResultType.TypeMembersFromValue)
+                {
                     leftRes = TryConvertTypeMembersToValueOrLValue(leftRes, scope, leftExp.get_Content());
+                }
+
                 if (leftRes.get_ExpType() != ExpressionResultType.TypeMembers
                     && leftRes.get_ExpType() != ExpressionResultType.TypeMembersFromValue)
                 {
                     //Tengo un tipo para el operando izquierdo.
                     if (leftRes.get_ExpType() == ExpressionResultType.Type)
+                    {
                         leftType = leftRes.get_Type();
+                    }
                     else
                     {
                         typeName = leftRes.get_TypeStr();
@@ -3060,10 +3431,10 @@ namespace LayerD.ZOECompiler
                         //     bien hacer un procesamiento especial para dicho caso.
                         //****************************************
                         //Aqui chequeo si es una referencia o un puntero elimino dicha referencia o puntero
-                        if (IsReferencePointerType(typeName) && !scope.get_IsOnPointerScope()) typeName = RemoveReferencesFromType(typeName, RemoveReferenciesType.ExtractType);
-                        else if (IsPointerType(typeName) && !scope.get_IsOnPointerScope()) typeName = RemovePointerIndirectionsFromType(typeName, 1);
+                        if (TypeString.IsReferencePointerType(typeName) && !scope.get_IsOnPointerScope()) typeName = TypeString.RemoveReferencesFromType(typeName, TypeString.RemoveReferenciesType.ExtractType);
+                        else if (TypeString.IsPointerType(typeName) && !scope.get_IsOnPointerScope()) typeName = TypeString.RemovePointerIndirectionsFromType(typeName, 1);
 
-                        if (IsArrayType(typeName))
+                        if (TypeString.IsArrayType(typeName))
                         {
                             //PENDIENTE : considerar cuando el array es declarado como
                             //un array nativo de C sin encapsular (o bien debo usar
@@ -3071,7 +3442,7 @@ namespace LayerD.ZOECompiler
                             typeName = NativeTypes.ArrayClassTypeName;
                             leftType = (TypeInfo)p_types[typeName];
                         }
-                        else if (IsPointerType(typeName))
+                        else if (TypeString.IsPointerType(typeName))
                         {
                             // don't need type for pointers
                         }
@@ -3092,28 +3463,39 @@ namespace LayerD.ZOECompiler
                         }
                     }
                 }
+                else
+                {
+                    AddNewError(SemanticError.New(SemanticErrorCode.ValueOrLValueRequiredAsOperand, 
+                        rightExp, "For right expression of binary operator " + opStr + ". In " + xplBinaryoperator.CurrentExpression.ReadableString));
+                    return res;
+                }
             }
+
             //Lo mismo para el operando derecho
             if (rightRes != null)
             {
                 if (rightRes.get_ExpType() == ExpressionResultType.TypeMembers
                     || rightRes.get_ExpType() == ExpressionResultType.TypeMembersFromValue)
+                {
                     rightRes = TryConvertTypeMembersToValueOrLValue(rightRes, scope, rightExp.get_Content());
+                }
                 if (rightRes.get_ExpType() != ExpressionResultType.TypeMembers
                     && rightRes.get_ExpType() != ExpressionResultType.TypeMembersFromValue)
                 {
                     //Tengo un tipo para el operando izquierdo.
                     if (rightRes.get_ExpType() == ExpressionResultType.Type)
+                    {
                         rightType = rightRes.get_Type();
+                    }
                     else
                     {
                         typeName = rightRes.get_TypeStr();
                         //Aqui chequeo si es una referencia o un puntero elimino dicha referencia o puntero
-                        if (IsReferencePointerType(typeName) && !scope.get_IsOnPointerScope()) typeName = RemoveReferencesFromType(typeName, RemoveReferenciesType.ExtractType);
+                        if (TypeString.IsReferencePointerType(typeName) && !scope.get_IsOnPointerScope()) typeName = TypeString.RemoveReferencesFromType(typeName, TypeString.RemoveReferenciesType.ExtractType);
                         // only remove pointer indirection if it's not inside on pointer scope
-                        else if (IsPointerType(typeName) && !scope.get_IsOnPointerScope()) typeName = RemovePointerIndirectionsFromType(typeName, 1);
+                        else if (TypeString.IsPointerType(typeName) && !scope.get_IsOnPointerScope()) typeName = TypeString.RemovePointerIndirectionsFromType(typeName, 1);
 
-                        if (IsArrayType(typeName))
+                        if (TypeString.IsArrayType(typeName))
                         {
                             //PENDIENTE : considerar cuando el array es declarado como
                             //un array nativo de C sin encapsular (o bien debo usar
@@ -3121,7 +3503,7 @@ namespace LayerD.ZOECompiler
                             typeName = NativeTypes.ArrayClassTypeName;
                             rightType = (TypeInfo)p_types[typeName];
                         }
-                        else if (IsPointerType(typeName))
+                        else if (TypeString.IsPointerType(typeName))
                         {
                             // don't need type for pointers
                         }
@@ -3139,11 +3521,19 @@ namespace LayerD.ZOECompiler
                         }
                     }
                 }
+                else
+                {
+                    AddNewError(SemanticError.New(SemanticErrorCode.ValueOrLValueRequiredAsOperand, 
+                        leftExp, "For left expression of binary operator " + opStr + ". In " + xplBinaryoperator.CurrentExpression.ReadableString));
+                    return res;
+                }
             }
+
             #endregion
 
             MemberInfo selectedMember = null;
             string cacheSearchString = null;
+
             // search in cache of operators if both types exists
             if (leftType != null && rightType != null)
             {
@@ -3154,37 +3544,64 @@ namespace LayerD.ZOECompiler
                     xplBinaryoperator.set_targetClass(selectedMember.get_DeclarationClassTypeFullName());
                     xplBinaryoperator.set_targetMember(selectedMember.get_MemberInternalName());
                     xplBinaryoperator.set_targetMemberExternalName(selectedMember.get_MemberExternalName());
+
+                    this.p_candidateStructures.AddCandidateStructure(selectedMember, xplBinaryoperator, scope);
+
                     res = new ExpressionResult(((XplFunction)selectedMember.get_MemberNode()).get_ReturnType().get_typeStr());
 
                     return res;
                 }
             }
 
-            #region Obtención de Miembros Candidatos
+            // Obtención de Miembros Candidatos
+            MemberInfo[] candidateMembers = null;
+            res = ObtainBinaryOperatorCandidateMembers(xplBinaryoperator, opStr, rightRes, leftRes, scope, leftType, rightType, functionName, out candidateMembers);
+            if (res != null || candidateMembers == null) return res;
+
+            return ResolveBinaryOperatorMembersOverloading(xplBinaryoperator, opStr, rightRes, leftRes, rightExp, leftExp, scope, selectedMember, cacheSearchString, candidateMembers);
+        }
+
+        private ExpressionResult ObtainBinaryOperatorCandidateMembers(XplBinaryoperator xplBinaryoperator, string opStr, ExpressionResult rightRes, ExpressionResult leftRes, Scope scope, TypeInfo leftType, TypeInfo rightType, string functionName, out MemberInfo[] candidateMembers)
+        {
             //1- Filtro todos los operadores en el tipo del operando "Izq" y en el operando "Der",
             //hago una unión de dichos miembros.
             //Filtro los miembros accesibles.
             //2- Si no hay miembros es un error.
             //2.1- Si hay más de un miembro resuelvo sobrecarga de los miembros.
             //3- Chequeo sea valida la llamada a función.
-            MemberInfo[] leftCandidateMembers = null, rightCandidateMembers = null, candidateMembers = null;
+            MemberInfo[] leftCandidateMembers = null;
+            MemberInfo[] rightCandidateMembers = null;
+            candidateMembers = null;
+
             //Si son los dos tipos iguales elimino uno!
             if (leftType == rightType) rightType = null;
             if (leftType != null) leftCandidateMembers = leftType.get_MemberInfoCollection().get_MembersInfo(functionName);
             if (rightType != null) rightCandidateMembers = rightType.get_MemberInfoCollection().get_MembersInfo(functionName);
             if (leftCandidateMembers == null && rightCandidateMembers == null)
             {
+                string leftResTypeStr = leftRes != null ? leftRes.get_TypeStr() : String.Empty;
+                string rightResTypeStr = rightRes != null ? rightRes.get_TypeStr() : String.Empty;
+
                 //Primero cheque si ambos son punteros
-                if (leftRes != null && rightRes != null && IsPointerType(leftRes.get_TypeStr()) && IsPointerType(rightRes.get_TypeStr()))
+                if (!String.IsNullOrEmpty(leftResTypeStr) && !String.IsNullOrEmpty(rightResTypeStr) && 
+                    TypeString.IsPointerType(leftResTypeStr) && TypeString.IsPointerType(rightResTypeStr))
                 {
                     if (opStr == "eq" || opStr == "noteq")
                     {
                         // Si son punteros del mismo tipo es seguro comparar
-                        if (IsSameStringType(leftRes.get_TypeStr(), rightRes.get_TypeStr()))
+                        if (IsSameStringType(leftResTypeStr, rightResTypeStr) ||
+                            IsPointerToBaseOrInterfaceOf(leftResTypeStr, rightResTypeStr) ||
+                            IsPointerToBaseOrInterfaceOf(rightResTypeStr, leftResTypeStr))
                         {
-                            //PENDIENTE : es necesario marcar esta operación para 
-                            //los modulos de salida??
+                            // TODO : mark this operation for output modules
                             return new ExpressionResult(NativeTypes.Boolean);
+                        }
+                        else
+                        {
+                            AddNewError(
+                                SemanticError.New(SemanticErrorCode.PointerTypesCannotBeCompared,
+                                xplBinaryoperator, leftResTypeStr, rightResTypeStr));
+                            return null;
                         }
                     }
                     else
@@ -3194,7 +3611,9 @@ namespace LayerD.ZOECompiler
                         // *A + *B ??? <-- do not have sense!!
                         AddNewError(
                             SemanticError.New(SemanticErrorCode.BinaryOperatorWasNotFoundForCurrentOperands,
-                            xplBinaryoperator, opStr, leftRes != null ? leftRes.get_TypeStr() : "", rightRes != null ? rightRes.get_TypeStr() : ""));
+                            xplBinaryoperator, opStr, leftResTypeStr, rightResTypeStr));
+
+                        return null;
                     }
                 }
                 else
@@ -3205,14 +3624,18 @@ namespace LayerD.ZOECompiler
                     //No se encontro ningun operador para los operandos.
                     AddNewError(
                         SemanticError.New(SemanticErrorCode.BinaryOperatorWasNotFoundForCurrentOperands,
-                        xplBinaryoperator, opStr, leftRes != null ? leftRes.get_TypeStr() : "", rightRes != null ? rightRes.get_TypeStr() : ""));
-
-                    return res;
+                        xplBinaryoperator, opStr, leftResTypeStr, rightResTypeStr));
+                    return null;
                 }
             }
             if (leftCandidateMembers != null && rightCandidateMembers != null)
             {
-                //Copio todos los miembros a un solo array
+                // TODO : this is not ok, fix it.
+                // must only copy members if they are different memembers!! other wise it will
+                // generate an error if you have for example: pointerToBaseClass == pointerToDerivedClass
+                // and BaseClass define == operator
+                // Analyze to change how custom operators are processed.
+                // It needs to be processed like conversion operators, all at the same time
                 candidateMembers = new MemberInfo[leftCandidateMembers.Length + rightCandidateMembers.Length];
                 leftCandidateMembers.CopyTo(candidateMembers, 0);
                 rightCandidateMembers.CopyTo(candidateMembers, leftCandidateMembers.Length);
@@ -3226,7 +3649,7 @@ namespace LayerD.ZOECompiler
                 AddNewError(
                     SemanticError.New(SemanticErrorCode.InaccesibleTypeMember,
                     xplBinaryoperator, opStr, leftRes != null ? leftRes.get_TypeStr() : ""));
-                return res;
+                return null;
             }
             candidateMembers = FilterNonHiddenMembers(candidateMembers, scope);
             if (candidateMembers == null)
@@ -3236,12 +3659,17 @@ namespace LayerD.ZOECompiler
                     SemanticError.New(SemanticErrorCode.BinaryOperatorWasNotFoundForCurrentOperands,
                     xplBinaryoperator, opStr, leftRes != null ? leftRes.get_TypeStr() : "", rightRes != null ? rightRes.get_TypeStr() : ""));
 
-                return res;
+                return null;
             }
-            #endregion
+            return null;
+        }
 
-            #region Resolusion de Sobrecarga y chequeo de argumentos
+        private ExpressionResult ResolveBinaryOperatorMembersOverloading(XplBinaryoperator xplBinaryoperator, string opStr, ExpressionResult rightRes, ExpressionResult leftRes, XplExpression rightExp, XplExpression leftExp, Scope scope, MemberInfo selectedMember, string cacheSearchString, MemberInfo[] candidateMembers)
+        {
+            ExpressionResult res = null;
+
             //Aqui tengo todos los miembros en "candidateMembers"
+            MemberInfo[] backup = candidateMembers;
 
             //Primero lleno los argumentos de la XplFunctioncall que utilizo como PlaceHolder
             p_dummyBinaryOperatorFunctioncall.get_args().Children().Clear();
@@ -3270,7 +3698,7 @@ namespace LayerD.ZOECompiler
                 {
                     AddNewError(
                         SemanticError.New(SemanticErrorCode.BestOverloadedFunctionHasSomeInvalidArguments,
-                        xplBinaryoperator, opStr, errorStr));
+                        xplBinaryoperator, opStr, errorStr + MemberInfo.ToString(backup)));
 
                     return null;
                 }
@@ -3295,11 +3723,12 @@ namespace LayerD.ZOECompiler
             //es necesario marcar la clase de llamada y el miembro objetivo o no.
             //PENDIENTE : convertir a llamadas a funcion cuando es necesario.
 
-            //xplFunctioncall.set_targetClass(candidateMembers[0].get_DeclarationClassTypeFullName());
-            //xplFunctioncall.set_targetMember(candidateMembers[0].get_MemberName());
             selectedMember = candidateMembers[0];
+            this.p_candidateStructures.AddCandidateStructure(selectedMember, xplBinaryoperator, scope);
             if (cacheSearchString != null)
+            {
                 p_operatorsCache.Add(cacheSearchString, selectedMember);
+            }
 
             xplBinaryoperator.set_targetClass(selectedMember.get_DeclarationClassTypeFullName());
             xplBinaryoperator.set_targetMember(selectedMember.get_MemberInternalName());
@@ -3307,7 +3736,6 @@ namespace LayerD.ZOECompiler
 
             res = new ExpressionResult(((XplFunction)selectedMember.get_MemberNode()).get_ReturnType().get_typeStr());
 
-            #endregion
             return res;
         }
 
@@ -3334,13 +3762,13 @@ namespace LayerD.ZOECompiler
             string typeStr = xplNewExpression.get_type().get_typeStr();
             if (typeStr == null || typeStr == "") return null;
             string fullTypeStr = null;
-            if (IsArrayType(typeStr))
+            if (TypeString.IsArrayType(typeStr))
             {
                 // it's an array
                 CheckInitializer(xplNewExpression, scope);
                 // find the elements' type
-                string elementTypeStr = RemoveAllDimensionsFromArrayType(typeStr);
-                while (IsPointerType(elementTypeStr)) elementTypeStr = RemovePointerIndirectionsFromType(elementTypeStr, 1);
+                string elementTypeStr = TypeString.RemoveAllDimensionsFromArrayType(typeStr);
+                while (TypeString.IsPointerType(elementTypeStr)) elementTypeStr = TypeString.RemovePointerIndirectionsFromType(elementTypeStr, 1);
                 fullTypeStr = p_types.get_ExistingTypeName(elementTypeStr, scope);
                 if (fullTypeStr == null)
                 {
@@ -3366,14 +3794,14 @@ namespace LayerD.ZOECompiler
                     //Aqui tengo que chequear que exista un constructor adecuado para el inicializador proporcionado.
                     CheckForConstructor(xplNewExpression, scope, type, null);
                 }
-                return new ExpressionResult(MakeReferenceTypeTo(typeStr), ExpressionResultType.Value);
+                return new ExpressionResult(TypeString.MakeReferenceTypeTo(typeStr), ExpressionResultType.Value);
             }
-            else if (IsPointerType(typeStr))
+            else if (TypeString.IsPointerType(typeStr))
             {
                 // It's a pointer
-                if (IsReferencePointerType(typeStr)) typeStr = ChangeReferenceToPointer(typeStr);
+                if (TypeString.IsReferencePointerType(typeStr)) typeStr = TypeString.ChangeReferenceToPointer(typeStr);
                 // TODO : check base pointer type for typeconstructor, arguments (that will be an error)
-                return new ExpressionResult(MakeReferenceTypeTo(typeStr), ExpressionResultType.Value);
+                return new ExpressionResult(TypeString.MakeReferenceTypeTo(typeStr), ExpressionResultType.Value);
             }
             else
             {
@@ -3411,7 +3839,7 @@ namespace LayerD.ZOECompiler
                     if (type.get_IsStruct())
                         return new ExpressionResult(typeStr, ExpressionResultType.Value);
                     else
-                        return new ExpressionResult(MakeReferenceTypeTo(typeStr), ExpressionResultType.Value);
+                        return new ExpressionResult(TypeString.MakeReferenceTypeTo(typeStr), ExpressionResultType.Value);
                 }
                 else
                 {
@@ -3435,22 +3863,11 @@ namespace LayerD.ZOECompiler
 
         private void CheckForConstructor(XplNewExpression xplNewExpression, Scope scope, TypeInfo type, XplInitializerList init)
         {
-            MemberInfo[] constructors = type.get_MemberInfoCollection().get_MembersInfo(type.get_Name());
-            constructors = FilterInstanceMembers(constructors, scope);
-            if (constructors == null)
-            {
-                //Valido si utilizo constructor por defecto
-                if (init == null || init.Children().GetLength() == 0)
-                    //OK usando constructor por defecto
-                    return;
-            }
-            constructors = FilterAccesibleMembers(constructors, scope);
-            if (constructors == null)
-            {
-                AddNewError(SemanticError.New(SemanticErrorCode.ConstructorNotAvailableDueToItsProtectionLevel,
-                    xplNewExpression, type.get_Name()));
-                return;
-            }
+            //set semantic info
+            XplExpression newExpression = xplNewExpression.get_Parent() as XplExpression;
+            newExpression.set_targetClass(type.get_FullName());
+            newExpression.set_targetMember(String.Empty);
+
             //Resuelvo la sobrecarga de función
             XplNodeList args = p_dummyNewExpressionFunctioncall.get_args().Children();
             p_dummyNewExpressionFunctioncall.set_name(type.get_Name());
@@ -3468,17 +3885,47 @@ namespace LayerD.ZOECompiler
                 }
             }
 
-            string errorStr = "On new expression.";
+            CheckForConstructor(xplNewExpression, scope, type, args, "On new expression.");
+            
+            //PENDIENTE : controlar si en los requerimientos del modulo de salida
+            //es necesario marcar el constructor objetivo o no.
+            //PENDIENTE : convertir a llamadas a funcion cuando es necesario.
+            //            
+            //xplFunctioncall.set_targetClass(constructors[0].get_DeclarationClassTypeFullName());
+            //xplFunctioncall.set_targetMember(constructors[0].get_MemberName());
+        }
+
+        private void CheckForConstructor(XplNewExpression newExpressionNode, Scope scope, TypeInfo type, XplNodeList args, string errorStr)
+        {
+            // try to find a constructor
+            MemberInfo[] constructors = type.get_MemberInfoCollection().get_MembersInfo(type.get_Name());
+            constructors = FilterInstanceMembers(constructors, scope);
+            if (constructors == null)
+            {
+                //Valido si utilizo constructor por defecto
+                if (args == null || args.GetLength() == 0)
+                    //OK usando constructor por defecto
+                    return;
+            }
+
+            constructors = FilterAccesibleMembers(constructors, scope);
+            if (constructors == null)
+            {
+                AddNewError(SemanticError.New(SemanticErrorCode.ConstructorNotAvailableDueToItsProtectionLevel,
+                    newExpressionNode, type.get_Name()));
+                return;
+            }
+
             if (constructors.Length > 1)
             {
                 //Tengo sobrecarga, debo resolver
-                constructors = ResolveFunctionOverload(p_dummyNewExpressionFunctioncall, constructors, scope, xplNewExpression);
+                constructors = ResolveFunctionOverload(p_dummyNewExpressionFunctioncall, constructors, scope, null);
                 //Si no obtengo como respuesta ningun miembro es un error
                 if (constructors == null)
                 {
                     AddNewError(
                         SemanticError.New(SemanticErrorCode.BestOverloadedFunctionHasSomeInvalidArguments,
-                        xplNewExpression, type.get_Name(), errorStr));
+                        newExpressionNode, type.get_Name(), errorStr));
                     return;
                 }
                 //Si luego de resolver sigo teniendo varios miembros es ambiguo
@@ -3493,29 +3940,31 @@ namespace LayerD.ZOECompiler
                         }
                     }
                     AddNewError(
-                        SemanticError.New(SemanticErrorCode.AmbiguousFunctionCall, xplNewExpression, errorStr));
+                        SemanticError.New(SemanticErrorCode.AmbiguousFunctionCall, newExpressionNode, errorStr));
                     return;
                 }
+
+                // set semantic info
+                (newExpressionNode.get_Parent() as XplExpression).set_targetMember(constructors[0].get_MemberInternalName());
             }
             else
             {
-                if (!CheckArgumentsForFunction(p_dummyNewExpressionFunctioncall, constructors[0], scope, true, false, xplNewExpression))
+                // set semantic info
+                (newExpressionNode.get_Parent() as XplExpression).set_targetMember(constructors[0].get_MemberInternalName());
+
+                if (!CheckArgumentsForFunction(p_dummyNewExpressionFunctioncall, constructors[0], scope, true, false, newExpressionNode))
                     return;
             }
+
             XplType retType = constructors[0].get_ReturnType();
             if (retType != null && type.get_IsFactory() &&
                 ((NativeTypes.IsNativeVoid(retType.get_typeStr()) && retType.get_ftype() == XplFactorytype_enum.EXPRESSION)
                 || NativeTypes.IsNativeType(retType.get_typeStr())))
             {
-                AddCandidateStructure(constructors[0], xplNewExpression, scope);
+                this.p_candidateStructures.AddCandidateStructure(constructors[0], newExpressionNode, scope);
             }
-            //PENDIENTE : controlar si en los requerimientos del modulo de salida
-            //es necesario marcar el constructor objetivo o no.
-            //PENDIENTE : convertir a llamadas a funcion cuando es necesario.
-            //            
-            //xplFunctioncall.set_targetClass(constructors[0].get_DeclarationClassTypeFullName());
-            //xplFunctioncall.set_targetMember(constructors[0].get_MemberName());
         }
+
         private ExpressionResult ProcessAssingExpression(XplAssing xplAssing, Scope scope)
         {
             ExpressionResult leftRes = ProcessExpression(xplAssing.get_l(), scope);
@@ -3561,10 +4010,14 @@ namespace LayerD.ZOECompiler
                         SemanticError.New(SemanticErrorCode.ValueRequiredAsRightOperatorOfAssingment, xplAssing));
                     return null;
                 }
+                // update type str of expressions
+                xplAssing.get_l().set_typeStr(leftRes.get_TypeStr());
+                xplAssing.get_r().set_typeStr(rightRes.get_TypeStr());
+
                 if (!IsSameStringType(leftRes.get_TypeStr(), rightRes.get_TypeStr()))
                 {
                     //Intento conversion implicita del operando derecho
-                    ConversionData cdata = ExistsImplicitConversion(rightRes.get_TypeStr(), leftRes.get_TypeStr(), scope);
+                    ConversionData cdata = ExistsImplicitConversion(rightRes.get_TypeStr(), leftRes.get_TypeStr(), xplAssing.get_r(), scope);
                     if (cdata != null)
                     {
                         MarkConversion(cdata, rightRes.get_TypeStr(), leftRes.get_TypeStr(), xplAssing.get_r(), scope);
@@ -3582,6 +4035,20 @@ namespace LayerD.ZOECompiler
             else
             {
                 //PENDIENTE : que hacer cuando tenemos resultados nulos???
+                if (rightRes != null)
+                {
+                    if (rightRes.get_ExpType() == ExpressionResultType.TypeMembers
+                        || rightRes.get_ExpType() == ExpressionResultType.TypeMembersFromValue)
+                        rightRes = TryConvertTypeMembersToValueOrLValue(rightRes, scope, xplAssing.get_r().get_Content());
+                    xplAssing.get_r().set_typeStr(rightRes.get_TypeStr());
+                }
+                if (leftRes != null)
+                {
+                    if (leftRes.get_ExpType() == ExpressionResultType.TypeMembers
+                        || leftRes.get_ExpType() == ExpressionResultType.TypeMembersFromValue)
+                        leftRes = TryConvertTypeMembersToValueOrLValue(leftRes, scope, xplAssing);
+                    xplAssing.get_l().set_typeStr(leftRes.get_TypeStr());
+                }
             }
             return leftRes;
         }
@@ -3649,7 +4116,8 @@ namespace LayerD.ZOECompiler
             if (member.IsProperty())
             {
                 XplProperty property = (XplProperty)member.get_MemberNode();
-                expRes.set_TypeStr(property.get_type().get_typeStr());
+                string typeStr = FixTypeStringForType(property.get_type());
+                expRes.set_TypeStr(typeStr);
                 expRes.set_TypeNode(property.get_type());
                 if (nodeForCandidateStructure != null)
                 {
@@ -3658,7 +4126,7 @@ namespace LayerD.ZOECompiler
                         member.get_DeclarationClassTypeFullName() != scope.get_FullClassName() &&
                         !property.get_isexec())
                     {
-                        AddCandidateStructure(member, nodeForCandidateStructure, scope);
+                        this.p_candidateStructures.AddCandidateStructure(member, nodeForCandidateStructure, scope);
                     }
                 }
                 //PENDIENTE : DEBO MARCAR EL RESULTADO PARA INDICAR QUE ES UNA PROPIEDAD Y POR
@@ -3672,7 +4140,8 @@ namespace LayerD.ZOECompiler
             else if (member.IsIndexer())
             {
                 XplFunction indexer = (XplFunction)member.get_MemberNode();
-                expRes.set_TypeStr(indexer.get_ReturnType().get_typeStr());
+                string typeStr = FixTypeStringForType(indexer.get_ReturnType());
+                expRes.set_TypeStr(typeStr);
                 expRes.set_TypeNode(indexer.get_ReturnType());
                 // TODO : DEBO MARCAR EL RESULTADO PARA INDICAR QUE ES UNA PROPIEDAD Y POR
                 //TANTO NO SE PUEDE OBTENER LA DIRECCION CON EL OPERADOR UNARIO '&'.
@@ -3686,12 +4155,24 @@ namespace LayerD.ZOECompiler
             else if (member.IsField())
             {
                 XplField field = (XplField)member.get_MemberNode();
-                expRes.set_TypeStr(field.get_type().get_typeStr());
+                string typeStr = FixTypeStringForType(field.get_type());
+                expRes.set_TypeStr(typeStr);
                 expRes.set_TypeNode(field.get_type());
                 expRes.set_ExpType(ExpressionResultType.ValueOrLValue);
                 expRes.set_Members(null);
             }
             return expRes;
+        }
+
+        private string FixTypeStringForType(XplType type)
+        {
+            string typeStr = type.get_typeStr();
+            if (String.IsNullOrEmpty(typeStr))
+            {
+                typeStr = CalculeTypeString(type, null, false, new Scope(p_types));
+                type.set_typeStr(typeStr);
+            }
+            return typeStr;
         }
         #endregion
     }

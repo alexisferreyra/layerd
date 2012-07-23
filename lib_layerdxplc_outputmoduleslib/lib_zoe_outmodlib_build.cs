@@ -1,12 +1,13 @@
 /*******************************************************************************
-* Copyright (c) 2007, 2008 Alexis Ferreyra.
+* Copyright (c) 2007, 2012 Alexis Ferreyra, Intel Corporation.
 * All rights reserved. This program and the accompanying materials
 * are made available under the terms of the Eclipse Public License v1.0
 * which accompanies this distribution, and is available at
 * http://www.eclipse.org/legal/epl-v10.html
 *
 * Contributors:
-*     Alexis Ferreyra - initial API and implementation
+*       Alexis Ferreyra - initial API and implementation
+*       Alexis Ferreyra (Intel Corporation)
 *******************************************************************************/
 /****************************************************************************
 * 
@@ -35,6 +36,8 @@ using LayerD.CodeDOM;
 using LayerD.OutputModules;
 using LayerD.ZOECompiler;
 using System.IO;
+using System.Globalization;
+
 
 namespace LayerD.ZOEOutputModulesLibrary{
     class OutputModuleInfo : IZOEOutputModuleInfo
@@ -230,8 +233,8 @@ namespace LayerD.ZOEOutputModulesLibrary{
                 IEZOEOutputModuleServices services = LoadOutputModule(module);
                 if (services != null)
                 {
-                    string modulePlatform = services.GetOutputModuleDefaultPlatformString().ToLower();
-                    platform = platform.ToLower();
+                    string modulePlatform = services.GetOutputModuleDefaultPlatformString().ToLower(CultureInfo.InvariantCulture);
+                    platform = platform.ToLower(CultureInfo.InvariantCulture);
                     if (modulePlatform == platform)
                         return services;
                 }
@@ -261,7 +264,7 @@ namespace LayerD.ZOEOutputModulesLibrary{
                     Object cgFactory = cgFactoryType.GetConstructor(new Type[0]).Invoke(new object[0]);
                     if (cgFactory != null)
                     {
-                        IEZOEOutputModuleServices services = (IEZOEOutputModuleServices)cgFactoryType.InvokeMember("GetServices", BindingFlags.InvokeMethod, null, cgFactory, null);
+                        IEZOEOutputModuleServices services = (IEZOEOutputModuleServices)cgFactoryType.InvokeMember("GetServices", BindingFlags.InvokeMethod, null, cgFactory, null,CultureInfo.InvariantCulture);
                         if (services != null) return services;
                     }
                 }

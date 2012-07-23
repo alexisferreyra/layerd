@@ -2049,7 +2049,7 @@ namespace LayerD.OutputModules
         {
             return "";
         }
-        protected override string renderSimpleName(string name, EZOEContext context)
+        protected override string renderSimpleName(XplNode node, string name, EZOEContext context)
         {
             //Simplemente asumo que todo es correcto y debo reemplazar "::" por "."
             name = processUserTypeName(name);
@@ -2270,6 +2270,14 @@ namespace LayerD.OutputModules
                     break;
                 case XplBinaryoperators_enum.XOR: //Xor de Bits
                     tempStr = leftExpStr + "^" + rightExpStr;
+                    break;
+                case XplBinaryoperators_enum.COMMA:
+                    tempStr = leftExpStr + "+" + rightExpStr;
+                    AddError("Comma operator not supported in Java.");
+                    break;
+                default:
+                    tempStr = leftExpStr + "+" + rightExpStr;
+                    AddError("Unrecognized binary operator in expression.");
                     break;
             }
             #endregion
@@ -2679,6 +2687,12 @@ namespace LayerD.OutputModules
         {
             AddError("The \"is\" expression is not implemented on Java Output Module.");
             return "__error__";
+        }
+
+        protected override string renderSizeofExp(XplType xplType, string typeStr, EZOEContext eZOEContext)
+        {
+            AddError("sizeof(type) expression not supported by this output module. ");
+            return "__error_sizeof_not_supported";
         }
     }
 }

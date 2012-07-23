@@ -1,7 +1,7 @@
 /*-------------------------------------------------
  *
  *	Este archivo fue generado automáticamente.
- *	Fecha: 3/2/2010 9:11:43 PM
+ *	Fecha: 8/11/2011 4:27:20 PM
  *
  *	Generado por Zoe CodeDOM Generator para C#.
  *	COPYRIGHT 2002,2005-2006. por Alexis Ferreyra.
@@ -18,6 +18,8 @@ namespace LayerD.CodeDOM{
 public class XplExpression:  XplNode{
 
 	#region Variables privadas para atributos y elementos
+	string p_targetClass;
+	string p_targetMember;
 	string p_typeStr;
 	string p_valueStr;
 	string p_doc;
@@ -34,6 +36,8 @@ public class XplExpression:  XplNode{
 
 	#region Region de Constructores Publicos
 	public XplExpression(){
+		p_targetClass = "";
+		p_targetMember = "";
 		p_typeStr = "";
 		p_valueStr = "";
 		p_doc = "";
@@ -45,7 +49,9 @@ public class XplExpression:  XplNode{
 		p_lddata = "";
 		p_choiceContent=null;
 }
-	public XplExpression(string n_typeStr, string n_valueStr, string n_doc, string n_helpURL, string n_ldsrc, bool n_iny, string n_inydata, string n_inyby, string n_lddata){
+	public XplExpression(string n_targetClass, string n_targetMember, string n_typeStr, string n_valueStr, string n_doc, string n_helpURL, string n_ldsrc, bool n_iny, string n_inydata, string n_inyby, string n_lddata){
+		set_targetClass(n_targetClass);
+		set_targetMember(n_targetMember);
 		set_typeStr(n_typeStr);
 		set_valueStr(n_valueStr);
 		set_doc(n_doc);
@@ -58,6 +64,8 @@ public class XplExpression:  XplNode{
 		p_choiceContent=null;
 	}
 	public XplExpression(XplNode n_choiceContent){
+		p_targetClass = "";
+		p_targetMember = "";
 		p_typeStr = "";
 		p_valueStr = "";
 		p_doc = "";
@@ -70,7 +78,9 @@ public class XplExpression:  XplNode{
 		p_choiceContent=null;
 		set_Content(n_choiceContent);
 	}
-	public XplExpression(string n_typeStr, string n_valueStr, string n_doc, string n_helpURL, string n_ldsrc, bool n_iny, string n_inydata, string n_inyby, string n_lddata, XplNode n_choiceContent){
+	public XplExpression(string n_targetClass, string n_targetMember, string n_typeStr, string n_valueStr, string n_doc, string n_helpURL, string n_ldsrc, bool n_iny, string n_inydata, string n_inyby, string n_lddata, XplNode n_choiceContent){
+		set_targetClass(n_targetClass);
+		set_targetMember(n_targetMember);
 		set_typeStr(n_typeStr);
 		set_valueStr(n_valueStr);
 		set_doc(n_doc);
@@ -93,6 +103,8 @@ public class XplExpression:  XplNode{
 	#region Funciones Sobreescritas de XplNode
 	public override XplNode Clone(){
 		XplExpression copy = new XplExpression();
+		copy.set_targetClass(this.p_targetClass);
+		copy.set_targetMember(this.p_targetMember);
 		copy.set_typeStr(this.p_typeStr);
 		copy.set_valueStr(this.p_valueStr);
 		copy.set_doc(this.p_doc);
@@ -116,6 +128,10 @@ public class XplExpression:  XplNode{
 		//Escribo el encabezado del elemento
 		writer.WriteStartElement( this.get_ElementName() );
 		//Escribo los atributos del elemento
+		if(p_targetClass != "")
+			writer.WriteAttributeString( "targetClass" ,ZoeHelper .Att_ToString(p_targetClass) );
+		if(p_targetMember != "")
+			writer.WriteAttributeString( "targetMember" ,ZoeHelper .Att_ToString(p_targetMember) );
 		if(p_typeStr != "")
 			writer.WriteAttributeString( "typeStr" ,ZoeHelper .Att_ToString(p_typeStr) );
 		if(p_valueStr != "")
@@ -148,6 +164,12 @@ public class XplExpression:  XplNode{
 			for(int i=0; i < reader.AttributeCount ; i++){
 				reader.MoveToAttribute(i);
 				switch(reader.Name){
+					case "targetClass":
+						this.set_targetClass(ZoeHelper .StringAtt_To_STRING(reader.Value));
+						break;
+					case "targetMember":
+						this.set_targetMember(ZoeHelper .StringAtt_To_STRING(reader.Value));
+						break;
 					case "typeStr":
 						this.set_typeStr(ZoeHelper .StringAtt_To_STRING(reader.Value));
 						break;
@@ -254,6 +276,10 @@ public class XplExpression:  XplNode{
 						tempNode = new XplType();
 						tempNode.Read(reader);
 						break;
+					case "sizeof":
+						tempNode = new XplType();
+						tempNode.Read(reader);
+						break;
 					case "is":
 						tempNode = new XplCastexpression();
 						tempNode.Read(reader);
@@ -283,9 +309,11 @@ public class XplExpression:  XplNode{
 	public override bool BinaryWrite(XplBinaryWriter writer){
 		bool result=true;
 		//Escribo el ID y el nombre del elemento
-		writer.Write((int) 143 );
+		writer.Write((int) 133 );
 		writer.Write( this.get_ElementName() );
 		//Escribo los atributos del elemento
+		writer.Write( p_targetClass );
+		writer.Write( p_targetMember );
 		writer.Write( p_typeStr );
 		writer.Write( p_valueStr );
 		writer.Write( p_doc );
@@ -309,6 +337,8 @@ public class XplExpression:  XplNode{
 	public override XplNode BinaryRead(XplBinaryReader reader){
 		this.set_ElementName( reader.ReadString() );
 		//Lectura de Atributos
+		p_targetClass = reader.ReadString();
+		p_targetMember = reader.ReadString();
 		p_typeStr = reader.ReadString();
 		p_valueStr = reader.ReadString();
 		p_doc = reader.ReadString();
@@ -355,6 +385,12 @@ public static XplExpression operator +(XplExpression arg1, XplNodeList arg2)
 	#endregion
 
 	#region Funciones para obtener Atributos y Elementos
+	public string get_targetClass(){
+		return p_targetClass;
+	}
+	public string get_targetMember(){
+		return p_targetMember;
+	}
 	public string get_typeStr(){
 		return p_typeStr;
 	}
@@ -391,19 +427,23 @@ public static XplExpression operator +(XplExpression arg1, XplNodeList arg2)
 
 	#region Funcion ChildNodes() y Attributes()
 	public override string[] Attributes(){
-		string[] ret = new string[9];
-		ret[0] = "typeStr";
-		ret[1] = "valueStr";
-		ret[2] = "doc";
-		ret[3] = "helpURL";
-		ret[4] = "ldsrc";
-		ret[5] = "iny";
-		ret[6] = "inydata";
-		ret[7] = "inyby";
-		ret[8] = "lddata";
+		string[] ret = new string[11];
+		ret[0] = "targetClass";
+		ret[1] = "targetMember";
+		ret[2] = "typeStr";
+		ret[3] = "valueStr";
+		ret[4] = "doc";
+		ret[5] = "helpURL";
+		ret[6] = "ldsrc";
+		ret[7] = "iny";
+		ret[8] = "inydata";
+		ret[9] = "inyby";
+		ret[10] = "lddata";
 		return ret;
 	}
 	public override string AttributeValue(string attributeName){
+		if (attributeName=="targetClass") return p_targetClass.ToString();
+		if (attributeName=="targetMember") return p_targetMember.ToString();
 		if (attributeName=="typeStr") return p_typeStr.ToString();
 		if (attributeName=="valueStr") return p_valueStr.ToString();
 		if (attributeName=="doc") return p_doc.ToString();
@@ -423,6 +463,16 @@ public static XplExpression operator +(XplExpression arg1, XplNodeList arg2)
 	#endregion
 
 	#region Funciones para setear Atributos y Elementos
+	public string set_targetClass(string new_targetClass){
+		string back_targetClass = p_targetClass;
+		p_targetClass = new_targetClass;
+		return back_targetClass;
+	}
+	public string set_targetMember(string new_targetMember){
+		string back_targetMember = p_targetMember;
+		p_targetMember = new_targetMember;
+		return back_targetMember;
+	}
 	public string set_typeStr(string new_typeStr){
 		string back_typeStr = p_typeStr;
 		p_typeStr = new_typeStr;
@@ -617,6 +667,15 @@ public static XplExpression operator +(XplExpression arg1, XplNodeList arg2)
 			p_choiceContent.set_Parent(this);
 			return back_texpression;
 		}
+		if(new_texpression.get_ElementName()=="sizeof"){
+			if(new_texpression.get_ContentTypeName()!=CodeDOMTypes.XplType){
+				this.set_ErrorString("El elemento de tipo '"+new_texpression.get_ContentTypeName()+"' no es valido como componente de 'texpression'.");
+				return null;
+			}
+			p_choiceContent = new_texpression;
+			p_choiceContent.set_Parent(this);
+			return back_texpression;
+		}
 		if(new_texpression.get_ElementName()=="is"){
 			if(new_texpression.get_ContentTypeName()!=CodeDOMTypes.XplCastexpression){
 				this.set_ErrorString("El elemento de tipo '"+new_texpression.get_ContentTypeName()+"' no es valido como componente de 'texpression'.");
@@ -719,6 +778,11 @@ public static XplExpression operator +(XplExpression arg1, XplNodeList arg2)
 	static public XplType new_toft(){
 		XplType node = new XplType();
 		node.set_ElementName("toft");
+		return node;
+	}
+	static public XplType new_sizeof(){
+		XplType node = new XplType();
+		node.set_ElementName("sizeof");
 		return node;
 	}
 	static public XplCastexpression new_is(){

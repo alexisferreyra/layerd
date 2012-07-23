@@ -1,7 +1,7 @@
 /*-------------------------------------------------
  *
  *	Este archivo fue generado automáticamente.
- *	Fecha: 3/2/2010 9:11:43 PM
+ *	Fecha: 8/11/2011 4:27:20 PM
  *
  *	Generado por Zoe CodeDOM Generator para C#.
  *	COPYRIGHT 2002,2005-2006. por Alexis Ferreyra.
@@ -339,7 +339,7 @@ public class XplDocumentation:  XplNode{
 	public override bool BinaryWrite(XplBinaryWriter writer){
 		bool result=true;
 		//Escribo el ID y el nombre del elemento
-		writer.Write((int) 137 );
+		writer.Write((int) 123 );
 		writer.Write( this.get_ElementName() );
 		//Escribo los atributos del elemento
 		writer.Write( p_short );

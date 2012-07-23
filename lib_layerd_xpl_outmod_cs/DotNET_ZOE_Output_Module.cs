@@ -1,3 +1,14 @@
+/*******************************************************************************
+* Copyright (c) 2008, 2012 Alexis Ferreyra, Intel Corporation.
+* All rights reserved. This program and the accompanying materials
+* are made available under the terms of the Eclipse Public License v1.0
+* which accompanies this distribution, and is available at
+* http://www.eclipse.org/legal/epl-v10.html
+*
+* Contributors:
+*       Alexis Ferreyra - initial API and implementation
+*       Alexis Ferreyra (Intel Corporation)
+*******************************************************************************/
 /****************************************************************************
  
   C# Output Module for Zoe compiler

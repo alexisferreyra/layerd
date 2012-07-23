@@ -1,7 +1,7 @@
 /*-------------------------------------------------
  *
  *	Este archivo fue generado automáticamente.
- *	Fecha: 3/2/2010 9:11:44 PM
+ *	Fecha: 8/11/2011 4:27:20 PM
  *
  *	Generado por Zoe CodeDOM Generator para C#.
  *	COPYRIGHT 2002,2005-2006. por Alexis Ferreyra.
@@ -20,6 +20,7 @@ public class ClassfactoryData:  XplNode{
 	#region Variables privadas para atributos y elementos
 	string p_typeFullName;
 	bool p_isInterface;
+	int p_fromCompileTime;
 	bool p_isInteractive;
 	bool p_active;
 	string p_moduleFileName;
@@ -31,15 +32,17 @@ public class ClassfactoryData:  XplNode{
 	public ClassfactoryData(){
 		p_typeFullName = "";
 		p_isInterface = false;
+		p_fromCompileTime = 0;
 		p_isInteractive = false;
 		p_active = true;
 		p_moduleFileName = "";
 		p_platforms = "";
 		p_zoeDocFileName = "";
 }
-	public ClassfactoryData(string n_typeFullName, bool n_isInterface, bool n_isInteractive, bool n_active, string n_moduleFileName, string n_zoeDocFileName){
+	public ClassfactoryData(string n_typeFullName, bool n_isInterface, int n_fromCompileTime, bool n_isInteractive, bool n_active, string n_moduleFileName, string n_zoeDocFileName){
 		p_typeFullName = "";
 		p_isInterface = false;
+		p_fromCompileTime = 0;
 		p_isInteractive = false;
 		p_active = true;
 		p_moduleFileName = "";
@@ -47,14 +50,16 @@ public class ClassfactoryData:  XplNode{
 		p_zoeDocFileName = "";
 		set_typeFullName(n_typeFullName);
 		set_isInterface(n_isInterface);
+		set_fromCompileTime(n_fromCompileTime);
 		set_isInteractive(n_isInteractive);
 		set_active(n_active);
 		set_moduleFileName(n_moduleFileName);
 		set_zoeDocFileName(n_zoeDocFileName);
 	}
-	public ClassfactoryData(string n_typeFullName, bool n_isInterface, bool n_isInteractive, bool n_active, string n_moduleFileName, string n_platforms, string n_zoeDocFileName){
+	public ClassfactoryData(string n_typeFullName, bool n_isInterface, int n_fromCompileTime, bool n_isInteractive, bool n_active, string n_moduleFileName, string n_platforms, string n_zoeDocFileName){
 		set_typeFullName(n_typeFullName);
 		set_isInterface(n_isInterface);
+		set_fromCompileTime(n_fromCompileTime);
 		set_isInteractive(n_isInteractive);
 		set_active(n_active);
 		set_moduleFileName(n_moduleFileName);
@@ -73,6 +78,7 @@ public class ClassfactoryData:  XplNode{
 		ClassfactoryData copy = new ClassfactoryData();
 		copy.set_typeFullName(this.p_typeFullName);
 		copy.set_isInterface(this.p_isInterface);
+		copy.set_fromCompileTime(this.p_fromCompileTime);
 		copy.set_isInteractive(this.p_isInteractive);
 		copy.set_active(this.p_active);
 		copy.set_moduleFileName(this.p_moduleFileName);
@@ -93,6 +99,8 @@ public class ClassfactoryData:  XplNode{
 			writer.WriteAttributeString( "typeFullName" ,ZoeHelper .Att_ToString(p_typeFullName) );
 		if(p_isInterface != false)
 			writer.WriteAttributeString( "isInterface" ,ZoeHelper .Att_ToString(p_isInterface) );
+		if(p_fromCompileTime != 0)
+			writer.WriteAttributeString( "fromCompileTime" ,ZoeHelper .Att_ToString(p_fromCompileTime) );
 		if(p_isInteractive != false)
 			writer.WriteAttributeString( "isInteractive" ,ZoeHelper .Att_ToString(p_isInteractive) );
 		if(p_active != true)
@@ -121,6 +129,9 @@ public class ClassfactoryData:  XplNode{
 						break;
 					case "isInterface":
 						this.set_isInterface(ZoeHelper .StringAtt_To_BOOL(reader.Value));
+						break;
+					case "fromCompileTime":
+						this.set_fromCompileTime(ZoeHelper .StringAtt_To_INT(reader.Value));
 						break;
 					case "isInteractive":
 						this.set_isInteractive(ZoeHelper .StringAtt_To_BOOL(reader.Value));
@@ -170,6 +181,7 @@ public class ClassfactoryData:  XplNode{
 		//Escribo los atributos del elemento
 		writer.Write( p_typeFullName );
 		writer.Write( p_isInterface );
+		writer.Write( p_fromCompileTime );
 		writer.Write( p_isInteractive );
 		writer.Write( p_active );
 		writer.Write( p_moduleFileName );
@@ -184,6 +196,7 @@ public class ClassfactoryData:  XplNode{
 		//Lectura de Atributos
 		p_typeFullName = reader.ReadString();
 		p_isInterface = reader.ReadBoolean();
+		p_fromCompileTime = reader.ReadInt32();
 		p_isInteractive = reader.ReadBoolean();
 		p_active = reader.ReadBoolean();
 		p_moduleFileName = reader.ReadString();
@@ -229,6 +242,9 @@ public static ClassfactoryData operator +(ClassfactoryData arg1, XplNodeList arg
 	public bool get_isInterface(){
 		return p_isInterface;
 	}
+	public int get_fromCompileTime(){
+		return p_fromCompileTime;
+	}
 	public bool get_isInteractive(){
 		return p_isInteractive;
 	}
@@ -248,19 +264,21 @@ public static ClassfactoryData operator +(ClassfactoryData arg1, XplNodeList arg
 
 	#region Funcion ChildNodes() y Attributes()
 	public override string[] Attributes(){
-		string[] ret = new string[7];
+		string[] ret = new string[8];
 		ret[0] = "typeFullName";
 		ret[1] = "isInterface";
-		ret[2] = "isInteractive";
-		ret[3] = "active";
-		ret[4] = "moduleFileName";
-		ret[5] = "platforms";
-		ret[6] = "zoeDocFileName";
+		ret[2] = "fromCompileTime";
+		ret[3] = "isInteractive";
+		ret[4] = "active";
+		ret[5] = "moduleFileName";
+		ret[6] = "platforms";
+		ret[7] = "zoeDocFileName";
 		return ret;
 	}
 	public override string AttributeValue(string attributeName){
 		if (attributeName=="typeFullName") return p_typeFullName.ToString();
 		if (attributeName=="isInterface") return p_isInterface.ToString();
+		if (attributeName=="fromCompileTime") return p_fromCompileTime.ToString();
 		if (attributeName=="isInteractive") return p_isInteractive.ToString();
 		if (attributeName=="active") return p_active.ToString();
 		if (attributeName=="moduleFileName") return p_moduleFileName.ToString();
@@ -284,6 +302,11 @@ public static ClassfactoryData operator +(ClassfactoryData arg1, XplNodeList arg
 		bool back_isInterface = p_isInterface;
 		p_isInterface = new_isInterface;
 		return back_isInterface;
+	}
+	public int set_fromCompileTime(int new_fromCompileTime){
+		int back_fromCompileTime = p_fromCompileTime;
+		p_fromCompileTime = new_fromCompileTime;
+		return back_fromCompileTime;
 	}
 	public bool set_isInteractive(bool new_isInteractive){
 		bool back_isInteractive = p_isInteractive;
