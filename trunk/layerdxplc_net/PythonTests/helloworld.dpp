@@ -1,0 +1,26 @@
+
+namespace py
+{
+	extern public class global
+	{
+	public:
+		static void print(object*ref arg1);
+	}
+}
+
+namespace app
+{
+	class test
+	{
+	public:
+		static int Main()
+		{
+			py::global::print("hello world");
+		}
+
+		void hello()
+		{
+			py::global::print("say hello");
+		}
+	}
+}
