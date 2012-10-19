@@ -86,6 +86,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="BuildTest.bat" />
+    <None Include="PythonTests\helloworld.dpp" />
     <None Include="Tests\CompileTimeProperty.Client.test.dpp" />
     <None Include="Mini\AutoVarTemplate.dpp" />
     <None Include="Mini\AutoVarTest.dpp" />
@@ -153,6 +154,7 @@
     <None Include="Tests\IntelliSense.dpp" />
     <None Include="Tests\IntelliSenseTest.dpp" />
     <None Include="Tests\EjemploVariosClientes.dpp" />
+    <None Include="Tests\mdpp.closures.test.dpp" />
     <None Include="Tests\ModelProcessorTemplate.dpp" />
     <None Include="Tests\ModelProcessorTest.dpp" />
     <None Include="Tests\MoviesService.dpp" />

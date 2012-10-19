@@ -39,6 +39,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "lib_zoe_output_cpp", "lib_z
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "lib_zoec_outmod_js", "lib_zoec_outmod_js\lib_zoec_outmod_js.csproj", "{71C66A25-BA65-4C22-A988-5045020A2484}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "lib_zoec_outmod_python", "lib_zoec_outmod_python\lib_zoec_outmod_python.csproj", "{72F87F26-6531-4B5E-BCAD-2436065975BE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug All|Any CPU = Debug All|Any CPU
@@ -370,6 +372,26 @@ Global
 		{71C66A25-BA65-4C22-A988-5045020A2484}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{71C66A25-BA65-4C22-A988-5045020A2484}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{71C66A25-BA65-4C22-A988-5045020A2484}.Release|Win32.ActiveCfg = Release|Any CPU
+		{72F87F26-6531-4B5E-BCAD-2436065975BE}.Debug All|Any CPU.ActiveCfg = Debug|Any CPU
+		{72F87F26-6531-4B5E-BCAD-2436065975BE}.Debug All|Any CPU.Build.0 = Debug|Any CPU
+		{72F87F26-6531-4B5E-BCAD-2436065975BE}.Debug All|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{72F87F26-6531-4B5E-BCAD-2436065975BE}.Debug All|Mixed Platforms.Build.0 = Debug|Any CPU
+		{72F87F26-6531-4B5E-BCAD-2436065975BE}.Debug All|Win32.ActiveCfg = Debug|Any CPU
+		{72F87F26-6531-4B5E-BCAD-2436065975BE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{72F87F26-6531-4B5E-BCAD-2436065975BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{72F87F26-6531-4B5E-BCAD-2436065975BE}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{72F87F26-6531-4B5E-BCAD-2436065975BE}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{72F87F26-6531-4B5E-BCAD-2436065975BE}.Debug|Win32.ActiveCfg = Debug|Any CPU
+		{72F87F26-6531-4B5E-BCAD-2436065975BE}.Release All|Any CPU.ActiveCfg = Release|Any CPU
+		{72F87F26-6531-4B5E-BCAD-2436065975BE}.Release All|Any CPU.Build.0 = Release|Any CPU
+		{72F87F26-6531-4B5E-BCAD-2436065975BE}.Release All|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{72F87F26-6531-4B5E-BCAD-2436065975BE}.Release All|Mixed Platforms.Build.0 = Release|Any CPU
+		{72F87F26-6531-4B5E-BCAD-2436065975BE}.Release All|Win32.ActiveCfg = Release|Any CPU
+		{72F87F26-6531-4B5E-BCAD-2436065975BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{72F87F26-6531-4B5E-BCAD-2436065975BE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{72F87F26-6531-4B5E-BCAD-2436065975BE}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{72F87F26-6531-4B5E-BCAD-2436065975BE}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{72F87F26-6531-4B5E-BCAD-2436065975BE}.Release|Win32.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

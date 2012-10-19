@@ -5,4 +5,5 @@
   <ZOECodeGenerator name="CPP1CodeGenerator_Beta" interfaceFileName="./outputmodules/lib_zoe_output_cpp.dll" isDynamic="true"></ZOECodeGenerator>
   <ZOECodeGenerator name="DPP1CodeGenerator_Beta" interfaceFileName="./outputmodules/lib_zoe_outmod_dpp.dll" isDynamic="true"></ZOECodeGenerator>
   <ZOECodeGenerator name="JSCodeGenerator" interfaceFileName="./outputmodules/lib_zoec_outmod_js.dll" isDynamic="true"></ZOECodeGenerator>
+  <ZOECodeGenerator name="PythonCodeGenerator" interfaceFileName="./outputmodules/lib_zoec_outmod_python.dll" isDynamic="true"></ZOECodeGenerator>
 </ZOECodeGenerators>
