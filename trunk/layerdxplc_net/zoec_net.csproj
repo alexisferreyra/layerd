@@ -87,6 +87,7 @@
   <ItemGroup>
     <None Include="BuildTest.bat" />
     <None Include="PythonTests\helloworld.dpp" />
+    <None Include="PythonTests\python.os.externs.dpp" />
     <None Include="Tests\CompileTimeProperty.Client.test.dpp" />
     <None Include="Mini\AutoVarTemplate.dpp" />
     <None Include="Mini\AutoVarTest.dpp" />

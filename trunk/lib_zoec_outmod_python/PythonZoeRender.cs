@@ -1,5 +1,5 @@
 ﻿/*******************************************************************************
- * Copyright (c) 2012 Intel Corporation.
+ * Copyright (c) 2012 Intel Corporation, Alexis Ferreyra.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,7 +7,8 @@
  *
  * Contributors:
  *    Alexis Ferreyra (Intel Corporation) - initial API and implementation and/or initial documentation
- *******************************************************************************/
+ *    Alexis Ferreyra  - initial branch from Javascript code generator into new Python code generator
+*******************************************************************************/
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -77,6 +78,8 @@ namespace LayerD.OutputModules
         bool _removeComments;
         // holds the state for printing spaces between statements
         SpacesPrinter _spacesPrinter;
+
+        XplFunction _mainFunction;
         
         #region Tools
         void RenderComments(XplNode node)
@@ -109,6 +112,7 @@ namespace LayerD.OutputModules
         private void PrepareOutput()
         {
             _buffer = new RenderBuffer(_outputPath);
+            _buffer.ProgramName = Path.GetFileName(this._outputFileName);
         }
 
         private void CloseOutput()
@@ -133,7 +137,7 @@ namespace LayerD.OutputModules
 
         private void CheckBuffer(XplNode node)
         {
-            _buffer.ChangeBufferIfNeeded(node);
+            //_buffer.ChangeBufferIfNeeded(node);
         }
 
         private void Write(string str)
@@ -291,7 +295,12 @@ namespace LayerD.OutputModules
 
         protected override void renderEndDocumentBody(LayerD.CodeDOM.XplDocumentBody documentBody)
         {
-            
+            if (this._mainFunction != null)
+            {
+                WriteNewLine();
+                WriteLine("# CALL MAIN FUNCTION");
+                WriteLine(PythonTools.GetFullDeclarationName(this._mainFunction) + "()");
+            }
         }
 
         protected override void renderImportDirective(LayerD.CodeDOM.XplName importDirective)
@@ -301,12 +310,22 @@ namespace LayerD.OutputModules
 
         protected override void renderBeginNamespace(string namespaceName, LayerD.CodeDOM.XplNamespace namespaceDecl, ExtendedZOEProcessor.EZOEContext context)
         {
+            if (PythonTools.IsEmptyNamespace(namespaceDecl)) return;
+
             // Do nothing. Namespaces are processed in RenderBuffer
+            WriteNewLine();
+            WriteLine("# BEGIN NAMESPACE " + namespaceName);
+            WriteLine(Keywords.Class + Space + namespaceName + ":");
+            IncreaseTabulation();
+            WriteNewLine();
         }
 
         protected override void renderEndNamespace(string namespaceName, LayerD.CodeDOM.XplNamespace namespaceDecl, ExtendedZOEProcessor.EZOEContext context)
         {
-            
+            if (PythonTools.IsEmptyNamespace(namespaceDecl)) return;
+
+            DecreaseTabulation();
+            WriteLine("# END NAMESPACE " + namespaceName);
         }
 
         void WriteCommentLine(string comment)
@@ -358,6 +377,7 @@ namespace LayerD.OutputModules
                 return;
             }
 
+            DecreaseTabulation();
             WriteNewLine();
         }
 
@@ -402,6 +422,15 @@ namespace LayerD.OutputModules
             {
                 if (String.IsNullOrEmpty(parametersStr)) parametersStr = "self";
                 else parametersStr = "self, " + parametersStr;
+            }
+            else
+            {
+                if (functionDecl.get_access() == XplAccesstype_enum.PUBLIC && functionName == "Main")
+                {
+                    _mainFunction = functionDecl;
+                }
+
+                WriteLine("@staticmethod");
             }
 
             Write(Keywords.Def + Space + functionName);
@@ -455,8 +484,6 @@ namespace LayerD.OutputModules
             if (!isAbstract && functionStorage != XplVarstorage_enum.EXTERN && functionStorage != XplVarstorage_enum.STATIC_EXTERN)
             {
                 DecreaseTabulation();
-
-                WriteNewLine();
                 WriteNewLine();
             }
 
@@ -501,18 +528,16 @@ namespace LayerD.OutputModules
             string className = PythonTools.GetValidIdentifier(fieldDecl.CurrentClass.get_name(), false);
             string fullDeclName = PythonTools.GetFullDeclarationName(fieldDecl.CurrentClass);
 
-            //Write(PythonTools.GetValidIdentifier(fieldName, false));
+            Write(PythonTools.GetValidIdentifier(fieldName, false));
 
-            //if (String.IsNullOrEmpty(initializerStr))
-            //{
-            //    WriteLine(" = " + PythonTools.GetDefaultInitForFieldDecl(fieldDecl.get_type()) + ";");
-            //}
-            //else
-            //{
-            //    WriteLine(" = " + initializerStr + ";");
-            //}
-
-            WriteNewLine();
+            if (String.IsNullOrEmpty(initializerStr))
+            {
+                WriteLine(" = " + PythonTools.GetDefaultInitForFieldDecl(fieldDecl.get_type()));
+            }
+            else
+            {
+                WriteLine(" = " + initializerStr);
+            }
         }
 
         protected override void renderBeginParameters(LayerD.CodeDOM.XplParameters parametersDecl, int maxParameter, LayerD.CodeDOM.XplFunction functionDecl, ExtendedZOEProcessor.EZOEContext context)
@@ -943,9 +968,9 @@ namespace LayerD.OutputModules
 
         protected override string renderSimpleName(XplNode node, string name, ExtendedZOEProcessor.EZOEContext context)
         {
-            if (name == "self")
+            if (name == "this")
             {
-                return name;
+                return "self";
             }
             else if (name == "base")
             {
@@ -1300,6 +1325,11 @@ namespace LayerD.OutputModules
 
         protected override string renderNewExp(LayerD.CodeDOM.XplNewExpression newExp, string typeStr, string initializerStr, ExtendedZOEProcessor.EZOEContext context)
         {
+            if (!String.IsNullOrEmpty(newExp.get_type().get_typeStr()))
+            {
+                typeStr = PythonTools.processUserTypeName(newExp.get_type().get_typeStr());
+            }
+
             // sanity check
             if (initializerStr != String.Empty && initializerStr[0] != '(' && initializerStr[0] != '[' && initializerStr[0] != '{')
             {
@@ -1308,7 +1338,7 @@ namespace LayerD.OutputModules
 
             if (initializerStr == String.Empty && newExp.get_type().get_typename() != String.Empty && newExp.get_type().get_typename()[0] != '$')
             {
-                return Space + typeStr + "()";
+                return typeStr + "()";
             }
             else if (typeStr == "Object")
             {
