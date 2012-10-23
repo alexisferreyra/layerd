@@ -1,26 +1,53 @@
-
-namespace py
-{
-	extern public class global
-	{
-	public:
-		static void print(object*ref arg1);
-	}
-}
+import "os", "platform=python", "extern=python/python.os.externs.zoe";
+using T;
 
 namespace app
 {
-	class test
+	class Test
 	{
+		int a = 1;
+		static int b = 2;
 	public:
 		static int Main()
 		{
+			Test*ref var1 = new app::Test();
+			var1.hello();
 			py::global::print("hello world");
+			py::global::print(py::os::getcwd());
 		}
 
 		void hello()
 		{
 			py::global::print("say hello");
+			py::global::print(this.a);
+			py::global::print(app::Test::b);
+			
+			new app::Test2().foo();
+
+			Test2*ref var2 = new Test2();
+			var2.foo();
+		}
+	}
+
+	class Test2
+	{
+	public:
+		void foo()
+		{
+			py::global::print("hello from foo!!!");
+			T2::doSomething();
+		}
+	}
+}
+
+namespace T
+{
+	class T2
+	{
+	public:
+		static void doSomething()
+		{
+			py::global::print("weird!!!!");
 		}
 	}
 }

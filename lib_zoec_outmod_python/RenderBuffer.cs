@@ -1,5 +1,5 @@
 ﻿/*******************************************************************************
- * Copyright (c) 2012 Intel Corporation.
+ * Copyright (c) 2012 Intel Corporation, Alexis Ferreyra.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,7 +7,8 @@
  *
  * Contributors:
  *    Alexis Ferreyra (Intel Corporation) - initial API and implementation and/or initial documentation
- *******************************************************************************/
+ *    Alexis Ferreyra  - initial branch from Javascript code generator into new Python code generator
+******************************************************************************/
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -306,9 +307,17 @@ namespace LayerD.OutputModules
         /// </summary>
         internal void Render()
         {
-            foreach (string filename in _buffers.Keys)
+            if (_buffers.Count == 0)
             {
-                _buffers[filename].RenderCode(OutputFolder);
+                if (String.IsNullOrEmpty(_currentBuffer.FileName)) _currentBuffer.FileName = this.ProgramName;
+                _currentBuffer.RenderCode(OutputFolder);
+            }
+            else
+            {
+                foreach (string filename in _buffers.Keys)
+                {
+                    _buffers[filename].RenderCode(OutputFolder);
+                }
             }
         }
 
@@ -391,6 +400,9 @@ namespace LayerD.OutputModules
             ImportDirectiveData data = ImportDirectiveData.ParseImportDirective(importDirective);
             if (data != null)
             {
+                Write(data.Render);
+                WriteNewLine();
+
                 _importDirectives.Add(data);
             }
         }
@@ -466,6 +478,14 @@ namespace LayerD.OutputModules
             }
         }
 
+        internal string Render
+        {
+            get
+            {
+                return Keywords.Import + " " + this.MainParameter;
+            }
+        }
+
         internal static ImportDirectiveData ParseImportDirective(XplName importDirective)
         {
             ImportDirectiveData data = new ImportDirectiveData();
@@ -500,23 +520,6 @@ namespace LayerD.OutputModules
                 else
                 {
                     data.MainParameter = tempStr;
-                }
-            }
-
-            // check for missing type parameter
-            if (flag && !data.IsScript && !data.IsStyleSheet && !data.IsResource && !String.IsNullOrEmpty(data.MainParameter))
-            {
-                if (data.MainParameter.EndsWith(".js", StringComparison.InvariantCultureIgnoreCase))
-                {
-                    data.IsScript = true;
-                }
-                else if (data.MainParameter.EndsWith(".css", StringComparison.InvariantCultureIgnoreCase))
-                {
-                    data.IsStyleSheet = true;
-                }
-                else
-                {
-                    flag = false;
                 }
             }
 

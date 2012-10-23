@@ -1,0 +1,13 @@
+namespace py
+{
+	extern public class global
+	{
+	public:
+		static void print(object*ref arg1);
+	}
+	extern public class os
+	{
+	public:
+		static string*ref getcwd();
+	}
+}

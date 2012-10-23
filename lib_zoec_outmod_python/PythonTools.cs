@@ -1,5 +1,5 @@
 ﻿/*******************************************************************************
- * Copyright (c) 2012 Intel Corporation.
+ * Copyright (c) 2012 Intel Corporation, Alexis Ferreyra.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,10 +7,10 @@
  *
  * Contributors:
  *    Alexis Ferreyra (Intel Corporation) - initial API and implementation and/or initial documentation
+ *    Alexis Ferreyra  - initial branch from Javascript code generator into new Python code generator
  *******************************************************************************/
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using LayerD.CodeDOM;
 using System.Globalization;
@@ -344,6 +344,10 @@ namespace LayerD.OutputModules
                 string simpleName;
                 switch (temp.get_TypeName())
                 {
+                    case CodeDOMTypes.XplFunction:
+                        isNamespace = false;
+                        simpleName = ((XplFunction)temp).get_name();
+                        break;
                     case CodeDOMTypes.XplClass:
                         isNamespace = false;
                         simpleName = ((XplClass)temp).get_name();
@@ -519,6 +523,16 @@ namespace LayerD.OutputModules
                 if (content != null && content.get_StringValue() == "_FOR_EACH_") return true;
             }
             return false;
+        }
+
+        internal static bool IsEmptyNamespace(XplNamespace namespaceDecl)
+        {
+            foreach (XplNode node in namespaceDecl.Children())
+            {
+                if (node.IsA(CodeDOMTypes.XplClass) && !((XplClass)node).get_external()) return false;
+            }
+
+            return true;
         }
     }
 }

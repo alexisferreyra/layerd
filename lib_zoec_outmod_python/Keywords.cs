@@ -1,5 +1,5 @@
 ﻿/*******************************************************************************
- * Copyright (c) 2012 Intel Corporation.
+ * Copyright (c) 2012 Intel Corporation, Alexis Ferreyra.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,17 +7,17 @@
  *
  * Contributors:
  *    Alexis Ferreyra (Intel Corporation) - initial API and implementation and/or initial documentation
+ *    Alexis Ferreyra  - initial branch from Javascript code generator into new Python code generator
  *******************************************************************************/
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 namespace LayerD.OutputModules
 {
     class Keywords
     {
-        static HashSet<string> _keywords;
+        static List<string> _keywords;
 
         internal const string
             False = "False",
@@ -57,7 +57,7 @@ namespace LayerD.OutputModules
 
         internal static void Init()
         {
-            _keywords = new HashSet<string>();
+            _keywords = new List<string>();
             _keywords.Add(False);
             _keywords.Add(Class);
             _keywords.Add(Finally);
