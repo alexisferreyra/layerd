@@ -1,0 +1,31 @@
+namespace py
+{
+	extern public class global
+	{
+	public:
+		static void print(object*ref arg1);
+		static py::os::File*ref open(string*ref file, string*ref mode);
+		static int len(object*ref arg1);
+		static string*ref str(object*ref arg1);
+	}
+	extern public class os
+	{
+	public:
+		static string*ref getcwd();
+				
+		public class File
+		{
+		public:
+			bool next();
+			char[] read(long bytes);
+			void write(string*ref str);
+			void close();
+		}
+	}
+	
+	extern public class Exception
+	{
+	public:
+		string*ref value;
+	}
+}

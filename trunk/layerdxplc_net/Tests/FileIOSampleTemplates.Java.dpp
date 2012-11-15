@@ -1,0 +1,73 @@
+using DotNET::System;
+using DotNET::System::Collections;
+using DotNET::LayerD::CodeDOM;
+using DotNET::LayerD::ZOECompiler;
+
+namespace LayerD::IO{
+
+	// Provides encapsulation for general exceptions
+	public factory class UniversalException{
+	public:
+		type UniversalException(){
+			return ZoeHelper::MakeTypeFromString("Java.java.lang.Exception");
+		}
+		exp string^ GetMessage(){
+			return writecode(ileft.getMessage());
+		}
+	}
+
+	// Provides encapsulation for basic consule input/output
+	public factory class Console {
+		Console(){
+			// You can't create instances
+		}
+	public:
+		static exp void Write(exp void toWrite){
+			return writecode(Java::java::lang::System::@out.print($toWrite));
+		}
+		static exp void WriteLine(exp void toWrite){
+			return writecode(Java::java::lang::System::@out.println($toWrite));
+		}
+		static exp void WriteLine(){
+			return writecode(Java::java::lang::System::@out.println());
+		}
+	}
+
+	// Provides encapsulation for reading text files
+	public factory class FileReader {
+	public:
+		type FileReader(){
+			return ZoeHelper::MakeTypeFromString("Java.java.io.FileReader");
+		}
+		exp void FileReader(exp string^ fileName){
+			return writecode(new Java::java::io::FileReader($fileName));
+		}
+		exp int Read(exp char[] buffer){
+			return writecode(ileft.read($buffer));
+		}
+		exp bool Eof(){
+			return writecode(!ileft.ready());
+		}
+		exp void Close(){
+			return writecode(ileft.close());
+		}
+	}
+
+	// Provides encapsulation for writing text files
+	public factory class FileWriter {
+	public:
+		type FileWriter(){
+			return ZoeHelper::MakeTypeFromString("Java.java.io.FileWriter");
+		}
+		exp void FileWriter(exp string^ fileName){
+			return writecode(new Java::java::io::FileWriter($fileName));
+		}
+		exp int Write(exp string^ buffer){
+			return writecode(ileft.write($buffer));
+		}
+		exp void Close(){
+			return writecode(ileft.close());
+		}
+	}
+
+}
