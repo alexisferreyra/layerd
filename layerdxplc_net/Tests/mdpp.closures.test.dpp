@@ -1,0 +1,77 @@
+using zoe;
+
+namespace T
+{
+	extern class closure_types
+	{
+	public:
+		fp int CT1(int arg1, int arg2);
+		factory exp CT1^ CT1_Call(exec block body);
+	}
+
+	class T1 
+	{
+	public:
+		void foo2(Func lambda = Func(a is int,b is int))
+		{
+		}
+		void foo()
+		{
+			int var1 = 1, var2 = 2;
+
+			Function^ fp1Var = (int)Function(a, b is int){
+				return a + b;
+			};
+
+			/*
+				this will be converted into:
+
+				extern class closure_types
+				{
+					fp int CT1(int arg1, int arg2);
+					factory exp CT1^ CT1Call(inout block body);
+				}
+
+				... and ...
+
+				CT1^ fp1Var = closure_types::CT1Call {
+					int a; // meta data marked as parameter
+					int b; // meta data marked as parameter
+					// body
+					return a + b;
+				};
+			
+			*/
+
+			CT1^ fp1Var = closure_types::CT1Call {
+				int a; // meta data marked as parameter
+				int b; // meta data marked as parameter
+				// body
+				return a + b;
+			};
+
+
+
+			Func fp1Var = (int)Func(a, b){
+				return a + b;
+			};
+			
+			Func fp3Var = Func(a, b){
+				return a + b;
+			};
+
+			func fpVar2 = F{ 
+				writecode{% 
+					int foo(int a, float b){ return a + b; } 
+				%}; 
+			};
+
+			function fp2Var(a is int, b is float);
+
+			function fp2Var((int) a, (float) a);
+
+
+		}
+
+	}
+}

@@ -320,7 +320,7 @@ namespace LayerD.OutputModules
                     case "$NONE$":
                     case "$TYPE$":
                     case "$BLOCK$":
-                        return "null";
+                        return "None";
                     default:
                         break;
                 }
@@ -533,6 +533,20 @@ namespace LayerD.OutputModules
             }
 
             return true;
+        }
+
+        internal static bool IsNativeTypeSuitableForByteArray(string typename)
+        {
+            if (String.IsNullOrEmpty(typename)) return false;
+            switch (typename)
+            {
+                case "$SBYTE$":
+                case "$BYTE$":
+                case "$CHAR$":
+                    return true;
+                default:
+                    return false;
+            }
         }
     }
 }

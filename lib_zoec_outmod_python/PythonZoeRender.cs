@@ -297,9 +297,16 @@ namespace LayerD.OutputModules
         {
             if (this._mainFunction != null)
             {
+                string parameters = String.Empty;
+                if (this._mainFunction.get_Parameters() != null)
+                {
+                    // TODO use "sys.argv"
+                    // will need to add the import to sys
+                    parameters = "None";
+                }
                 WriteNewLine();
                 WriteLine("# CALL MAIN FUNCTION");
-                WriteLine(PythonTools.GetFullDeclarationName(this._mainFunction) + "()");
+                WriteLine(PythonTools.GetFullDeclarationName(this._mainFunction) + "(" + parameters + ")");
             }
         }
 
@@ -574,7 +581,9 @@ namespace LayerD.OutputModules
                 case EZOETypeContext.PropertyDecl:
                     break;
                 case EZOETypeContext.CatchVarDecl:
-                    return declareName;
+                    while (type.get_dt() != null) type = type.get_dt();
+                    string typeStr = PythonTools.processUserTypeName(type.get_typename());
+                    return typeStr + Space + Keywords.As + Space + declareName;
                 case EZOETypeContext.SizeofExp:
                     break;
                 case EZOETypeContext.GettypeExp:
@@ -879,7 +888,7 @@ namespace LayerD.OutputModules
         {
             this._spacesPrinter.PrintSpace(trySta);
 
-            Write(Keywords.Try);
+            Write(Keywords.Try + ":");
         }
 
         protected override void renderEndTry(LayerD.CodeDOM.XplTryStatement trySta, ExtendedZOEProcessor.EZOEContext context)
@@ -889,10 +898,6 @@ namespace LayerD.OutputModules
 
         protected override void renderCatchStatement(LayerD.CodeDOM.XplCatchStatement catchSta, string declExp, ExtendedZOEProcessor.EZOEContext context)
         {
-            // TODO : add runtime support for multiple catches
-            // that requires to save type information in objects
-            // JS type information is not enought to decide which 
-            // catch is the correct one to choose
             Write(Keywords.Except + Space + declExp + ":");
         }
 
@@ -1144,7 +1149,7 @@ namespace LayerD.OutputModules
                     tempStr = leftExpStr + " / " + rightExpStr;
                     break;
                 case XplBinaryoperators_enum.EQ: //Igualdad Logico
-                    tempStr = leftExpStr + " === " + rightExpStr;
+                    tempStr = leftExpStr + " == " + rightExpStr;
                     break;
                 case XplBinaryoperators_enum.EXP: //Exponente
                     tempStr = leftExpStr + " ** " + rightExpStr;
@@ -1268,7 +1273,7 @@ namespace LayerD.OutputModules
                     tempStr = "-" + expStr;
                     break;
                 case XplUnaryoperators_enum.NOT: //Negado logico '!'
-                    tempStr = "!" + expStr;
+                    tempStr = Keywords.Not + Space + expStr;
                     break;
                 case XplUnaryoperators_enum.ONECOMP: //Complemento a Uno '~'
                     tempStr = "~" + expStr;
@@ -1328,6 +1333,15 @@ namespace LayerD.OutputModules
             if (!String.IsNullOrEmpty(newExp.get_type().get_typeStr()))
             {
                 typeStr = PythonTools.processUserTypeName(newExp.get_type().get_typeStr());
+            }
+
+            // char[]
+            if (newExp.get_type().get_isarray() && PythonTools.IsNativeTypeSuitableForByteArray(newExp.get_type().get_dt().get_typename()))
+            {
+                if (newExp.get_type().get_ae() != null)
+                {
+                    return "bytearray(" + processExpression(newExp.get_type().get_ae(), context) + ")";
+                }
             }
 
             // sanity check
