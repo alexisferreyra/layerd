@@ -41,6 +41,8 @@
   # [Programming_NET Programming for .NET]
   # [Programming_Java Programming for Java]
   # [Programming_Cpp Programming for C/C++]
+  # [Programming_Javascript Programming for Javascript]
+  # [Programming_Python Programming for Python]
 
 * Reference *
   # [CodeDOM_Reference CodeDOM Reference]
