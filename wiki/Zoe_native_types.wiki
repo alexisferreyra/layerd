@@ -6,12 +6,6 @@ Zoe native types are defined as follow (in Meta D++ syntax):
 
 {{{
 
-//
-//    Zoe native types
-//
-//    2007(R) Alexis, Ferreyra.
-//
-
 namespace zoe::lang{
   public class Object{
   public:
