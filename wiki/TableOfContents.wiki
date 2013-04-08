@@ -12,6 +12,7 @@
   # Basic Language
     # [Hello_World_Samples Hello World]
     # [Expressions_and_Statements Expressions and Statements]
+    # [Closures]
     # [Native_types Native types]
     # [Literals Literal values]
     # [Classes_Interfaces_Namespaces Namespaces, Classes, Structs, Enums and Interfaces]
