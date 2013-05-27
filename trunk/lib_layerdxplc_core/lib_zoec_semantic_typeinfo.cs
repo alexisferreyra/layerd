@@ -134,6 +134,11 @@ namespace LayerD.ZOECompiler
             if (p_typeOfTypeNode == XplNodeType.Namespace) return true;
             return false;
         }
+
+        /// <summary>
+        /// Returns true if it is a Class. False if it is any other type including Enum, Interface, Struct or Union
+        /// </summary>
+        /// <returns>Returns true if it is a Class. False if it is any other type including Enum, Interface, Struct or Union</returns>
         public bool get_IsClass()
         {
             if (p_typeNode.get_TypeName() == CodeDOMTypes.XplClass)
@@ -179,6 +184,10 @@ namespace LayerD.ZOECompiler
                 && ((XplClass)p_typeNode).get_isinterface()) return true;
             return false;
         }
+        /// <summary>
+        /// Return true if it is a factory or interactive type
+        /// </summary>
+        /// <returns>True if it is a factory or itneractive type, false otherwise</returns>
         public bool get_IsFactory()
         {
             if (p_typeOfTypeNode == XplNodeType.Class)
@@ -300,6 +309,11 @@ namespace LayerD.ZOECompiler
         {
             p_typeChequed = value;
         }
+        internal bool get_TypeChequed()
+        {
+            return p_typeChequed;
+        }
+
         /// <summary>
         /// Chequea si las bases directas o indirectas han sido completamente chequeadas,
         /// si no han sido completamente chequedas se inicia el chequeo diferido para
@@ -358,6 +372,10 @@ namespace LayerD.ZOECompiler
         bool p_hasDefaultTypeConstructor;
         bool p_defaultTypeConstructorCalculated;
 
+        /// <summary>
+        /// Return true if the Class has a constructor member which returns type type.
+        /// </summary>
+        /// <returns>Return true if the Class has a constructor member which returns type type.</returns>
         public bool get_HasDefaultTypeConstructor()
         {
             //PENDIENTE : Revisar esto!!! hacerlo mas rapido
@@ -397,6 +415,11 @@ namespace LayerD.ZOECompiler
         public void set_TypeReaded(bool readed)
         {
             p_typeReaded = readed;
+        }
+
+        internal MemberInfo get_DefaultTypeConstructorMemberInfo()
+        {
+            throw new NotImplementedException();
         }
     }
 
@@ -1016,7 +1039,7 @@ namespace LayerD.ZOECompiler
             }
         }
 
-        private string get_ParametersString(XplParameters parameters)
+        private static string get_ParametersString(XplParameters parameters)
         {
             string retStr = "(";
             XplNodeList list = parameters.Children();
@@ -1151,13 +1174,6 @@ namespace LayerD.ZOECompiler
             }
             return false;
         }
-        public object get_MemberInfoTag()
-        {
-            return null;
-        }
-        public void set_MemberInfoTag(object tag)
-        {
-        }
         public bool IsConstructor()
         {
             if (p_name == p_classType.get_Name() && p_type == MemberType.Method) return true;
@@ -1260,6 +1276,35 @@ namespace LayerD.ZOECompiler
                 }
             }
             return -1;
+        }
+
+        /// <summary>
+        /// Returns if block (last parameter) requires to be evaluated.
+        /// Result with members which last parameter is not a block will be indetermined.
+        /// </summary>
+        public bool RequireEvalBlock
+        {
+            get
+            {
+                var parameters = this.get_Parameters();
+                if (parameters == null) return false;
+                var lastParameter = (XplParameter)parameters.Children().GetNodeAt(parameters.Children().GetLength() - 1);
+                return lastParameter.get_direction() == XplParameterdirection_enum.INOUT;
+            }
+        }
+
+        /// <summary>
+        /// Returns true if member is a function or function pointer with one parameter of type "params ^[]^_$OBJECT$"
+        /// </summary>
+        /// <returns>True if function has one parameter of type "params ^[]^_$OBJECT$"</returns>
+        internal bool HasObjectVariableParameters()
+        {
+            var parameter = this.get_Parameter(0, false);
+            if (parameter == null) return false;
+            if (!parameter.get_params()) return false;
+            var typeStr = parameter.get_type().get_typeStr();
+            if (String.IsNullOrEmpty(typeStr) || typeStr != "^_[]^_" + NativeTypes.Object) return false;
+            return true;
         }
     }
     #endregion

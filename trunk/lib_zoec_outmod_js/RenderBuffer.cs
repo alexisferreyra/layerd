@@ -144,7 +144,7 @@ namespace LayerD.OutputModules
 
             RenderLines(outputBuffer, lines);
 
-            SaveToDisk(outputBuffer, Path.ChangeExtension(Path.Combine(outputFolder != null ? outputFolder : String.Empty, FileName), "js"));
+            SaveToDisk(outputBuffer, Path.Combine(outputFolder != null ? outputFolder : String.Empty, FileName) + ".js");
         }
 
         private void RenderDebugInfo(StringBuilder outputBuffer)
@@ -228,21 +228,15 @@ namespace LayerD.OutputModules
 
             foreach (string namespaceName in namespaces)
             {
-                outputBuffer.AppendLine("APT.createNamespace(\"" + JsTools.processUserTypeName(namespaceName) + "\");");
+                outputBuffer.AppendLine( JsTools.BuildCreateNamespaceExpression( JsTools.ProcessUserTypeName(namespaceName, true)) );
                 outputBuffer.AppendLine();
-                outputBuffer.AppendLine(); 
             }
 
         }
 
         private static void CloseNamespaces(Section section, StringBuilder outputBuffer)
         {
-            //var node = section.ZoeNode;
-            //while (node.CurrentNamespace != null)
-            //{
-            //    outputBuffer.AppendLine("}");
-            //    node = node.CurrentNamespace.get_Parent();
-            //}
+
         }
 
 
@@ -255,6 +249,11 @@ namespace LayerD.OutputModules
         {
             return this._declaredTypes.Count > 0;
         }
+
+        internal bool IsUserDefinedTypeRegistered(XplClass zoeDeclarationNode)
+        {
+            return _declaredTypes.Contains(JsTools.GetFullDeclarationName(zoeDeclarationNode));
+        }
     }
 
     class RenderBuffer
@@ -266,18 +265,24 @@ namespace LayerD.OutputModules
             "\t\t" + "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" + "\n" +
             "\t\t" + "<title></title>" + "\n";
 
+        const string MAIN_NAME_TEMPLATE = "%MAIN_FUNCTION_NAME%";
+
         const string HTML_SUFFIX =
             "\t" + "</head>" + "\n" +
             "\t" + "<body >" + "\n" +
             "\t\t" + "<div data-role=\"page\" id=\"main-page\">" + "\n" +
             "\t\t" + "</div>" + "\n" +
-            "\t\t" + "<script  type=\"text/javascript\" >$$main({});</script>" + "\n" +
+            "\t\t" + "<script  type=\"text/javascript\" >$$main(%MAIN_FUNCTION_NAME%);</script>" + "\n" +
             "\t" + "</body>" + "\n" +
             "</html>";
 
         string _currentLine;
+        string _mainFunctionName;
         Dictionary<string, CompilationUnit> _buffers = new Dictionary<string, CompilationUnit>();
         Stack<CompilationUnit> _backupBufferingBuffer = new Stack<CompilationUnit>();
+        bool _thatRendered;
+        bool _thisUsedInsideClosure;
+        int _closureCounter;
 
         CompilationUnit _currentBuffer;
         List<ImportDirectiveData> _importDirectives;
@@ -289,6 +294,18 @@ namespace LayerD.OutputModules
             _currentLine = String.Empty;
             _currentBuffer = new CompilationUnit();
             _importDirectives = new List<ImportDirectiveData>();
+        }
+
+        public string MainFunctionName
+        {
+            get
+            {
+                return _mainFunctionName;
+            }
+            set
+            {
+                _mainFunctionName = value;
+            }
         }
 
         public string ProgramName
@@ -357,14 +374,14 @@ namespace LayerD.OutputModules
                 }
             }
             
-            buffer.Append(HTML_SUFFIX);
+            buffer.Append(HTML_SUFFIX.Replace(MAIN_NAME_TEMPLATE, _mainFunctionName));
 
             CompilationUnit.SaveToDisk(buffer, Path.ChangeExtension(Path.Combine(this.OutputFolder != null ? this.OutputFolder : String.Empty, ProgramName), "html"));
         }
 
         private void AddJavaScriptFileReference(StringBuilder buffer, string filename)
         {
-            string jsfilename = Path.ChangeExtension(filename, "js");
+            string jsfilename = filename + ".js";
             buffer.AppendLine("\t\t" + "<script type=\"text/javascript\" src=\"" + jsfilename + "\"></script>");
         }
 
@@ -457,6 +474,11 @@ namespace LayerD.OutputModules
             if (_currentBuffer == null) return String.Empty;
             return _currentBuffer.FileName;
         }
+        
+        internal bool IsBuffering()
+        {
+            return this._backupBufferingBuffer.Count > 0;
+        }
 
         internal void StartBuffering()
         {
@@ -474,7 +496,50 @@ namespace LayerD.OutputModules
 
             string val = this._currentBuffer.SourceText;
             this._currentBuffer = this._backupBufferingBuffer.Pop();
+            
+            if (_thisUsedInsideClosure && !_thatRendered)
+            {
+                this._thatRendered = true;
+                Write(Keywords.Var + " $that = " + Keywords.This + ";");
+                WriteNewLine();
+            }
+
             return val;
+        }
+
+        internal void ThisUsedInsideClosureFlag()
+        {
+            this._thisUsedInsideClosure = true;
+        }
+
+        internal void ClearThisUsedInsideClosureFlag()
+        {
+            this._thisUsedInsideClosure = false;
+        }
+
+        internal void ClearThatRendered()
+        {
+            this._thatRendered = false;
+        }
+
+        internal bool IsUserDefinedTypeRegistered(XplClass zoeDeclarationNode)
+        {
+            return _currentBuffer.IsUserDefinedTypeRegistered(zoeDeclarationNode);
+        }
+
+        internal void BeginClosureBody()
+        {
+            this._closureCounter++;
+        }
+
+        internal void EndClosureBody()
+        {
+            this._closureCounter--;
+        }
+
+        internal bool IsInsideClosure()
+        {
+            return this._closureCounter > 0;
         }
     }
 
@@ -551,7 +616,18 @@ namespace LayerD.OutputModules
                     {
                         data.Externs.Add(parameterValue);
                     }
-                    else if (parameterName == "outputsubfolder") data.OutputSubfolder = parameterValue;
+                    else if (parameterName == "outputsubfolder")
+                    {
+                        data.OutputSubfolder = parameterValue;
+                    }
+                    else if (parameterName == "createNamespaceFunction")
+                    {
+                        JsTools.CreateNamespaceFunction = parameterValue;
+                    }
+                    else if (parameterName == "truncateFunction")
+                    {
+                        JsTools.TruncateFunction = parameterValue;
+                    }
                 }
                 else
                 {
@@ -625,8 +701,14 @@ namespace LayerD.OutputModules
                     
                 }
             }
-
+            
+            // by default use path relative to binary
             string sourceFolder = Path.GetDirectoryName(AppDomain.CurrentDomain.BaseDirectory);
+            // if path start with '.' use path relative to working directory
+            if (this.MainParameter[0] == '.')
+            {
+                sourceFolder = Directory.GetCurrentDirectory();
+            }
 
             string sourceFile = Path.Combine(sourceFolder, this.MainParameter);
             

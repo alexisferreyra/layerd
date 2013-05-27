@@ -1,7 +1,20 @@
-import "apt.base.js", "platform=JavaScript", "type=script", "copy=true";
-import "default.wrapper.js", "platform=JavaScript", "type=script", "copy=true", "extern=default.externs.zoe";
-
+import "classy.js", "platform=Javascript", "type=script";
 using js;
+
+namespace js
+{
+	extern public class global
+	{
+	public:
+		extern public class console
+		{
+		public:
+			static void log(params object*ref[] args);
+		}
+	}
+
+	
+}
 
 namespace T
 {
@@ -18,6 +31,21 @@ namespace T
 		void SetName(string^ newName);
 	}
 
+	// this a class 
+	class C3 inherits C2
+	{
+	public:
+		C3()
+		{
+			js::global::console::log("C3 constructor");
+		}
+		override string^ GetName()
+		{
+			// say something
+			return "C3 Says " + base.GetName();
+		}
+	}
+
 	class C1 implements Namer
 	{
 	protected:
@@ -27,11 +55,13 @@ namespace T
 		{
 			global::console::log("C1 constructor");
 		}
+		/*
 		C1(string^ arg1)
 		{
 			global::console::log("C1 constructor 2");
 			this._name = arg1;
 		}
+		*/
 		static int Main(string^[] args)
 		{
 			E1 var1 = E1::V3;
@@ -43,16 +73,18 @@ namespace T
 			C2^ obj2 = new T::C2();
 			obj2.SetName("Adriel");
 			obj3.SetName("Ferreyra");
+			obj3.SetNewName("Ferreyra2");
 			obj3.fooBase();
 
 			global::console::log("C1 Says: " + obj1.GetName());
 			global::console::log("C2 Says: " + obj2.GetName());
 			global::console::log("C2 Says: " + obj2.GetNameFromField());
 			global::console::log("C3 Says: " + obj3.GetName());
+			global::console::log("C3 name from base: " + obj3.GetNameFromBaseField());
 		}
 		void fooBase()
 		{
-			global::console::log("C1.fooBase");
+			js::global::console::log("C1.fooBase");
 		}
 
 		void foo()
@@ -103,7 +135,7 @@ namespace T
 	public:
 		C2()
 		{
-			global::console::log("C2 constructor");
+			js::global::console::log("C2 constructor");
 		}
 		override string^ GetName()
 		{
@@ -111,7 +143,11 @@ namespace T
 		}
 		override void SetName(string^ newName)
 		{
-			base.SetName(newName + "Ho");
+			base.SetName(newName + " Hohoho");
+		}
+		void SetNewName(string^ newName)
+		{
+			base.SetName(newName);
 		}
 		string^ GetNameFromField()
 		{
@@ -119,22 +155,48 @@ namespace T
 		}
 		string^ GetNameFromBaseField()
 		{
-			return base._name;
+			return base._name + " and " + base.GetName();
 		}
 	}
 
-	// this a class 
-	class C3 inherits C2
+	class EventType{
+    public:
+        static const int Touches = 0;
+        static const int Motion = 1;
+        static const int RemoteControl = 2;
+
+        extern static int operator implicit(T::EventType arg1);
+        extern static T::EventType operator implicit(int arg1);
+    }
+
+	public extern class Global
+	{
+	}
+
+    public extension class Global
+    {
+    public:	
+        static bool THROW_IF_NOT_IMPLEMENTED = true;
+        static int NotFound = -1;
+		static int RAND_MAX = 4294967296;
+	}
+
+	class Point 
 	{
 	public:
-		C3()
-		{
-			global::console::log("C3 constructor");
+        Point(double x, double y)
+        {
+			this.x = x;
+			this.y = y;				
 		}
-		override string^ GetName()
-		{
-			// say something
-			return "C3 Says " + base.GetName();
-		}
+			
+        static T::Point FixedPoint() 
+        {
+            return T::Point(10, 10);
+        }
+
+		double x;
+		double y;
 	}
+
 }

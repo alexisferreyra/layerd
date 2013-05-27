@@ -77,6 +77,7 @@ namespace LayerD.OutputModules
         bool _removeComments;
         // holds the state for printing spaces between statements
         SpacesPrinter _spacesPrinter;
+        List<String> _currentClassStaticMembers;
         
         #region Tools
         void RenderComments(XplNode node)
@@ -85,24 +86,7 @@ namespace LayerD.OutputModules
 
             if (node.get_doc() != null && node.get_doc() != String.Empty)
             {
-                string[] comments = node.get_doc().Split('\n');
-                for (int n = 0; n < comments.Length; n++)
-                {
-                    string comment = comments[n].Replace('\r', ' ').Trim();
-                    if (comment != String.Empty)
-                    {
-                        if (node.get_TypeName() == CodeDOMTypes.XplClass ||
-                            node.get_TypeName() == CodeDOMTypes.XplNamespace)
-                        {
-                            Write("// " + comment);
-                        }
-                        else
-                        {
-                            Write("// " + comment);
-                        }
-                        WriteNewLine();
-                    }
-                }
+                renderCommentFromString(node.get_doc(), false);
             }
         }
 
@@ -118,6 +102,7 @@ namespace LayerD.OutputModules
 
         private void RenderMultipleFiles()
         {
+            _buffer.ProgramName = Path.GetFileNameWithoutExtension(this._outputFileName);
             _buffer.Render();
         }
 
@@ -262,19 +247,17 @@ namespace LayerD.OutputModules
 
         protected override string renderGetTypeExp(LayerD.CodeDOM.XplType xplType, string typeStr, ExtendedZOEProcessor.EZOEContext eZOEContext)
         {
-            return String.Empty;
+            return JsTools.GetTypeStringFromInnerTypeName(xplType);
         }
 
         protected override string renderTypeOfExp(LayerD.CodeDOM.XplType typeofExpNode, string typeStr, ExtendedZOEProcessor.EZOEContext eZOEContext)
         {
-            return String.Empty;
+            return JsTools.GetTypeStringFromInnerTypeName(typeofExpNode);
         }
 
         protected override string renderIsExp(LayerD.CodeDOM.XplCastexpression xplExpression, string expStr, string typeStr, ExtendedZOEProcessor.EZOEContext eZOEContext)
         {
-            XplType tempType = xplExpression.get_type();
-            while (tempType.get_dt() != null) tempType = tempType.get_dt();
-            typeStr = JsTools.processUserTypeName(tempType.get_typename());
+            typeStr = JsTools.GetTypeStringFromInnerTypeName(xplExpression.get_type());
 
             return expStr + Space + Keywords.InstanceOf + Space + typeStr;
         }
@@ -326,8 +309,38 @@ namespace LayerD.OutputModules
             // check if is needed to change output buffer
             CheckBuffer(classDecl);
             _buffer.RegisterUserDefinedType(classDecl);
-            
+
+            _currentClassStaticMembers = new List<string>();
+            bool isAllStaticMembers = JsTools.IsAllStaticMembersClass(classDecl);
+
             string fullDeclName = JsTools.GetFullDeclarationName(classDecl);
+            if (classDecl.get_extension())
+            {
+                if (!isAllStaticMembers)
+                {
+                    WriteLine("// Extension to class \"" + fullDeclName + "\"");
+                    WriteLine("// To extend a class add methods to .prototype property");
+                }
+                return;
+            }
+
+            string baseClassStr = JsTools.GetBaseName(classDecl);
+            if (!String.IsNullOrEmpty(baseClassStr))
+            {
+                JsTools.WriteForwardDeclarations(fullDeclName, baseClassStr, classDecl, _buffer);
+                baseClassStr = ", " + baseClassStr;
+            }
+            Write(fullDeclName + " = Class.$define(\"" + fullDeclName + "\"" + baseClassStr + ", {");
+
+            if (isAllStaticMembers)
+            {
+                WriteLine("});");
+                WriteNewLine();
+                return;
+            }
+
+            WriteNewLine();
+            IncreaseTabulation();
 
             // render constructors
             XplNodeList list = classDecl.get_FunctionNodeList();
@@ -337,14 +350,14 @@ namespace LayerD.OutputModules
                 if (function.get_name() == className && function.get_storage() != XplVarstorage_enum.EXTERN)
                 {
                     count++;
-                    renderConstructorCommonCode(classType, implementsStr, inheritsStr, classDecl, fullDeclName, function);
+                    renderConstructorCommonCode(classType, implementsStr, inheritsStr, classDecl, fullDeclName, function, baseClassStr);
                 }
             }
 
             if (count == 0)
             {
                 // render automatic default constructor
-                renderConstructorCommonCode(classType, implementsStr, inheritsStr, classDecl, fullDeclName, null);
+                renderConstructorCommonCode(classType, implementsStr, inheritsStr, classDecl, fullDeclName, null, baseClassStr);
             }
 
             renderInternalCopyMethod( classDecl );
@@ -360,8 +373,7 @@ namespace LayerD.OutputModules
             string fullDeclName = JsTools.GetFullDeclarationName(classDecl);
 
             // declaration line 
-            Write(fullDeclName + "." + Keywords.Prototype + ".");
-            Write(functionName + " = ");
+            Write(functionName + ": ");
             Write(Keywords.Function);
             Write("() {");
             WriteNewLine();
@@ -393,59 +405,31 @@ namespace LayerD.OutputModules
 
             // close body
             DecreaseTabulation();
-            Write("};");
+            Write("},");
             WriteNewLine();
             WriteNewLine();
         }
 
-        private void renderConstructorCommonCode(ExtendedZOEProcessor.EZOEClassType classType, string implementsStr, string inheritsStr, LayerD.CodeDOM.XplClass classDecl, string fullDeclName, XplFunction function)
+        private void renderConstructorCommonCode(ExtendedZOEProcessor.EZOEClassType classType, string implementsStr, string inheritsStr, LayerD.CodeDOM.XplClass classDecl, string fullDeclName, XplFunction function, string baseClassStr)
         {
+            if (classDecl.get_isenum() || classDecl.get_isinterface()) return;
+
             WriteClosureAnnotationForClass(classType, inheritsStr, implementsStr, function != null && function.get_Parameters() != null ? function.get_Parameters().Children() : null);
 
             string parametersStr = function != null && function.get_Parameters() != null ? processParameters(function.get_Parameters(), function, EZOEContext.FunctionDecl) : String.Empty;
 
-            Write(fullDeclName + " = " + Keywords.Function + "(" + parametersStr + ") {");
-            if (classType != EZOEClassType.Interface)
-            {
-                WriteNewLine();
-                IncreaseTabulation();
-                WriteLine("if(this.constructor !== " + fullDeclName + ") return new " + fullDeclName + "(" + parametersStr + ");");
-
-                WriteLine(fullDeclName + ".$inherits();");
-
-                if(String.IsNullOrEmpty(parametersStr)) WriteLine(fullDeclName + ".$init.apply(this);");
-                else WriteLine("arguments.length > 0 ? " + fullDeclName + ".$init.apply(this, [" + parametersStr + "]) : " + fullDeclName + ".$init.apply(this);");
-
-                WriteLine(Keywords.Return + Space + Keywords.This + ";");
-                DecreaseTabulation();
-            }
-
-            // close function constructor
-            CloseFunction();
-
-            // create $inherits function
-            Write(fullDeclName + ".$inherits = " + Keywords.Function + "() {");
-            if (classType != EZOEClassType.Interface)
-            {
-                WriteNewLine();
-            }
-
-            // inherits
+            Write("__init__: " + Keywords.Function + "(" + parametersStr + ") {");
+            WriteNewLine();
             IncreaseTabulation();
-            renderInherits(classDecl.get_InheritsNodeList(), fullDeclName);
-            CloseFunction();
-
-            // create $init function
-            Write(fullDeclName + ".$init = " + Keywords.Function + "(" + parametersStr + ") {");
-            if (classType != EZOEClassType.Interface)
-            {
-                WriteNewLine();
-            }
 
             // render instance fields
-            IncreaseTabulation();
             renderInstanceFields(classDecl.get_FieldNodeList());
-            renderInit(classDecl.get_InheritsNodeList(), fullDeclName);
+
+            // call to base constructor
+            if (baseClassStr != String.Empty)
+            {
+                WriteLine("this.$super(" + parametersStr + ");");
+            }
 
             if (function != null && function.get_FunctionBody() != null)
             {
@@ -468,13 +452,8 @@ namespace LayerD.OutputModules
                 }
             }
 
-            CloseFunction();
-        }
-
-        private void CloseFunction()
-        {
             DecreaseTabulation();
-            WriteLine("};");
+            WriteLine("},");
             WriteNewLine();
         }
 
@@ -535,39 +514,6 @@ namespace LayerD.OutputModules
             }
         }
 
-        private void renderInherits(XplNodeList list, string classFullTypeStr)
-        {
-            foreach (XplInherits inhs in list)
-            {
-                var typeList = inhs.FindNodes("@XplType");
-                foreach (XplType type in typeList)
-                {
-                    string typeStr = renderType(type, String.Empty, EZOETypeContext.Expression, EZOEContext.Expression);
-                    if (typeStr != "zoe.lang.Object")
-                    {
-                        WriteLine("APT.inherits(" + classFullTypeStr + ", " + typeStr + ");");
-                    }
-                }
-            }
-        }
-
-        private void renderInit(XplNodeList list, string classFullTypeStr)
-        {
-            foreach (XplInherits inhs in list)
-            {
-                var typeList = inhs.FindNodes("@XplType");
-                foreach (XplType type in typeList)
-                {
-                    string typeStr = renderType(type, String.Empty, EZOETypeContext.Expression, EZOEContext.Expression);
-                    if (typeStr != "zoe.lang.Object")
-                    {
-                        WriteCommentLine(" call base class constructor");
-                        WriteLine(typeStr != "Object" ? typeStr + ".$init.apply(this);" : typeStr + ".apply(this);");
-                    }
-                }
-            }
-        }
-
         protected override void renderEndClass(ExtendedZOEProcessor.EZOEClassType classType, string className, LayerD.CodeDOM.XplClass classDecl, ExtendedZOEProcessor.EZOEContext context)
         {
             if (_isExternalClass > 0)
@@ -576,14 +522,22 @@ namespace LayerD.OutputModules
                 return;
             }
 
-            // className = JsTools.GetValidIdentifier(className, false);
+            DecreaseTabulation();
 
-            // simple render of "class"
-            // WriteCommentLine("//////////////////////////////////////////////////////////////////////////////");
-            // WriteCommentLine(" End " + JsTools.GetClassTypeString(classType) + className);
-            // WriteCommentLine("//////////////////////////////////////////////////////////////////////////////");
+            if (!classDecl.get_extension() && !JsTools.IsAllStaticMembersClass(classDecl))
+            {
+                WriteLine("});");
+                WriteNewLine();
+            }
 
+            // render static members
+            foreach (string member in _currentClassStaticMembers)
+            {
+                Write(member);
+            }
             WriteNewLine();
+
+            _currentClassStaticMembers.Clear();
         }
 
         protected override string renderImplements(LayerD.CodeDOM.XplClass classDecl, LayerD.CodeDOM.XplNodeList implements, ExtendedZOEProcessor.EZOEContext context)
@@ -614,11 +568,16 @@ namespace LayerD.OutputModules
             if (_isExternalClass > 0 || functionStorage == XplVarstorage_enum.EXTERN || functionStorage == XplVarstorage_enum.STATIC_EXTERN) return;
 
             XplClass currentClass = functionDecl.CurrentClass;
-
+            
             // if is constructor return
             if (functionName == currentClass.get_name()) return;
             
             bool isStatic = functionStorage == XplVarstorage_enum.STATIC;
+            bool isExtension = functionDecl.CurrentClass.get_extension();
+
+            if (isStatic || isExtension) DecreaseTabulation();
+            if (isStatic) _buffer.StartBuffering();
+
             string className = JsTools.GetValidIdentifier(currentClass.get_name(), false);
             string fullDeclName = JsTools.GetFullDeclarationName(currentClass);
             functionName = JsTools.GetValidIdentifier(functionName, false);
@@ -628,19 +587,27 @@ namespace LayerD.OutputModules
             // TODO : render all functions as public for now
             if (isStatic)
             {
-                // render:
-                // NamespaceName.ClassName.FunctionName = function
+                if (functionName == "main" && access == XplAccesstype_enum.PUBLIC && JsTools.IsObjCDummyGlobalClass(functionDecl.CurrentClass) || 
+                    JsTools.IsZoeMainFunction(functionDecl))
+                {
+                    _buffer.MainFunctionName = fullDeclName + "." + functionName;
+                }
                 Write(fullDeclName + ".");
+                Write(functionName + " = ");
             }
             else
             {
-                // render: 
-                // NamespaceName.ClassName.prototype.FunctionName = function
-                Write(fullDeclName + "." + Keywords.Prototype + ".");
+                if (isExtension)
+                {
+                    Write(fullDeclName + "." + Keywords.Prototype + "." + functionName + " = ");
+                }
+                else
+                {
+                    Write(functionName + ": ");
+                }
             }
-            Write(functionName + " = ");
-            Write(Keywords.Function);
 
+            Write(Keywords.Function);
             // parameters
             Write("(" + parametersStr + ") {");
 
@@ -651,6 +618,12 @@ namespace LayerD.OutputModules
             }
 
             renderCopyByValueParameters(functionDecl);
+
+            if (!_buffer.IsBuffering())
+            {
+                _buffer.ClearThatRendered();
+                _buffer.ClearThisUsedInsideClosureFlag();
+            }
         }
 
         private void renderCopyByValueParameters(XplFunction functionDecl)
@@ -718,27 +691,36 @@ namespace LayerD.OutputModules
             }
 
             // if its a constructor return
-            if(functionName == functionDecl.CurrentClass.get_name()) return;
+            XplClass currentClass = functionDecl.CurrentClass;
+            if(functionName == currentClass.get_name()) return;
 
-            bool isInterface = functionDecl.CurrentClass.get_isinterface();
+            bool isInterface = currentClass.get_isinterface();
+            bool isStatic = functionStorage == XplVarstorage_enum.STATIC;
+            bool isExtension = currentClass.get_extension();
 
-            if (!isAbstract && functionStorage != XplVarstorage_enum.EXTERN && functionStorage != XplVarstorage_enum.STATIC_EXTERN
-                && !(functionDecl.get_Parent().get_TypeName() == CodeDOMTypes.XplClass && isInterface))
+            if (!isAbstract && !(functionDecl.get_Parent().get_TypeName() == CodeDOMTypes.XplClass && isInterface))
             {
-                string className = JsTools.GetValidIdentifier(functionDecl.CurrentClass.get_name(), false);
+                string className = JsTools.GetValidIdentifier(currentClass.get_name(), false);
                 functionName = JsTools.GetValidIdentifier(functionName, false);
-                bool isConstructor = functionName == className;
 
                 DecreaseTabulation();
                 Write("}");
-                if (!isConstructor) Write(";");
+                if (isStatic || isExtension) Write(";");
+                else Write(",");
 
                 WriteNewLine();
                 WriteNewLine();
             }
 
             // close methods for interface
-            if (isInterface) WriteLine("};");
+            if (isInterface) WriteLine("},");
+
+            if (isStatic && context == EZOEContext.ClassBody)
+            {
+                _currentClassStaticMembers.Add(_buffer.StopBuffering());
+            }
+
+            if(isStatic && !isExtension) IncreaseTabulation();
         }
 
         protected override void renderBeginProperty(LayerD.CodeDOM.XplProperty propertyDecl, string propertyName, string typeStr, LayerD.CodeDOM.XplAccesstype_enum access, LayerD.CodeDOM.XplVarstorage_enum propertyStorage, bool isAbstract, bool isFinal, bool isNew, bool isConst, bool isOverride, bool isVirtual, ExtendedZOEProcessor.EZOEContext context)
@@ -783,28 +765,63 @@ namespace LayerD.OutputModules
             // TODO : all fields are public for now
             if (isStatic)
             {
+                _buffer.DecreaseTabulation();
+                _buffer.StartBuffering();
+
                 WriteClosureAnnotationForVar(fieldDecl.get_type());
+                string validFieldName = JsTools.GetValidIdentifier(fieldName, false);
                 // render:
                 // NamespaceName.ClassName.FieldName = 0
-                Write(fullDeclName + ".");
+                if (String.IsNullOrEmpty(initializerStr))
+                {
+                    Write(fullDeclName + ".");
+                    Write(validFieldName);
+                    WriteLine(" = " + JsTools.GetDefaultInitForFieldDecl(fieldDecl.get_type()) + ";");
+                }
+                else
+                {
+                    if (JsTools.StaticFieldRequiresEncapsulation(fieldDecl))
+                    {
+                        WriteLine("Object.defineProperty(" + fullDeclName + ", \"" + validFieldName + "\", ");
+                        if (fieldDecl.get_type().get_const())
+                        {
+                            IncreaseTabulation();
+                            WriteLine("{ get : function(){ return " + initializerStr + "; } });");
+                            DecreaseTabulation();
+                        }
+                        else
+                        {
+                            IncreaseTabulation();
+                            WriteLine("{ get : function(){");
+                            IncreaseTabulation();
+                            WriteLine("if(" + fullDeclName + ".__" + validFieldName + " === undefined) " + fullDeclName + ".__" + validFieldName + " = " + initializerStr + ";");
+                            IncreaseTabulation();
+                            WriteLine("return " + fullDeclName + ".__" + validFieldName + ";");
+                            DecreaseTabulation();
+                            WriteLine("},");
+                            WriteLine("set : function(newValue){ " + fullDeclName + ".__" + validFieldName + " = newValue; }");
+                            DecreaseTabulation();
+                            WriteLine("});");
+                            DecreaseTabulation();
+                        }
+                    }
+                    else
+                    {
+                        Write(fullDeclName + ".");
+                        Write(validFieldName);
+                        WriteLine(" = " + initializerStr + ";");
+                    }
+                }
+
+                WriteNewLine();
+                _currentClassStaticMembers.Add(_buffer.StopBuffering());
+                IncreaseTabulation();
             }
             else
             {
                 // it's rendered inside render Begin Class
                 return;
             }
-            Write(JsTools.GetValidIdentifier(fieldName, false));
-
-            if (String.IsNullOrEmpty(initializerStr))
-            {
-                WriteLine(" = " + JsTools.GetDefaultInitForFieldDecl(fieldDecl.get_type()) + ";");
-            }
-            else
-            {
-                WriteLine(" = " + initializerStr + ";");
-            }
-
-            WriteNewLine();
         }
 
         protected override void renderBeginParameters(LayerD.CodeDOM.XplParameters parametersDecl, int maxParameter, LayerD.CodeDOM.XplFunction functionDecl, ExtendedZOEProcessor.EZOEContext context)
@@ -849,7 +866,7 @@ namespace LayerD.OutputModules
                 case EZOETypeContext.CastExp:
                     break;
                 case EZOETypeContext.Expression:
-                    return JsTools.processUserTypeName(type.get_typename());
+                    return JsTools.ProcessUserTypeName(type.get_typename());
                 case EZOETypeContext.Unknow:
                     break;
                 default:
@@ -1259,16 +1276,34 @@ namespace LayerD.OutputModules
         {
             if (name == "this")
             {
+                if (_buffer.IsInsideClosure())
+                {
+                    _buffer.ThisUsedInsideClosureFlag(); 
+                    return "$that";
+                }
                 return name;
             }
             else if (name == "base")
             {
-                // TODO : implement base
-                return "this.$super()";
+                if (node.get_Parent().get_Parent().IsA(CodeDOMTypes.XplFunctioncall) || node.get_Parent().get_Parent().get_Parent().get_Parent().IsA(CodeDOMTypes.XplFunctioncall))
+                {
+                    if (_buffer.IsInsideClosure())
+                    {
+                        _buffer.ThisUsedInsideClosureFlag();
+                        return "$that.$super()";
+                    }
+                    return "this.$super()";
+                }
+                return "this";
+            }
+            else if (name == "js.global.@this" && node.CurrentExpression != null && node.CurrentExpression.get_targetClass() == "js.global")
+            {
+                // closure this
+                return "this";
             }
             else
             {
-                return JsTools.processUserTypeName(name);
+                return JsTools.ProcessUserTypeName(name);
             }
         }
 
@@ -1331,7 +1366,7 @@ namespace LayerD.OutputModules
 
         protected override string renderAssingExp(LayerD.CodeDOM.XplAssing assing, string leftExpStr, string rightExpStr, LayerD.CodeDOM.XplAssingop_enum operation, ExtendedZOEProcessor.EZOEContext context)
         {
-            if ((int)Precedences.AssingExp == JsTools.getExpressionPrecedence(assing.get_l()))
+            if ((int)Precedences.AssingExp == JsTools.GetExpressionPrecedence(assing.get_l()))
             {
                 leftExpStr = "(" + leftExpStr + ")";
             }
@@ -1383,7 +1418,7 @@ namespace LayerD.OutputModules
                 tempStr += ".$copy()";
             }
 
-            if (JsTools.requireParenthesis(assing)) tempStr = "(" + tempStr + ")";
+            if (JsTools.RequireParenthesis(assing)) tempStr = "(" + tempStr + ")";
 
             return tempStr;
         }
@@ -1400,13 +1435,13 @@ namespace LayerD.OutputModules
                 case XplBinaryoperators_enum.PM: //Pointer Member Access "->"
                 case XplBinaryoperators_enum.PMP: //Pointer To Member Pointer Access "->*"
                 case XplBinaryoperators_enum.RM: //Reservado para Acceso a miembros
-                    if (_optimizeParenthesis && JsTools.getOperatorPrecedence(op) > JsTools.getExpressionPrecedence(bopExp.get_l()))
+                    if (_optimizeParenthesis && JsTools.GetOperatorPrecedence(op) > JsTools.GetExpressionPrecedence(bopExp.get_l()))
                     {
                         leftExpStr = "(" + leftExpStr + ")";
                     }
                     break;
                 default:
-                    if (_optimizeParenthesis && JsTools.getOperatorPrecedence(op) == JsTools.getExpressionPrecedence(bopExp.get_r()))
+                    if (_optimizeParenthesis && JsTools.GetOperatorPrecedence(op) == JsTools.GetExpressionPrecedence(bopExp.get_r()))
                     {
                         rightExpStr = "(" + rightExpStr + ")";
                     }
@@ -1514,7 +1549,7 @@ namespace LayerD.OutputModules
 
             if (_optimizeParenthesis)
             {
-                if (!flag && JsTools.requireParenthesis(bopExp)) tempStr = "(" + tempStr + ")";
+                if (!flag && JsTools.RequireParenthesis(bopExp)) tempStr = "(" + tempStr + ")";
             }
             else
             {
@@ -1544,7 +1579,7 @@ namespace LayerD.OutputModules
             switch (op)
             {
                 case XplUnaryoperators_enum.AOF: //Address of '&'                    
-                    tempStr = "&" + expStr;
+                    tempStr = JsTools.GetPointerObject(expStr);
                     break;
                 case XplUnaryoperators_enum.DEC: //Decremento postfijo 'e--'
                     tempStr = expStr + "--";
@@ -1553,7 +1588,7 @@ namespace LayerD.OutputModules
                     tempStr = expStr + "++";
                     break;
                 case XplUnaryoperators_enum.IND: //Indireccion de puntero '*'
-                    tempStr = "*" + expStr;
+                    tempStr = expStr + ".value";
                     break;
                 case XplUnaryoperators_enum.MIN: //Negativo '-'
                     tempStr = "-" + expStr;
@@ -1571,7 +1606,7 @@ namespace LayerD.OutputModules
                     tempStr = "++" + expStr;
                     break;
                 case XplUnaryoperators_enum.RAOF: //Reference AddressOf '&&'
-                    tempStr = "&" + expStr;
+                    tempStr = expStr + ".value";
                     break;
                 case XplUnaryoperators_enum.SIZEOF:
                     tempStr = "sizeof(" + expStr + ")";
@@ -1583,7 +1618,7 @@ namespace LayerD.OutputModules
 
             if (_optimizeParenthesis)
             {
-                if (JsTools.requireParenthesis(uopExp)) tempStr = "(" + tempStr + ")";
+                if (JsTools.RequireParenthesis(uopExp)) tempStr = "(" + tempStr + ")";
             }
             else tempStr = "(" + tempStr + ")";
             return tempStr;
@@ -1592,18 +1627,59 @@ namespace LayerD.OutputModules
         protected override string renderFunctionCallExp(LayerD.CodeDOM.XplFunctioncall fcallExp, string leftExpStr, string argsStr, bool useBrackets, ExtendedZOEProcessor.EZOEContext context)
         {
             const string THIS_SUPER = "this.$super().";
+            const string THAT_SUPER = "$that.$super().";
+
+            var currentFunction = fcallExp.CurrentFunction;
+            string currentFunctioName = currentFunction != null ? currentFunction.get_name() : String.Empty;
+            string replaceSuperStr = null;
+            string targetName = null;
+
             if (leftExpStr.StartsWith(THIS_SUPER))
             {
-                leftExpStr = "this.$super_" + leftExpStr.Substring(THIS_SUPER.Length);
+                replaceSuperStr = "this";
+                targetName = leftExpStr.Substring(THIS_SUPER.Length);
+            }
+            if (leftExpStr.StartsWith(THAT_SUPER))
+            {
+                replaceSuperStr = "$that";
+                targetName = leftExpStr.Substring(THAT_SUPER.Length);
             }
 
-            if (fcallExp.get_targetClass() == "js.global" && fcallExp.get_targetMember().StartsWith("S#", StringComparison.InvariantCulture))
+            string targetClass = fcallExp.get_targetClass();
+            string targetMember = fcallExp.get_targetMember();
+
+            if (replaceSuperStr != null)
+            {
+                if (currentFunctioName == targetName)
+                {
+                    leftExpStr = replaceSuperStr + ".$super";
+                }
+                else
+                {
+                    if (String.IsNullOrEmpty(targetClass))
+                    {
+                        // fallback to this object if there is an error
+                        leftExpStr = "this." + Keywords.Prototype + "." + targetName + ".call";
+                    }
+                    else
+                    {
+                        leftExpStr = JsTools.ProcessUserTypeName(targetClass) + "." + Keywords.Prototype + "." + targetName + ".call";
+                    }
+                    argsStr = String.IsNullOrEmpty(argsStr) ? replaceSuperStr : replaceSuperStr + ", " + argsStr;
+                }
+            }
+
+            if (targetClass == "js.global" && targetMember.StartsWith("S#", StringComparison.InvariantCulture))
             {
                 // special $ function 
                 // TODO : change this to use existing targetExternalName attribute
                 leftExpStr = "$";
             }
-            else if (fcallExp.get_targetClass() == "js.global" && fcallExp.get_targetMember().StartsWith("F#", StringComparison.InvariantCulture))
+            else if (targetClass == "js.global" && targetMember.StartsWith("typeof#", StringComparison.InvariantCulture))
+            {
+                leftExpStr = "typeof";
+            }
+            else if (targetClass == "js.global" && targetMember.StartsWith("F#", StringComparison.InvariantCulture))
             {
                 // special function js::global::F (for closure literals)
                 XplFunctionBody body = fcallExp.get_bk();
@@ -1612,11 +1688,19 @@ namespace LayerD.OutputModules
                     XplNode innerExp = body.Children().FirstNode();
                     if (innerExp.IsA(CodeDOMTypes.XplExpression))
                     {
-                        return processExpression((XplExpression)innerExp, context);
+                        JsTools.DisableReplaceOfKeywords();
+                        var blockLiteralString = processExpression((XplExpression)innerExp, context);
+                        JsTools.EnableReplaceOfKeywords();
+                        return blockLiteralString;
                     }
                 }
             }
-            else if (fcallExp.get_targetClass() == "js.Function" && fcallExp.get_targetMember().StartsWith("CALL#", StringComparison.InvariantCulture))
+            else if (targetClass == "#intrinsic_closure#" && targetMember == "#IC_CALL#")
+            {
+                leftExpStr = Keywords.Function;
+                argsStr = renderIntrinsicClosureParameters(fcallExp, context);
+            }
+            else if (targetClass == "js.Function" && targetMember.StartsWith("CALL#", StringComparison.InvariantCulture))
             {
                 // special function js::Function::CALL (for () mimics)
                 leftExpStr = leftExpStr.Substring(0, leftExpStr.Length - 5);
@@ -1630,13 +1714,25 @@ namespace LayerD.OutputModules
                 bool back = this._generateClosureTypeAnnotations;
                 this._generateClosureTypeAnnotations = false;
                 _buffer.StartBuffering();
+                _buffer.BeginClosureBody();
                 IncreaseTabulation();
                 processFunctionBody(bk, context);
                 DecreaseTabulation();
                 Write("}");
                 bkstr = " {\n" + _buffer.StopBuffering();
+                _buffer.EndClosureBody();
                 this._generateClosureTypeAnnotations = back;
                 while (bkstr.EndsWith("\r", StringComparison.InvariantCulture) || bkstr.EndsWith("\n", StringComparison.InvariantCulture)) bkstr = bkstr.Remove(bkstr.Length - 1, 1);
+            }
+
+            // check if we need to add "new" when we are constructing a type by value from Zoe point of view
+            if (!String.IsNullOrEmpty(targetClass) && !String.IsNullOrEmpty(targetMember))
+            {
+                if (targetMember != "?") targetMember = targetMember.Substring(0, targetMember.IndexOf('#'));
+                if (targetClass.EndsWith("." + targetMember))
+                {
+                    leftExpStr = Keywords.New + Space + leftExpStr;
+                }
             }
 
             if (!useBrackets)
@@ -1649,10 +1745,51 @@ namespace LayerD.OutputModules
             }
         }
 
+        private string renderIntrinsicClosureParameters(XplFunctioncall fcallExp, EZOEContext context)
+        {
+            string retStr = String.Empty;
+
+            var args = fcallExp.get_args();
+            if (args != null)
+            {
+                int current = 0;
+                int max = args.Children().GetLength();
+                foreach (XplExpression arg in args.Children())
+                {
+                    var content = arg.get_Content();
+                    var simpleName = String.Empty;
+                    if (content.IsA(CodeDOMTypes.XplNode))
+                    {
+                        simpleName = content.get_StringValue();
+                    }
+                    else if(content.IsA(CodeDOMTypes.XplCastexpression))
+                    {
+                        simpleName = ((XplCastexpression)content).get_e().get_Content().get_StringValue();
+                        if (String.IsNullOrEmpty(simpleName)) simpleName = "__error_in_parameter_for_closure__";
+                    }
+                    retStr += renderSimpleName(content, simpleName, context);
+                    current++;
+                    if (current < max) retStr += ", ";
+                }
+            }
+
+            return retStr;
+        }
+
         protected override string renderCastExp(LayerD.CodeDOM.XplCastexpression castExp, string typeStr, string castExpStr, LayerD.CodeDOM.XplCasttype_enum castType, ExtendedZOEProcessor.EZOEContext context)
         {
             string typeAnnotation = _generateClosureTypeAnnotations ? JsTools.GetClosureTypeAnnotation(castExp.get_type(), true) : String.Empty;
-            if (!String.IsNullOrEmpty(typeAnnotation)) typeAnnotation = "/** @type{" + typeAnnotation + "} */";
+            if (!String.IsNullOrEmpty(typeAnnotation))
+            {
+                typeAnnotation = "/** @type{" + typeAnnotation + "} */";
+            }
+            if (castExp.get_e().get_typeStr() == "$FLOAT$" || castExp.get_e().get_typeStr() == "$DOUBLE$")
+            {
+                if (JsTools.IsIntegerNativeType(castExp.get_type().get_typeStr()))
+                {
+                    castExpStr = JsTools.BuildTruncateExpression(castExpStr);
+                }
+            }
 
             return typeAnnotation + castExpStr;
         }
@@ -1691,6 +1828,8 @@ namespace LayerD.OutputModules
         protected override void renderDocumentation(LayerD.CodeDOM.XplDocumentation documentation, ExtendedZOEProcessor.EZOEContext context)
         {
             if (_removeComments) return;
+            if (_isExternalClass > 0) return;
+            this._spacesPrinter.PrintSpace(documentation);
 
             if (documentation != null)
             {
@@ -1708,7 +1847,7 @@ namespace LayerD.OutputModules
                 if (!String.IsNullOrEmpty(ldsrcStr))
                 {
                     JsTools.ParseZoeSourceInfo(ldsrcStr, ref minLine, ref  maxLine, ref currentFile);
-                    if (_buffer.GetCurrentBufferFileName() != Path.GetFileNameWithoutExtension(currentFile)) return;
+                    if (currentFile != null && _buffer != null && _buffer.GetCurrentBufferFileName()!=null && !_buffer.GetCurrentBufferFileName().Equals(Path.GetFileNameWithoutExtension(currentFile), StringComparison.InvariantCultureIgnoreCase)) return;
                 }
 
                 
@@ -1723,20 +1862,26 @@ namespace LayerD.OutputModules
                             mainComment = true;
                             break;
                     }
-                    string[] comments = docStr.Split('\n');
-                    for (int n = 0; n < comments.Length; n++)
-                    {
-                        string comment = comments[n].Replace('\r', ' ').Trim();
-                        if (comment != String.Empty)
-                        {
-                            if (mainComment)
-                                Write("// " + comment);
-                            else
-                                Write("// " + comment);
+                    renderCommentFromString(docStr, mainComment);
+                }
+            }
+        }
 
-                            WriteNewLine();
-                        }
-                    }
+        private void renderCommentFromString(string docStr, bool isMainComment)
+        {
+            string[] comments = docStr.Split('\n');
+            for (int n = 0; n < comments.Length; n++)
+            {
+                string comment = comments[n].Trim('\r');
+                if (comment != String.Empty)
+                {
+                    if (isMainComment) Write("//" + comment);
+                    else Write("//" + comment);
+                    WriteNewLine();
+                }
+                else
+                {
+                    if (n < comments.Length - 1) WriteLine("//");
                 }
             }
         }

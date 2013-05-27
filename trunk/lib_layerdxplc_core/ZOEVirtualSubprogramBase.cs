@@ -46,7 +46,9 @@ namespace zoe.lang{
             {
                 if (ripIndex > 0 && ripIndex % DebugRipReportIncrement == 0)
                 {
+                    System.GC.Collect();
                     Console.WriteLine("[rN]" + ripIndex + " : " + ripNode.FullSourceFileInfo);
+                    Console.Out.Flush();
                 }
             }
 
@@ -86,7 +88,7 @@ namespace zoe.lang{
                 + " Rip Node: " + (ripNode != null ? ripNode.get_ContentTypeNameString() : "") + " Node: " + (node != null ? node.get_ContentTypeNameString() : ""));
 		}
 
-        private void MergeExpression(XplNode node, XplNode ripNode)
+        private static void MergeExpression(XplNode node, XplNode ripNode)
         {
             ripNode.set_Content(node.get_Content());
         }
@@ -297,8 +299,19 @@ namespace zoe.lang{
                 ripNode.get_Parent().set_Content(XplExpression.new_empty());
                 if (DebugFunctioncallMerges) Console.WriteLine("To: <emtpy>");
             }
+            else if (ripNode.IsA(CodeDOMTypes.XplNode) && node.IsA(CodeDOMTypes.XplType))
+            {
+                // this is a merge between a typename and a qualified name which member was not found as part of target classfactory
+                // like in: "ns::myCFType::myNonExistingMember"
+
+                XplType typeNode = (XplType)node;
+                while(typeNode.get_dt() != null) typeNode = typeNode.get_dt();
+
+                string newTypeName = typeNode.get_typename();
+                ripNode.set_Value(newTypeName + "." + TypeString.GetSimpleNameFromQualified(ripNode.get_StringValue()));
+            }
             else
-            {                
+            {
                 CodeDOMTypes contextTypename = ripNode.get_Parent().get_Parent().get_TypeName();
                 XplNode content = node.get_Content();
                 if (content == null) content = XplExpression.new_empty();
@@ -342,6 +355,11 @@ namespace zoe.lang{
                     || (LayerD.ZOECompiler.ClassfactoryInteractiveBase.compiler != null
                     && LayerD.ZOECompiler.ClassfactoryInteractiveBase.compiler.BreakCompileTime);
             }
+        }
+
+        public virtual void Run(LayerD.ZOECompiler.ArgumentVector AV, LayerD.ZOECompiler.RIPVector RIPV, LayerD.ZOECompiler.ContextVector CV)
+        {
+
         }
     }
 }

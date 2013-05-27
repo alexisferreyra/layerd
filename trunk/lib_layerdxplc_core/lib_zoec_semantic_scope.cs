@@ -61,6 +61,11 @@ namespace LayerD.ZOECompiler
             p_symbolName = symbolName;
             p_symbolNode = symbolNode;
         }
+        public Symbol(string symbolTypeStr, string symbolName)
+        {
+            p_symbolName = symbolName;
+        }
+
         /// <summary>
         /// Devuelve el nombre del simbolo
         /// </summary>
@@ -238,6 +243,7 @@ namespace LayerD.ZOECompiler
         bool p_isOnPointerScope = false;
         bool p_isOnBucleStatement = false;
         bool p_isInyectedCode = false;
+        bool p_isInsideFunctionCallBlockArgument = false;
         const char p_scopeSeparator = '.';
 
         Hashtable p_symbols = null;
@@ -591,5 +597,15 @@ namespace LayerD.ZOECompiler
             return partialName + ScopeSeparator + simpleName;
         }
 
+
+        internal void set_IsInsideFunctionCallBlockArgument(bool flag)
+        {
+            p_isInsideFunctionCallBlockArgument = true;
+        }
+
+        internal bool IsInsideFunctionCallBlockArgument()
+        {
+            return p_isInsideFunctionCallBlockArgument;
+        }
     }
 }

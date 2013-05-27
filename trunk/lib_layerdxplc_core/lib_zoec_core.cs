@@ -454,6 +454,14 @@ namespace LayerD.ZOECompiler{
         }
         #endregion
 
+        public void WriteDetailedDebugLine(string debugLine)
+        {
+            if (this.get_ShowInternalTimes() && !this.get_SilentMode())
+            {
+                if (p_textOutputStream != null) p_textOutputStream.WriteLine(debugLine);
+            }
+        }
+
         public static void WriteDebugTextLine(string debugTextLine)
         {
             if (p_textOutputStream!=null) p_textOutputStream.WriteLine(debugTextLine);
@@ -483,7 +491,11 @@ namespace LayerD.ZOECompiler{
             int counter = 0;
 
             // find context class type
-            TypeInfo contextClass = this.GetTypeInfoFrom(context.CurrentClass);
+            TypeInfo contextClass = null;
+            if (this.LastTypesTable != null)
+            {
+                contextClass = this.GetTypeInfoFrom(context.CurrentClass);
+            }
 
             // find all declarations in current function
             XplNodeList declarations = null;
@@ -499,7 +511,14 @@ namespace LayerD.ZOECompiler{
                         localVars.Add(parameter.get_name());
                     }
                 }
-                declarations = currentFunction.FindNodes("@XplDeclarator");
+                
+                // OLD method / performance problems
+                // declarations = currentFunction.FindNodes("@XplDeclarator");
+                if (currentFunction.get_FunctionBody() != null)
+                {
+                    declarations = FindNodesOfType(currentFunction.get_FunctionBody().Children(), CodeDOMTypes.XplDeclarator, new XplNodeList());
+                }
+
                 if (declarations != null)
                 {
                     foreach (XplDeclarator declarator in declarations)
@@ -530,6 +549,19 @@ namespace LayerD.ZOECompiler{
             }
 
             return new XplIName(newIdName);
+        }
+
+        private static XplNodeList FindNodesOfType(XplNodeList sourceList, CodeDOMTypes codeDOMType, XplNodeList currentList)
+        {
+            if(sourceList == null || sourceList.GetLength() == 0) return currentList;
+
+            foreach (XplNode item in sourceList)
+            {
+                if (item.IsA(codeDOMType)) currentList += item;
+                FindNodesOfType(item.ChildNodes(), codeDOMType, currentList);
+            }
+
+            return currentList;
         }
 
         private void ShowDebugWindow()
@@ -951,9 +983,12 @@ namespace LayerD.ZOECompiler{
                     parameterDocument = splitter.get_LastSplitParameterDocument();
                     //PENDIENTE : Elimino del documento parametro el espacio de nombre zoe.lang
                     //revisar si esto se hara de esta forma.
-                    XplNodeList zoeNS = parameterDocument.FindNodes("/Namespace[name='zoe::lang']");
-                    foreach (XplNode node in zoeNS)
-                        parameterDocument.get_DocumentBody().Children().Remove(node);
+                    List<XplNode> toRemoveList = new List<XplNode>();
+                    foreach (XplNode node in parameterDocument.get_DocumentBody().Children())
+                    {
+                        if (node.IsA(CodeDOMTypes.XplNamespace) && ((XplNamespace)node).get_name() == "zoe::lang") toRemoveList.Add(node);
+                    }
+                    foreach (XplNode toRemove in toRemoveList) parameterDocument.get_DocumentBody().Children().Remove(toRemove);
 
                     //4º)Compilo el Subprograma Virtual
                     if (!splitter.IsLastSubprogramNull())
@@ -969,13 +1004,7 @@ namespace LayerD.ZOECompiler{
                         this.BreakCompileTime = false;
 
                         if (p_showFullDebugInfo) WriteDebugTextLine("Running Compile Time Nº" + p_currentCompileCycle + ".");
-                        if (buildingControler.RunCompileTime(
-                            virtualSubprogram,
-                            parameterDocument,
-                            program,
-                            p_outputPlatform,
-                            p_compilationPlatform
-                            ))
+                        if (buildingControler.RunCompileTime(virtualSubprogram, parameterDocument))
                         {
                             p_lastResultDocument = parameterDocument;
                             if (p_showFullDebugInfo) WriteDebugTextLine("End Compile Time Nº" + p_currentCompileCycle + ".");

@@ -526,6 +526,8 @@ namespace LayerD.OutputModules.Importers
 
 			XplFunction newFunc=XplClass.new_Function();
             string mname=method.Name ;
+            bool mapNetTypeNames = true;
+
             //No importo los metodos q implementan propiedades :-),
             //es decir que empiezan con "get_" o "set_"
             if ((mname.StartsWith("get_", StringComparison.InvariantCulture) || mname.StartsWith("set_", StringComparison.InvariantCulture)) && method.IsSpecialName) 
@@ -533,6 +535,9 @@ namespace LayerD.OutputModules.Importers
 
             if (mname.StartsWith("op_", StringComparison.InvariantCulture))
             {
+                string fullTypeName = method.DeclaringType.FullName;
+                if (fullTypeName == "System.String" || fullTypeName == "System.Object") mapNetTypeNames = false;
+
                 string funcName = "%op_";
                 //Operadores en ZOE : 
                 //Unary : MIN,INC,DEC,PREINC,PREDEC,IND,AOF,RAOF,SIZEOF,TYPEOF,ONECOMP,NOT
@@ -633,7 +638,7 @@ namespace LayerD.OutputModules.Importers
 			//El tipo de retorno
 			newFunc.set_ReturnType(getXplType(method.ReturnType,false));
 			//Los parametros
-			newFunc.set_Parameters(ImportParameters(method.GetParameters()));
+			newFunc.set_Parameters(ImportParameters(method.GetParameters(), mapNetTypeNames));
 			//Los atributos
 
 			//Finalmente lo agrego a un classmember adecuado de acuerdo a la visibilidad
@@ -642,20 +647,20 @@ namespace LayerD.OutputModules.Importers
 			else newFunc.set_access(XplAccesstype_enum.PROTECTED);
             AddMember(newClass, newFunc);
 		}
-		XplParameters ImportParameters(ParameterInfo[] parameters){
+		XplParameters ImportParameters(ParameterInfo[] parameters, bool mapNetTypeNames = true){
 			if(parameters==null || parameters.Length==0)return null;
 			XplParameters xplParams=XplFunction.new_Parameters();
 			foreach(ParameterInfo parameter in parameters){
-				XplParameter xplParam=ImportParameter(parameter);
+				XplParameter xplParam=ImportParameter(parameter, mapNetTypeNames);
 				xplParam.set_number((uint)xplParams.Children().GetLength()+1);
 				xplParams.Children().InsertAtEnd(xplParam);
 			}
 			return xplParams;
 		}
-		XplParameter ImportParameter(ParameterInfo parameter){
+		XplParameter ImportParameter(ParameterInfo parameter, bool mapNetTypeNames = true){
 			XplParameter xplParam=XplParameters.new_P();
 			xplParam.set_name(parameter.Name);
-			xplParam.set_type(getXplType(parameter.ParameterType,true));
+			xplParam.set_type(getXplType(parameter.ParameterType,true, mapNetTypeNames));
 			if(parameter.IsIn)xplParam.set_direction(XplParameterdirection_enum.IN);
 			else if(parameter.IsOut)xplParam.set_direction(XplParameterdirection_enum.OUT);
 			else {
@@ -855,7 +860,7 @@ namespace LayerD.OutputModules.Importers
 		#endregion
 
 		#region procesamiento de tipos
-		XplType getXplType(Type netType,bool isParameter){
+		XplType getXplType(Type netType,bool isParameter, bool mapNetTypeNames = true){
             
             if ((netType.IsPrimitive && netType.Name != "IntPtr" && netType.Name != "UIntPtr")
                 || netType.Name == "Decimal")
@@ -919,13 +924,13 @@ namespace LayerD.OutputModules.Importers
             else
             {
                 //Si no es un array, puntero o referencia
-                if (netType.FullName == "System.Void")
+                if (netType.FullName == "System.Void" && mapNetTypeNames)
                     type.set_typename("$VOID$");
-                else if (netType.FullName == "System.String")
+                else if (netType.FullName == "System.String" && mapNetTypeNames)
                     type.set_typename("$STRING$");
-                else if (netType.FullName == "System.DateTime")
+                else if (netType.FullName == "System.DateTime" && mapNetTypeNames)
                     type.set_typename("zoe.lang.DateTime");
-                else if (netType.FullName == "System.Object")
+                else if (netType.FullName == "System.Object" && mapNetTypeNames)
                     type.set_typename("$OBJECT$");
                 else
                 {

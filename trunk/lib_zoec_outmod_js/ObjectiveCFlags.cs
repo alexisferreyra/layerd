@@ -18,7 +18,7 @@ namespace LayerD.OutputModules
         public const string ANONYMOUS_DECL = "__apt_anonymous_decl__";
         public const string OBJC_GLOBAL_CLASS_TAG = "^this is a global class^";
         public const string OBJC_PROTOCOL_TAG = "%OBJC_PROTOCOL_DECL%";
-        public const string GLOBAL_CLASS_NAME_PREFIX = "_global_";
+        public const string GLOBAL_CLASS_NAME_PREFIX = "c_global";
 	}
 }
 

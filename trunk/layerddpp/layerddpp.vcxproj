@@ -122,6 +122,7 @@ REM ..\bin\btyacc.exe  -dv -b layerd_dpp_parser_beta layerd_dpp_parser_beta.y
       <Message>Copia el archivo ejecutable al directorio comun de binarios LayerD</Message>
       <Command>copy "$(TargetPath)"  "%zoe_compiler_path%"
 copy "$(TargetPath)"  "%metadpp_compiler_path%"
+copy "$(TargetPath)"  $(SolutionDir)layerdxplc_net\bin\$(Configuration)
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>

@@ -139,6 +139,7 @@ namespace LayerD.OutputModules
         const string INamePC = "iname ";
         const string WritecodePC = "writecode";
         const string GettypePC = "gettype";
+        const string ExtensionPC = "extension ";
 		#endregion
 
 		#region Datos Privados o Protegidos
@@ -1177,6 +1178,7 @@ namespace LayerD.OutputModules
             writeLineDirective(classDecl.get_ldsrc(), false);
             //Primero los modificadores
             if (classDecl.get_external()) writeOut(ExternPC);
+            if (classDecl.get_extension()) writeOut(ExtensionPC);
             if (isNew) writeOut(NewPC);
             if (isAbstract) writeOut(AbstractPC);
             if (isFinal) writeOut(FinalPC);

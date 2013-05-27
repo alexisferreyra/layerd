@@ -20,14 +20,6 @@
 *  of the software and information about LayerD technology.
 *
 ****************************************************************************/
-
-//Archivo: lib_layerdxplc_splitter.cs 
-//
-//Separador de programas LayerD-Zoe,
-//genera el Subprograma Virtual y el Documento Parametro
-//a partir de un Documento de Tiempo de Ejecución.
-//
-
 using System;
 using System.Collections;
 using System.Diagnostics;
@@ -110,9 +102,6 @@ namespace LayerD.ZOECompiler
             //- XplExpression when overloading conversion operators
             //
             Debug.Assert(node != null, "El nodo no debe ser nulo en la estructura candidata");
-            /*Debug.Assert(node is XplFunctioncall || node is XplComplexfunctioncall
-                || node is XplBinaryoperator || node is XplUnaryoperator || node is XplNewExpression
-                ,"Error en el tipo de nodo pasado al constructor.");*/
             p_type = CandidateStructureType.MemberInvocation;
             p_node = node;
             p_classfactoryType = classfactoryType;
@@ -183,13 +172,6 @@ namespace LayerD.ZOECompiler
             {
                 if (p_isPropertySet == 0)
                 {
-                    //calculate
-                    //XplNode parent = p_node.get_Parent().get_Parent();
-                    //if (parent.get_TypeName() == CodeDOMTypes.XplAssing)
-                    //{
-                    //    if (((XplAssing)parent).get_l().get_Content() == p_node) p_isPropertySet = 1;
-                    //    else p_isPropertySet = -1;
-                    //}
                     if (p_node.get_TypeName() == CodeDOMTypes.XplAssing)
                     {
                         p_isPropertySet = 1;
@@ -299,6 +281,7 @@ namespace LayerD.ZOECompiler
             }
         }
     }
+
     class CandidateStructuresCollection: ArrayList 
     {
         bool p_interactiveOnly;
@@ -415,7 +398,6 @@ namespace LayerD.ZOECompiler
     }
     #endregion
 
-    #region Implementaciones de ArgumentVector, RIPVector, ContextVector
     public class ArgumentVector : ArrayList
     {
         public void Add(XplNode node)
@@ -424,9 +406,11 @@ namespace LayerD.ZOECompiler
             base.Add(node);
         }
     }
+
     public class RIPVector : ArrayList
     {
     }
+
     public class ContextVector : ArrayList
     {
         public void Add(XplNode node)
@@ -435,7 +419,6 @@ namespace LayerD.ZOECompiler
             base.Add(node);
         }
     }
-    #endregion
 
     class DTECodeSplitter
     {
@@ -484,7 +467,7 @@ namespace LayerD.ZOECompiler
         {
             if (dteDocument == null || candidateStructuresCollection==null) return false;
             
-            //OJO, por ahora uso la misma instancia ¿deberia clonar y trabajar sobre la copia?
+            // REVIEW it use the same instance. Maybe I need to clone this
             p_parameterDocument = dteDocument;
             p_interactiveOnly = interactiveOnly;
             p_structures = candidateStructuresCollection;
@@ -496,91 +479,74 @@ namespace LayerD.ZOECompiler
         private void RunSplitProcess()
         {
             p_isLastSubprogramNull = false;
-            //1º Marco de las estructuras candidatas que usare determinando las existencias.
             MarkCandidateStructures();
-            //2º Construyo el Subprograma.
             BuildSubprogram();
-            //3º Construyo el Documento Parametro.
-            BuildParameterDocument();
         }
-
-        #region BuildParameterDocument
-        /// <summary>
-        /// Con la colección de estructuras candidatas marcadas confecciona
-        /// el documento parametro y las estructuras necesarias para
-        /// su procesamiento durante la fabricación.
-        /// </summary>
-        private void BuildParameterDocument()
-        {
-        }
-        #endregion
 
         #region BuildSubprogram
         /// <summary>
-        /// Con la colección de estructuras candidatas marcadas
-        /// confecciona el subprograma virtual.
+        /// Builds a simple program to call compile time functions
         /// </summary>
         private void BuildSubprogram()
         {
             MakeSubprogramSkeleton();
             XplFunction main = BuildSubprogramClass();
-            XplFunctionBody currentBlockNode = main.get_FunctionBody();
-            XplNodeList currentBlock = currentBlockNode.Children();
+            XplFunction initFunc = main;
+            main = CreateRunFunction();
+            initFunc.get_FunctionBody().Children().InsertAtEnd(CreateRunCallExpression(main.get_name()));
+            initFunc.CurrentClass += main;
+
+            XplNodeList currentBlock = main.get_FunctionBody().Children();
             int avcount = 0, ripcount = 0, cvcount = 0;
             p_argumentVector = new ArgumentVector();
             p_ripVector = new RIPVector();
             p_contextVector = new ContextVector();
+
+
             foreach (CandidateStructure cs in p_structures)
             {
                 if (cs.Existence == ExistenceType.Virtual || cs.Existence == ExistenceType.Dual)
                 {
                     if (cs.CSType == CandidateStructureType.MemberInvocation)
-                    {   //Llamada a función
+                    {   
                         if (cs.CFMemberInfo.IsStatic())
                         {
-                            // Static
                             ProcessStaticMemberInvocation(currentBlock, ref avcount, ref ripcount, ref cvcount, cs);
                         }
                         else
                         {
-                            // Instance
                             ProcessInstanceMemberInvocation(currentBlock, ref avcount, ref ripcount, ref cvcount, cs);
                         }
                     }
                     else if (cs.CSType == CandidateStructureType.TypeName)
-                    {   //Tipo
+                    {   
                         ProcessTypeName(currentBlock, ref ripcount, ref cvcount, cs);
                     }
                     else if (cs.CSType == CandidateStructureType.EnterBlock)
-                    {   //Entrada a Bloque
-                        XplFunctionBody block = XplFunctionBody.new_bk();
-                        currentBlock.InsertAtEnd(block);
-                        currentBlockNode = block;
-                        currentBlock = currentBlockNode.Children();
+                    {
+                        /* TODO */
                     }
                     else if (cs.CSType == CandidateStructureType.LeaveBlock)
-                    {   //Salida de Bloque
-                        currentBlockNode = (XplFunctionBody)currentBlockNode.get_Parent();
-                        currentBlock = currentBlockNode.Children();
+                    {
+                        /* TODO */
                     }
                     else if (cs.CSType == CandidateStructureType.Symbol)
                     {
-                        const string symbolDecl = "<Decls><d name=\"var\" ><type ispointer=\"true\"><dt typename=\"_MiTipo\" /><pi ref=\"true\" /></type><i><e ><new><type typename=\"MiTipo\" /></new></e></i></d></Decls>";
-                        XplDeclaratorlist decls = XplFunctionBody.new_Decls();
-                        ZoeHelper.ReadFromString(symbolDecl, decls);
-                        XplDeclarator d = (XplDeclarator)decls.Children().FirstNode();
-                        // d.set_name(cs.SymbolName);
-                        // TODO : review when implementing full support for instance members
-                        d.set_name(new XplIName().Identifier);
-
-                        d.get_type().get_dt().set_typename(cs.CFTypeInfo.get_FullName());
-                        ((XplNewExpression)d.FindNode("/new")).get_type().set_typename(cs.CFTypeInfo.get_FullName());
-                        currentBlock.InsertAtEnd(decls);
+                        /* TODO */
                     }
                     else
                     {
-                        // this must never happend
+                        // this must never happen
                         Debug.WriteLine("Missing CandidateStructureType on BuildSubprogram()");
+                    }
+
+                    if (ripcount > 0 && main.get_FunctionBody().Children().GetLength() > 50)
+                    {
+                        XplFunction newFunc = CreateRunFunction();
+                        initFunc.get_FunctionBody().Children().InsertAtEnd(CreateRunCallExpression(newFunc.get_name()));
+                        main.CurrentClass += newFunc;
+                        currentBlock = newFunc.get_FunctionBody().Children();
+                        main = newFunc;
                     }
                 }
             }
@@ -594,16 +560,36 @@ namespace LayerD.ZOECompiler
             else p_isLastSubprogramNull = false;
         }
 
+        private XplNode CreateRunCallExpression(string runFunctionName)
+        {
+            XplFunctioncall fc = XplExpression.new_fc();
+            XplNode name = XplExpression.new_n();
+            name.set_Value(runFunctionName);
+            fc.set_l(new XplExpression(name));
+            //Argumentos
+            XplExpressionlist args = XplFunctioncall.new_args();
+            XplExpression arg1 = ZoeHelper.MakeSimpleNameExpression("AV");
+            XplExpression arg2 = ZoeHelper.MakeSimpleNameExpression("RIPV");
+            XplExpression arg3 = ZoeHelper.MakeSimpleNameExpression("CV");
+            args.Children().InsertAtEnd(arg1);
+            args.Children().InsertAtEnd(arg2);
+            args.Children().InsertAtEnd(arg3);
+            fc.set_args(args);
+            //retorno la expresion
+            XplExpression retExp = XplExpressionlist.new_e();
+            retExp.set_Content(fc);
+            return retExp;
+        }
+
         private void ProcessTypeName(XplNodeList currentBlock, ref int ripcount, ref int cvcount, CandidateStructure cs)
         {
             //Por ahora lo proceso igual q una llamada a un metodo estatico :-) con
             //nombre _tc_internalimpl_NOMBRECLASE(...)
-            XplNodeList args = cs.CallArguments;
 
             //Agrego el nodo de contexto al CV
             p_contextVector.Add(cs.Node);
             //Creo la expresion para asignar el contexto
-            //"__context = (XplNode)RIPV[n1];
+            //"__context = (XplNode)RIPV[n1];"
             currentBlock.InsertAtEnd(
                 CreateSetContextExpression(cs, cvcount));
             //Creo la expresion "node = cf.call(AV[n1], AV[n2]..);"
@@ -630,38 +616,43 @@ namespace LayerD.ZOECompiler
                 int n = 0;
                 if (args != null)
                 {
+                    int maxArgs = miParams != null ? miParams.Children().GetLength() : 0;
                     foreach (XplExpression argumentNode in args)
                     {
-                        miParam = (XplParameter)miParams.Children().GetNodeAt(n);
-                        XplType tparam = miParam.get_type();
+                        if (n < maxArgs)
+                        {
+                            miParam = (XplParameter)miParams.Children().GetNodeAt(n);
+                            XplType tparam = miParam.get_type();
 
-                        if (tparam.get_ftype() == XplFactorytype_enum.NONE || tparam.get_typename() == NativeTypes.Type) //Tipo comun o "type"
-                        {
-                            callArgs.InsertAtEnd(argumentNode);
-                        }
-                        else if (tparam.get_ftype() == XplFactorytype_enum.INAME) //IName
-                        {
-                            XplType t;
-                            if (argumentNode.get_typeStr() == "")
+                            if (tparam.get_ftype() == XplFactorytype_enum.NONE || tparam.get_typename() == NativeTypes.Type) //Tipo comun o "type"
                             {
-                                t = ZoeHelper.MakeTypeFromString(NativeTypes.Void);
+                                callArgs.InsertAtEnd(argumentNode);
+                            }
+                            else if (tparam.get_ftype() == XplFactorytype_enum.INAME) //IName
+                            {
+                                XplType t;
+                                if (argumentNode.get_typeStr() == "")
+                                {
+                                    t = ZoeHelper.MakeTypeFromString(NativeTypes.Void);
+                                }
+                                else
+                                {
+                                    t = ZoeHelper.MakeTypeFromString(argumentNode.get_typeStr());
+                                }
+                                p_argumentVector.Add(t);
+                                callArgs.InsertAtEnd(CreateINameExp(argumentNode, CreateVectorAccessExpression("AV", avcount)));
+                                avcount++;
                             }
                             else
                             {
-                                t = ZoeHelper.MakeTypeFromString(argumentNode.get_typeStr());
+                                //Tipo "expression" o "block" (en realidad tipo expresion, block no entra)
+                                p_argumentVector.Add(GetArgumentNode(argumentNode));
+                                callArgs.InsertAtEnd(
+                                    CreateCastExpression(
+                                        CreateVectorAccessExpression("AV", avcount),
+                                        "^_LayerD.CodeDOM.XplExpression"));
+                                avcount++;
                             }
-                            p_argumentVector.Add(t);
-                            callArgs.InsertAtEnd(CreateINameExp(argumentNode, CreateVectorAccessExpression("AV", avcount)));
-                            avcount++;
-                        }
-                        else   //Tipo "expression" o "block" (en realidad tipo expresion, block no entra)
-                        {
-                            p_argumentVector.Add(GetArgumentNode(argumentNode));
-                            callArgs.InsertAtEnd(
-                                CreateCastExpression(
-                                    CreateVectorAccessExpression("AV", avcount),
-                                    "^_LayerD.CodeDOM.XplExpression"));
-                            avcount++;
                         }
                         n++;
                     }
@@ -709,6 +700,7 @@ namespace LayerD.ZOECompiler
             {
                 // TODO : implement for indexers
             }
+
             //Agrego el nodo de contexto al CV
             p_contextVector.Add(cs.Node);
             //Creo la expresion para asignar el contexto
@@ -845,17 +837,23 @@ namespace LayerD.ZOECompiler
             currentBlock.InsertAtEnd(CreateBreakCheck());
         }
 
-        private XplNode CreateBreakCheck()
+        static XplIfStatement _breakCheck = null;
+        private static XplNode CreateBreakCheck()
         {
-            var breakExp = XplFunctionBody.new_if();
+            if (_breakCheck == null)
+            {
+                var breakExp = XplFunctionBody.new_if();
 
-            ZoeHelper.ReadFromString(
-                "<if><boolean><bo op=\"m\"><l><n>this</n></l><r>" +
-                "<n>BreakCompileTime</n></r></bo></boolean><ifbk>" +
-                "<return></return></ifbk></if>", 
-                breakExp);
+                ZoeHelper.ReadFromString(
+                    "<if><boolean><bo op=\"m\"><l><n>this</n></l><r>" +
+                    "<n>BreakCompileTime</n></r></bo></boolean><ifbk>" +
+                    "<return></return></ifbk></if>",
+                    breakExp);
 
-            return breakExp;
+                _breakCheck = breakExp;
+            }
+
+            return _breakCheck;
         }
 
         private XplNode CreateINameExp(XplExpression argumentNode, XplExpression paramTypeExp)
@@ -876,6 +874,8 @@ namespace LayerD.ZOECompiler
             exp.set_Content(ne);
             return exp;
         }
+
+        static XplExpression __setContextExp = null;
         /// <summary>
         /// Crea la expresion "zoe::lang::ClassfactoryBase::context = CV[n];" para
         /// establecer el contexto antes de llamar a la función destino.
@@ -883,13 +883,29 @@ namespace LayerD.ZOECompiler
         private XplNode CreateSetContextExpression(CandidateStructure cs, int cvcount)
         {
             XplAssing assing = XplExpression.new_a();
-            if(!p_interactiveOnly)
+            if (!p_interactiveOnly)
+            {
                 assing.set_l(ZoeHelper.MakeSimpleNameExpression("LayerD::ZOECompiler::ClassfactoryBase::context"));
+            }
             else
+            {
                 assing.set_l(ZoeHelper.MakeSimpleNameExpression("LayerD::ZOECompiler::ClassfactoryInteractiveBase::context"));
+            }
+
             XplExpression node = new XplExpression();
-            //ZoeHelper.ReadFromString("<e><new><type typename=\"zoe::lang::Context\" /><init><list><e><cast><e><b><l><n>CV</n></l><args><e><lit str=\"" + cvcount + "\" type=\"integer\" /></e></args></b></e><type typeStr=\"^_LayerD::CodeDOM::XplNode\"  ispointer=\"true\"><dt typename=\"LayerD::CodeDOM::XplNode\" /><pi ref=\"true\" /></type></cast></e></list></init></new></e>", node);
-            ZoeHelper.ReadFromString("<e><cast><e><b><l><n>CV</n></l><args><e><lit str=\"" + cvcount + "\" type=\"integer\" /></e></args></b></e><type typeStr=\"^_LayerD::CodeDOM::XplNode\"  ispointer=\"true\"><dt typename=\"LayerD::CodeDOM::XplNode\" /><pi ref=\"true\" /></type></cast></e>", node);
+            string cvcountStr = Convert.ToString(cvcount, NumberFormatInfo.InvariantInfo);
+            if (__setContextExp == null)
+            {
+                ZoeHelper.ReadFromString("<e><cast><e><b><l><n>CV</n></l><args><e><lit str=\"" + cvcountStr + "\" type=\"integer\" /></e></args></b></e><type typeStr=\"^_LayerD::CodeDOM::XplNode\"  ispointer=\"true\"><dt typename=\"LayerD::CodeDOM::XplNode\" /><pi ref=\"true\" /></type></cast></e>", node);
+                __setContextExp = node;
+            }
+            else
+            {
+                node = __setContextExp.Clone() as XplExpression;
+                // TODO : I know, this is a ugly :(
+                ((XplLiteral)((XplFunctioncall)((XplCastexpression)node.get_Content()).get_e().get_Content()).get_args().Children().FirstNode().get_Content()).set_str(cvcountStr);
+            }
+
             assing.set_r(node);
             XplExpression retExp = XplFunctionBody.new_e();
             retExp.set_Content(assing);
@@ -900,7 +916,7 @@ namespace LayerD.ZOECompiler
         /// del subprograma virtual de acuerdo si la expresion es una 
         /// expresion, un tipo o un iname.
         /// </summary>
-        private XplNode GetArgumentNode(XplExpression argumentNode)
+        private static XplNode GetArgumentNode(XplExpression argumentNode)
         {
             if (argumentNode.get_typeStr() == NativeTypes.Type)
                 return argumentNode.get_Content();
@@ -908,11 +924,11 @@ namespace LayerD.ZOECompiler
                 return argumentNode;
         }
 
-        private XplExpression CreateCastExpression(XplExpression xplExpression, XplType xplType)
+        private static XplExpression CreateCastExpression(XplExpression xplExpression, XplType xplType)
         {
             return CreateCastExpression(xplExpression, xplType.get_typeStr());
         }
-        private XplExpression CreateCastExpression(XplExpression xplExpression, string xplType)
+        private static XplExpression CreateCastExpression(XplExpression xplExpression, string xplType)
         {
             XplCastexpression cast = XplExpression.new_cast();
             cast.set_type(ZoeHelper.MakeTypeFromString(xplType));
@@ -925,7 +941,7 @@ namespace LayerD.ZOECompiler
         /// <summary>
         /// Crea una expresion de la forma "vectorName[avcount]".
         /// </summary>
-        private XplExpression CreateVectorAccessExpression(string vectorName, int avcount)
+        private static XplExpression CreateVectorAccessExpression(string vectorName, int avcount)
         {
             XplFunctioncall fc = XplExpression.new_b();
             XplNode name = XplExpression.new_n();
@@ -981,7 +997,7 @@ namespace LayerD.ZOECompiler
         /// 
         /// "callArgs" es la lista de expresiones "AV[n1], AV[n2].." ya creada.
         /// </summary>
-        private XplExpression CreateSPCallExpression(CandidateStructure cs, XplNodeList callArgs)
+        private static XplExpression CreateSPCallExpression(CandidateStructure cs, XplNodeList callArgs)
         {
             XplExpression retExp;
             MemberInfo mi = cs.CFMemberInfo;
@@ -1072,7 +1088,7 @@ namespace LayerD.ZOECompiler
                     }
                     else if (leftExpNodeType == CodeDOMTypes.XplBinaryoperator)
                     {
-                        string symbol = ((XplBinaryoperator)leftExp.get_Content()).get_l().get_Content().get_StringValue();
+                        // string symbol = ((XplBinaryoperator)leftExp.get_Content()).get_l().get_Content().get_StringValue();
 
                         // PENDIENTE : urgente cambiar esto y evitar q cada llamada a 
                         // classfactory sea una nueva instancia
@@ -1185,7 +1201,61 @@ namespace LayerD.ZOECompiler
             XplDocumentBody body = XplDocument.new_DocumentBody();
             p_virtualSubprogram.set_DocumentData(data);
             p_virtualSubprogram.set_DocumentBody(body);
+            _runFunctionCounter = 0;
         }
+
+        static int _runFunctionCounter;
+
+        private XplFunction CreateRunFunction()
+        {
+            XplFunction main = XplClass.new_Function();
+            if (_runFunctionCounter == 0)
+            {
+                main.set_name("Run");
+                main.set_override(true);
+                main.set_access(XplAccesstype_enum.PUBLIC);
+            }
+            else
+            {
+                main.set_name("Run" + Convert.ToString(_runFunctionCounter, NumberFormatInfo.InvariantInfo));
+            }
+
+            main.set_FunctionBody(XplFunction.new_FunctionBody());
+            //Tipo de retorno            
+            main.set_ReturnType(ZoeHelper.MakeTypeFromString("$VOID$"));
+            //Parametros
+            XplParameters parameters = new XplParameters();
+            main.set_Parameters(parameters);
+            //Parametro 1
+            XplParameter param = XplParameters.new_P();
+            param.set_name("AV");
+            param.set_number(1);
+            param.set_type(ZoeHelper.MakeTypeFromString("^_LayerD::ZOECompiler::ArgumentVector"));
+            parameters.Children().InsertAtEnd(param);
+            //Parametro 2
+            param = XplParameters.new_P();
+            param.set_name("RIPV");
+            param.set_number(2);
+            param.set_type(ZoeHelper.MakeTypeFromString("^_LayerD::ZOECompiler::RIPVector"));
+            parameters.Children().InsertAtEnd(param);
+            //Parametro 3
+            param = XplParameters.new_P();
+            param.set_name("CV");
+            param.set_number(3);
+            param.set_type(ZoeHelper.MakeTypeFromString("^_LayerD::ZOECompiler::ContextVector"));
+            parameters.Children().InsertAtEnd(param);
+            //Declaracion de "node"
+            XplDeclaratorlist dl = XplFunctionBody.new_Decls();
+            XplDeclarator decl = XplDeclaratorlist.new_d();
+            dl.Children().InsertAtEnd(decl);
+            decl.set_name("node");
+            decl.set_type(ZoeHelper.MakeTypeFromString("^_LayerD::CodeDOM::XplNode"));
+            main.get_FunctionBody().Children().InsertAtEnd(dl);
+
+            _runFunctionCounter++;
+            return main;
+        }
+
         private XplFunction BuildSubprogramClass()
         {
             XplNodeList progBody = p_virtualSubprogram.get_DocumentBody().Children();
@@ -1229,41 +1299,9 @@ namespace LayerD.ZOECompiler
             inh.set_access(XplAccesstype_enum.PUBLIC);
             inhs.Children().InsertAtEnd(inh);
             spclass.Children().InsertAtEnd(inhs);
-            XplFunction main = XplClass.new_Function();
+
+            XplFunction main = CreateRunFunction();
             spclass.Children().InsertAtEnd(main);
-            main.set_name("Run");
-            main.set_access(XplAccesstype_enum.PUBLIC);
-            main.set_FunctionBody(XplFunction.new_FunctionBody());
-            //Tipo de retorno            
-            main.set_ReturnType(ZoeHelper.MakeTypeFromString("$VOID$"));
-            //Parametros
-            XplParameters parameters = new XplParameters();
-            main.set_Parameters(parameters);
-            //Parametro 1
-            XplParameter param = XplParameters.new_P();
-            param.set_name("AV");
-            param.set_number(1);
-            param.set_type(ZoeHelper.MakeTypeFromString("^_LayerD::ZOECompiler::ArgumentVector"));
-            parameters.Children().InsertAtEnd(param);
-            //Parametro 2
-            param = XplParameters.new_P();
-            param.set_name("RIPV");
-            param.set_number(2);
-            param.set_type(ZoeHelper.MakeTypeFromString("^_LayerD::ZOECompiler::RIPVector"));
-            parameters.Children().InsertAtEnd(param);
-            //Parametro 3
-            param = XplParameters.new_P();
-            param.set_name("CV");
-            param.set_number(3);
-            param.set_type(ZoeHelper.MakeTypeFromString("^_LayerD::ZOECompiler::ContextVector"));
-            parameters.Children().InsertAtEnd(param);
-            //Declaracion de "node"
-            XplDeclaratorlist dl = XplFunctionBody.new_Decls();
-            XplDeclarator decl = XplDeclaratorlist.new_d();
-            dl.Children().InsertAtEnd(decl);
-            decl.set_name("node");
-            decl.set_type(ZoeHelper.MakeTypeFromString("^_LayerD::CodeDOM::XplNode"));
-            main.get_FunctionBody().Children().InsertAtEnd(dl);
 
             return main;
         }

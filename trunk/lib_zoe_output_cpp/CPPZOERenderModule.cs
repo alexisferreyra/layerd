@@ -671,8 +671,8 @@ namespace LayerD.OutputModules
                 {
                     isRef = currentType.get_pi().get_ref();
                     if (derived != null
-                        && !derived.get_isarray()
-                        && !isRef)
+                        && !derived.get_isarray())
+                        /* && !isRef)  Ref is only syntactic sugar in mdpp */
                     {
                         retStr += "*";
                         if (currentType.get_pi().get_const()) retStr += CppKeywords.ConstPC;

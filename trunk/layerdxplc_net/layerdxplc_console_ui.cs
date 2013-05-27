@@ -133,56 +133,28 @@ namespace LayerD.ZOECompilerUI
         public ArgumentsData(string[] args)
         {
             string opcion = "", argData = ""; ;
-            foreach (string arg in args)
+            foreach (string raw_arg in args)
             {
+                string arg = trimQuotes(raw_arg);
                 if (arg[0] != '-')
                 {
                     string extension = Path.GetExtension(arg).ToLower(CultureInfo.InvariantCulture);
-                    //Es un nombre de archivo fuente
-                    if (p_inputProgram == null && p_sourceFiles.Count==0 && (extension==".pzoe" || extension==".pxpl") )
-                    {
-                        p_inputProgram = arg;
-                        if (!File.Exists(p_inputProgram))
-                        {
-                            if (!Util.IsSpanishCulture())
-                                p_errorStr = "File \"" + p_inputProgram + "\" does not exists.";
-                            else
-                                p_errorStr = "El archivo \"" + p_inputProgram + "\" no existe.";
-                            p_argumentsError = true;
-                            return;
-                        }
-                    }
-                    else
-                    {
-                        //Se proporciono más de un archivo fuente, es un listado
-                        //de fuentes ZOE ordinarios, no se proporciona programa.
-                        if (p_sourceFiles.Count == 0)
-                        {
-                            //p_sourceFiles.Add(arg);
-                            p_inputProgram = null;
-                            p_buildDefaultProgram = true;
-                        }
-                        if (!File.Exists(arg))
-                        {
-                            if (!Util.IsSpanishCulture())
-                                p_errorStr = "File \"" + arg + "\" does not exists.";
-                            else
-                                p_errorStr = "El archivo \"" + arg + "\" no existe.";
-                            p_argumentsError = true;
-                            return;
-                        }
-                        p_sourceFiles.Add(arg);
-                    }
+
+                    if (!CheckForFile(arg)) return;
+
+                    // this is a source file
+                    if (p_inputProgram == null && p_sourceFiles.Count == 0 && (extension == ".pzoe" || extension == ".pxpl")) p_inputProgram = arg;
+                    else p_sourceFiles.Add(arg);
                 }
                 else
                 {
                     ProcessModifier(opcion, argData, arg);
                 }
             }
-            //PENDIENTE : Desactivar esto en versiones más avanzadas.
+
             if (BETA)
             {
-                //banderas levantadas para falicitar el uso en modo beta.....
+                // just for beta...
                 p_ignoreErrorsOnImportedTypes = true;
             }
 
@@ -196,21 +168,48 @@ namespace LayerD.ZOECompilerUI
                 p_argumentsError = true;
                 return;
             }
+            if (p_inputProgram  == null)
+            {
+                p_buildDefaultProgram = true;
+            }
             if (p_programName == null)
             {
-                if (p_outputFileName == null && p_sourceFiles.Count > 0)
-                {
-                    p_programName = Path.GetFileNameWithoutExtension((string)p_sourceFiles[0]);
-                }
-                else
-                {
-                    p_programName = Path.GetFileNameWithoutExtension(p_outputFileName);
-                }
+                if (p_outputFileName == null && p_sourceFiles.Count > 0) p_programName = Path.GetFileNameWithoutExtension((string)p_sourceFiles[0]);
+                else p_programName = Path.GetFileNameWithoutExtension(p_outputFileName);
             }
             if (p_buildDefaultProgram && p_outputFileName == null)
+            {
                 if (!p_buildLibrary) p_outputFileName = p_programName + ".exe";
                 else p_outputFileName = p_programName + ".dll";
-            if (p_outputPlatform == null) p_outputPlatform = "DotNET 1.0";
+            }
+            if (p_outputPlatform == null)
+            {
+                p_outputPlatform = "DotNET 1.0";
+            }
+        }
+
+        private bool CheckForFile(string filename)
+        {
+            if (!File.Exists(filename))
+            {
+                p_errorStr = "File \"" + filename + "\" does not exists.";
+                p_argumentsError = true;
+                return false;
+            }
+            return true;
+        }
+
+        private string trimQuotes(string arg_raw)
+        {
+            if (arg_raw.StartsWith("\""))
+            {
+                return arg_raw.Substring(1, arg_raw.Length - 2);
+            }
+            else
+            {
+                return arg_raw;
+            }
+
         }
 
         private void ProcessModifier(string opcion, string argData, string arg)
@@ -230,6 +229,16 @@ namespace LayerD.ZOECompilerUI
             }
             switch (opcion)
             {
+                case "sourcelist":
+                    var lines = File.ReadAllLines(argData);
+                    foreach (string line in lines)
+                    {
+                        var filename = trimQuotes(line.Trim());
+                        if (String.IsNullOrEmpty(filename) || !CheckForFile(filename)) return;
+                        Util.Write("(+)" + filename);
+                        p_sourceFiles.Add(filename);
+                    }
+                    break;
                 case "ae":
                 case "addextensions":
                     p_addExtensions = true;
@@ -244,8 +253,8 @@ namespace LayerD.ZOECompilerUI
                     else
                     {
                         p_argumentsError = true;
-                        Util.Write("You must name comma separated extensions to remove.", "Debe indicar los nombres de las extensiones a remover separados por coma.");
-                        p_errorStr = "You must name extensions to remove.";
+                        Util.Write("Provide comma separated extensions' names to remove.");
+                        p_errorStr = "Missing extensions' names to remove in argument.";
                     }
                     break;
                 case "cae":
@@ -382,7 +391,7 @@ namespace LayerD.ZOECompilerUI
                     p_dumpCompileTimeFunctionCalls = true;
                     break;
                 default:
-                    Util.Write("Option -" + opcion + " unrecognized.", "Opción -" + opcion + " no reconozida.");
+                    Util.Write("Option -" + opcion + " unrecognized.");
                     break;
             }
         }
@@ -395,6 +404,8 @@ namespace LayerD.ZOECompilerUI
             Util.Write("([ZOE Program Source] | [ZOE Source Files]) [Options]","([Programa ZOE] | [Archivos Fuente ZOE]) [Opciones]");
             Util.Write("");
             Util.Write("Options:","Opciones:");
+            Util.Write("\t-sourcelist:[filelist.txt]");
+            Util.Write("\t\tprovide the list of source files in a text file");
             Util.Write("\t-i | -interactive");
             Util.Write("\t\tRun interactive compilation",
                 "\t\tEjecutar compilación Interactiva.");

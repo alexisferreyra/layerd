@@ -185,7 +185,7 @@ namespace LayerD.ZOECompiler
         /// "InternalImportResult".
         /// </summary>
         /// <returns>Siempre devuelve una instancia de la clase de resultados.</returns>
-        public InternalImportResult ImportEZOEProgram(string extendedProgramName, XplLayerDZoeProgramConfig currentProgramConfig, string runtimePlatform, string basePath)
+        public static InternalImportResult ImportEZOEProgram(string extendedProgramName, XplLayerDZoeProgramConfig currentProgramConfig, string runtimePlatform, string basePath)
         {
             InternalImportResult result = new InternalImportResult();
             result.DetailedErrorInfo = "Internal Function not implemented. Sorry :-).";
@@ -199,7 +199,7 @@ namespace LayerD.ZOECompiler
         /// <param name="fullSourceInfo">Source file info as used by XplNodes</param>
         /// <param name="fallbackPath">Fallback path when sourefile doesn't contain file info.</param>
         /// <returns>A path</returns>
-        internal string GetDirectoryFromSourceInfo(string fullSourceInfo, string fallbackPath)
+        internal static string GetDirectoryFromSourceInfo(string fullSourceInfo, string fallbackPath)
         {
             if (String.IsNullOrEmpty(fullSourceInfo)) return fallbackPath;
 

@@ -38,6 +38,7 @@ using System.IO;
 using System.Xml;
 using System.Collections;
 using LayerD.CodeDOM;
+using System.Collections.Generic;
 
 namespace LayerD.ZOECompiler{
 
@@ -93,9 +94,9 @@ namespace LayerD.ZOECompiler{
                 }
                 return program;
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                throw e;
+                throw;
             }
             finally
             {
@@ -152,9 +153,9 @@ namespace LayerD.ZOECompiler{
                 }
                 return program;
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                throw e;
+                throw;
             }
             finally
             {
@@ -212,25 +213,38 @@ namespace LayerD.ZOECompiler{
                 if (writer != null)writer.Close();
             }
         }
-        public static void LoadCDOMFile(XplNode node, string fileName)
+
+        static Dictionary<string, XplNode> _cache = new Dictionary<string, XplNode>();
+
+        public static XplNode LoadCDOMFile(XplNode node, string fileName)
         {
-            XplReader reader = null;
-            try
+            string key = fileName.ToLowerInvariant();
+            if (node is XplDocument && _cache.ContainsKey(key))
             {
-                reader = new XplReader(fileName);
-                reader.Read();
-                node.Read(reader);
+                return _cache[key];
             }
-            finally
+            else
             {
-                if (reader != null) reader.Close();
+                XplReader reader = null;
+                try
+                {
+                    reader = new XplReader(fileName);
+                    reader.Read();
+                    node.Read(reader);
+                    if(node is XplDocument) _cache.Add(key, node);
+                }
+                finally
+                {
+                    if (reader != null) reader.Close();
+                }
+                return node;
             }
         }
 
         public static XplDocument LoadSingleSource(string fileName)
         {
             XplDocument doc = new XplDocument();
-            LoadCDOMFile(doc, fileName);
+            doc = LoadCDOMFile(doc, fileName) as XplDocument;
             return doc;
         }
     }

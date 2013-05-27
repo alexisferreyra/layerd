@@ -38,19 +38,21 @@ namespace LayerD.ZOECompiler
     partial class SemanticAnalizer
     {
         const string ZOE_INVALID_IDENTIFIER = "_____zoe__invalid__identifier_____";
+        Hashtable p_intrinsicClosureTypes = new Hashtable();
+
         #region Process para Expresiones
         /// <summary>
         /// Llama a "ProcessExpression" por cada expresión 
         /// en la lista, si la lista es nula retorna.
         /// </summary>
-        private void ProcessExpressionList(XplExpressionlist el, Scope currentScope)
+        private void ProcessExpressionList(XplExpressionlist el, Scope currentScope, TypeInfo classType, MemberInfo memberInfo)
         {
             if (el.Children() == null) return;
             XplNodeList list = el.Children();
             foreach (XplExpression exp in list)
-                ProcessExpression(exp, currentScope);
+                ProcessExpression(exp, currentScope, classType, memberInfo);
         }
-        private void CheckForBoolExpression(XplExpression boolExp, Scope currentScope, string errorStr, XplNode statementNode)
+        private void CheckForBoolExpression(XplExpression boolExp, Scope currentScope, TypeInfo classType, MemberInfo memberInfo, string errorStr, XplNode statementNode)
         {
             if (boolExp == null)
             {
@@ -60,7 +62,7 @@ namespace LayerD.ZOECompiler
             }
             else
             {
-                ExpressionResult boolExpRes = ProcessExpression(boolExp, currentScope);
+                ExpressionResult boolExpRes = ProcessExpression(boolExp, currentScope, classType, memberInfo);
                 if (boolExpRes == null) return;
                 if (boolExpRes.get_IsTypeMembers())
                 {
@@ -88,11 +90,11 @@ namespace LayerD.ZOECompiler
                 }
             }
         }
-        private ExpressionResult ProcessExpression(XplExpression xplExpression, Scope currentScope)
+        private ExpressionResult ProcessExpression(XplExpression xplExpression, Scope currentScope, TypeInfo classType, MemberInfo memberInfo)
         {
-            return ProcessExpression(xplExpression, currentScope, SemanticAction.CheckImplementation);
+            return ProcessExpression(xplExpression, currentScope, classType, memberInfo, SemanticAction.CheckImplementation);
         }
-        private ExpressionResult ProcessExpression(XplExpression xplExpression, Scope currentScope, SemanticAction semanticAction)
+        private ExpressionResult ProcessExpression(XplExpression xplExpression, Scope currentScope, TypeInfo classType, MemberInfo memberInfo, SemanticAction semanticAction)
         {
             //Primero chequeo que sea una expresion en el cuerpo del programa o
             //miembro de un espacio de nombres.
@@ -126,22 +128,22 @@ namespace LayerD.ZOECompiler
                 switch (exp.get_ElementName())
                 {
                     case "a":       //Asignacion
-                        expResult = ProcessAssingExpression((XplAssing)exp, currentScope);
+                        expResult = ProcessAssingExpression((XplAssing)exp, currentScope, classType, memberInfo);
                         break;
                     case "new":     //new
-                        expResult = ProcessNewExpression((XplNewExpression)exp, currentScope);
+                        expResult = ProcessNewExpression((XplNewExpression)exp, currentScope, classType, memberInfo);
                         break;
                     case "bo":      //Operador Binario
-                        expResult = ProcessBinaryOperatorExpression((XplBinaryoperator)exp, currentScope);
+                        expResult = ProcessBinaryOperatorExpression((XplBinaryoperator)exp, currentScope, classType, memberInfo);
                         break;
                     case "to":      //Operador Binario
-                        expResult = ProcessTernaryOperatorExpression((XplTernaryoperator)exp, currentScope);
+                        expResult = ProcessTernaryOperatorExpression((XplTernaryoperator)exp, currentScope, classType, memberInfo);
                         break;
                     case "uo":      //Operador Unario
-                        expResult = ProcessUnaryOperatorExpression((XplUnaryoperator)exp, currentScope);
+                        expResult = ProcessUnaryOperatorExpression((XplUnaryoperator)exp, currentScope, classType, memberInfo);
                         break;
                     case "b":       //Llamada a funcion con []
-                        expResult = ProcessBracketExpression((XplFunctioncall)exp, currentScope);
+                        expResult = ProcessBracketExpression((XplFunctioncall)exp, currentScope, classType, memberInfo);
                         break;
                     case "n":       //Simple expression, nombre
                         expResult = ProcessSimpleNameExpression((XplNode)exp, currentScope);
@@ -150,19 +152,19 @@ namespace LayerD.ZOECompiler
                         expResult = ProcessLiteralExpression((XplLiteral)exp, currentScope);
                         break;
                     case "fc":      //Llamada a funcion con ()
-                        expResult = ProcessFunctioncallExpression((XplFunctioncall)exp, currentScope);
+                        expResult = ProcessFunctioncallExpression((XplFunctioncall)exp, currentScope, classType, memberInfo);
                         break;
                     case "cfc":     //Llamada a funcion compleja
-                        expResult = ProcessComplexFunctioncallExpression((XplComplexfunctioncall)exp, currentScope);
+                        expResult = ProcessComplexFunctioncallExpression((XplComplexfunctioncall)exp, currentScope, classType, memberInfo);
                         break;
                     case "cast":    //cast
-                        expResult = ProcessCastExpression((XplCastexpression)exp, currentScope);
+                        expResult = ProcessCastExpression((XplCastexpression)exp, currentScope, classType, memberInfo);
                         break;
                     case "delete":  //delete
                         expResult = ProcessDeleteExpression((XplExpression)exp, currentScope);
                         break;
                     case "onpointer":   //onpointer
-                        expResult = ProcessOnpointerExpression((XplExpression)exp, currentScope);
+                        expResult = ProcessOnpointerExpression((XplExpression)exp, currentScope, classType, memberInfo);
                         break;
                     case "empty":       //empty
                         break;
@@ -173,7 +175,7 @@ namespace LayerD.ZOECompiler
                         expResult = ProcessTypeOfExpression((XplType)exp, currentScope);
                         break;
                     case "is":      //exp IS type
-                        expResult = ProcessIsExpression((XplCastexpression)exp, currentScope);
+                        expResult = ProcessIsExpression((XplCastexpression)exp, currentScope, classType, memberInfo);
                         break;
                     case "sizeof":
                         expResult = ProcessSizeofExpression((XplType)exp, currentScope);
@@ -200,6 +202,17 @@ namespace LayerD.ZOECompiler
                         {
                             xplExpression.set_valueStr(expResult.get_ConstantValueAsString());
                         }
+                    }
+                    else if (expResult.get_IsTypeMembers())
+                    {
+                        var members = expResult.get_Members();
+                        var retType = members[0].get_ReturnType();
+                        var expTypeStr = retType != null ? retType.get_typeStr() : String.Empty;
+                        xplExpression.set_typeStr(expTypeStr);
+                    }
+                    else
+                    {
+                        xplExpression.set_typeStr(String.Empty);
                     }
                 }
                 return expResult;
@@ -228,7 +241,7 @@ namespace LayerD.ZOECompiler
             return res;
         }
 
-        private ExpressionResult ProcessTernaryOperatorExpression(XplTernaryoperator xplTernaryoperator, Scope currentScope)
+        private ExpressionResult ProcessTernaryOperatorExpression(XplTernaryoperator xplTernaryoperator, Scope currentScope, TypeInfo classType, MemberInfo memberInfo)
         {
             if (xplTernaryoperator.get_o1() == null || xplTernaryoperator.get_o2() == null || xplTernaryoperator.get_o3() == null)
             {
@@ -241,12 +254,14 @@ namespace LayerD.ZOECompiler
                 CheckForBoolExpression(
                     xplTernaryoperator.get_o1(),
                     currentScope,
+                    classType,
+                    memberInfo,
                     "First expression of ternary operator must be a boolean value.",
                     xplTernaryoperator.get_o1());
 
                 // evaluate second and third operands
-                ExpressionResult o2Res = ProcessExpression(xplTernaryoperator.get_o2(), currentScope);
-                ExpressionResult o3Res = ProcessExpression(xplTernaryoperator.get_o3(), currentScope);
+                ExpressionResult o2Res = ProcessExpression(xplTernaryoperator.get_o2(), currentScope, classType, memberInfo);
+                ExpressionResult o3Res = ProcessExpression(xplTernaryoperator.get_o3(), currentScope, classType, memberInfo);
                 // check that both operands are values and have the same type or implicit convertible type
                 if (o2Res == null || o3Res == null)
                 {
@@ -605,6 +620,9 @@ namespace LayerD.ZOECompiler
             int backErrorCount = p_errorCollection.Count;
             CheckType(typeNode, typeNode, currentScope, false, "On \"typeof\" expression.");
 
+            // check for type constructor
+            CheckForTypeConstructorCallOrSymbol(typeNode, currentScope, null);
+
             if (backErrorCount == p_errorCollection.Count)
                 //Devuelvo un valor del tipo utilizado en tiempo de ejecución para 
                 //representar un tipo de datos.
@@ -613,7 +631,7 @@ namespace LayerD.ZOECompiler
                 res = null;
             return res;
         }
-        private ExpressionResult ProcessIsExpression(XplCastexpression xplCastexpression, Scope currentScope)
+        private ExpressionResult ProcessIsExpression(XplCastexpression xplCastexpression, Scope currentScope, TypeInfo classType, MemberInfo memberInfo)
         {
             //PENDINETE : revisar semantica de expresión IS cuando se posea la especificación más 
             //detallada del funcionamiento esperado.
@@ -624,10 +642,13 @@ namespace LayerD.ZOECompiler
             {
                 CheckType(typeNode, typeNode, currentScope, false, "On \"is\" expression.");
 
+                // check for type constructor
+                CheckForTypeConstructorCallOrSymbol(typeNode, currentScope, null);
+
                 XplExpression isExp = xplCastexpression.get_e();
                 if (isExp != null)
                 {
-                    ExpressionResult expRes = ProcessExpression(isExp, currentScope);
+                    ExpressionResult expRes = ProcessExpression(isExp, currentScope, classType, memberInfo);
                     if (expRes != null && !expRes.get_IsValue())
                     {
                         expRes = TryConvertTypeMembersToValueOrLValue(expRes, currentScope, isExp.get_Content());
@@ -709,7 +730,7 @@ namespace LayerD.ZOECompiler
             //PENDIENTE : Expresión Delete.
             return null;
         }
-        private ExpressionResult ProcessCastExpression(XplCastexpression xplCastexpression, Scope currentScope)
+        private ExpressionResult ProcessCastExpression(XplCastexpression xplCastexpression, Scope currentScope, TypeInfo classType, MemberInfo memberInfo)
         {
             if (!CalculeTypeString(xplCastexpression.get_type(), currentScope))
                 //El tipo esta mal definido, la expresion es incorrecta por tanto.
@@ -719,7 +740,7 @@ namespace LayerD.ZOECompiler
             // check for type constructor
             CheckForTypeConstructorCallOrSymbol(xplCastexpression.get_type(), currentScope, null);
 
-            ExpressionResult castExpRes = ProcessExpression(xplCastexpression.get_e(), currentScope);
+            ExpressionResult castExpRes = ProcessExpression(xplCastexpression.get_e(), currentScope, classType, memberInfo);
             if (castExpRes == null) //La expresion a castear no se puede resolver, el cast menos
                 return null;
             if (castExpRes.get_IsTypeMembers())
@@ -753,10 +774,10 @@ namespace LayerD.ZOECompiler
             }
             return new ExpressionResult(castToType, ExpressionResultType.Value);
         }
-        private ExpressionResult ProcessComplexFunctioncallExpression(XplComplexfunctioncall xplComplexfunctioncall, Scope currentScope)
+        private ExpressionResult ProcessComplexFunctioncallExpression(XplComplexfunctioncall xplComplexfunctioncall, Scope currentScope, TypeInfo classType, MemberInfo memberInfo)
         {
             //PENDIENTE : Expresión de llamada a función compleja.
-            ExpressionResult leftResult = ProcessExpression(xplComplexfunctioncall.get_l(), currentScope);
+            ExpressionResult leftResult = ProcessExpression(xplComplexfunctioncall.get_l(), currentScope, classType, memberInfo);
             if (leftResult != null)
                 if (leftResult.get_ExpType() != ExpressionResultType.TypeMembers &&
                     leftResult.get_ExpType() != ExpressionResultType.TypeMembersFromValue)
@@ -812,9 +833,9 @@ namespace LayerD.ZOECompiler
                 }
             return null;
         }
-        private ExpressionResult ProcessBracketExpression(XplFunctioncall xplFunctioncall, Scope currentScope)
+        private ExpressionResult ProcessBracketExpression(XplFunctioncall xplFunctioncall, Scope currentScope, TypeInfo classType, MemberInfo memberInfo)
         {
-            ExpressionResult leftResult = ProcessExpression(xplFunctioncall.get_l(), currentScope);
+            ExpressionResult leftResult = ProcessExpression(xplFunctioncall.get_l(), currentScope, classType, memberInfo);
             if (leftResult != null)
             {
                 if (leftResult.get_ExpType() == ExpressionResultType.TypeMembers ||
@@ -838,7 +859,7 @@ namespace LayerD.ZOECompiler
                         //Aquí es una indización en un puntero
                         //PENDIENTE : chequear si el modulo de salida permite aritmetica
                         //de puntero y emitir errores.
-                        if (CheckValidArgumentForArrayAccessOrPointerIndexing(xplFunctioncall, currentScope))
+                        if (CheckValidArgumentForArrayAccessOrPointerIndexing(xplFunctioncall, currentScope, classType, memberInfo))
                             return new ExpressionResult(TypeString.RemovePointerIndirectionsFromType(typeStr, 1)
                                 , ExpressionResultType.ValueOrLValue);
                     }
@@ -852,7 +873,7 @@ namespace LayerD.ZOECompiler
                             //exista un único argumento y sea de tipo entero o long, o convertible.
                             //PENDIENTE : chequear accesos fuera de rango con matrices estaticas??
                             typeStr = TypeString.RemoveArrayTypeFromType(typeStr);
-                            if (CheckValidArgumentForArrayAccessOrPointerIndexing(xplFunctioncall, currentScope))
+                            if (CheckValidArgumentForArrayAccessOrPointerIndexing(xplFunctioncall, currentScope, classType, memberInfo))
                                 return new ExpressionResult(typeStr, ExpressionResultType.ValueOrLValue);
                         }
                         else
@@ -875,7 +896,7 @@ namespace LayerD.ZOECompiler
                                 //if the member does not exist or is a undefined call
                                 if (xplFunctioncall.get_args() != null)
                                 {
-                                    ProcessArguments(xplFunctioncall, currentScope);
+                                    ProcessArguments(xplFunctioncall, currentScope, classType, memberInfo);
                                 }
                                 TypeInfo expType = (TypeInfo)p_types[typeStr];
                                 MemberInfo[] members = expType.get_MemberInfoCollection().get_MembersInfo("%indexer%");
@@ -948,7 +969,7 @@ namespace LayerD.ZOECompiler
             }
             return null;
         }
-        private void ProcessArguments(XplNodeList arguments, Scope currentScope)
+        private void ProcessArguments(XplNodeList arguments, Scope currentScope, TypeInfo classType, MemberInfo memberInfo)
         {
             XplExpression argExp;
             ExpressionResult expRes;
@@ -956,7 +977,7 @@ namespace LayerD.ZOECompiler
             {
                 argExp = arg;
                 if (IsNamedArgument(arg)) argExp = GetNamedArgumentExpression(arg);
-                expRes = ProcessExpression(arg, currentScope);
+                expRes = ProcessExpression(arg, currentScope, classType, memberInfo);
                 if (expRes != null)
                 {
                     //Si no es un valor intento convertirlo a un valor
@@ -975,11 +996,11 @@ namespace LayerD.ZOECompiler
 
             }
         }
-        private void ProcessArguments(XplFunctioncall xplFunctioncall, Scope currentScope)
+        private void ProcessArguments(XplFunctioncall xplFunctioncall, Scope currentScope, TypeInfo classType, MemberInfo memberInfo)
         {
-            ProcessArguments(xplFunctioncall.get_args().Children(), currentScope);
+            ProcessArguments(xplFunctioncall.get_args().Children(), currentScope, classType, memberInfo);
         }
-        private bool CheckValidArgumentForArrayAccessOrPointerIndexing(XplFunctioncall xplFunctioncall, Scope scope)
+        private bool CheckValidArgumentForArrayAccessOrPointerIndexing(XplFunctioncall xplFunctioncall, Scope scope, TypeInfo classType, MemberInfo memberInfo)
         {
             XplExpressionlist args = xplFunctioncall.get_args();
             if (args == null || args.Children() == null || args.Children().GetLength() > 1 || args.Children().GetLength() < 1)
@@ -992,7 +1013,7 @@ namespace LayerD.ZOECompiler
             else
             {
                 XplExpression arg = (XplExpression)args.Children().FirstNode();
-                ExpressionResult argResult = ProcessExpression(arg, scope);
+                ExpressionResult argResult = ProcessExpression(arg, scope, classType, memberInfo);
                 if (argResult != null)
                 {
                     argResult = TryConvertTypeMembersToValueOrLValue(argResult, scope, arg.get_Content());
@@ -1030,15 +1051,21 @@ namespace LayerD.ZOECompiler
             return true;
         }
 
-        private ExpressionResult ProcessFunctioncallExpression(XplFunctioncall xplFunctioncall, Scope scope)
+        private ExpressionResult ProcessFunctioncallExpression(XplFunctioncall xplFunctioncall, Scope scope, TypeInfo classType, MemberInfo memberInfo)
         {
-            ExpressionResult leftResult = ProcessExpression(xplFunctioncall.get_l(), scope);
+            ExpressionResult leftResult = ProcessExpression(xplFunctioncall.get_l(), scope, classType, memberInfo);
+
+            if (leftResult == null && xplFunctioncall.get_bk() != null && IsIntrinsicClosureFunctionCall(xplFunctioncall))
+            {
+                return ProcessIntrinsicClosureFunctionCall(xplFunctioncall, scope, classType, memberInfo);
+            }
+
             //Evaluo las expresiones de los argumentos
             //Evaluate this before to allow classfactorys to consult type of arguments even
             //if the member does not exist or is a undefined call
             if (xplFunctioncall.get_args() != null)
             {
-                ProcessArguments(xplFunctioncall, scope);
+                ProcessArguments(xplFunctioncall, scope, classType, memberInfo);
             }
             if (leftResult != null)
             {
@@ -1132,44 +1159,233 @@ namespace LayerD.ZOECompiler
                         SemanticError.New(SemanticErrorCode.InvalidMemberTypeUsedAsMethod, xplFunctioncall, members[0].get_MemberName()));
                 else
                 {
-                    return ProcessFunctioncallExpressionCommonEnd(xplFunctioncall, scope, members[0]);
+                    return ProcessFunctioncallExpressionCommonEnd(xplFunctioncall, scope, members[0], classType, memberInfo);
                 }
             }
+
             return null;
         }
 
-        private ExpressionResult ProcessFunctioncallExpressionCommonEnd(XplFunctioncall xplFunctioncall, Scope scope, MemberInfo member)
+        private ExpressionResult ProcessIntrinsicClosureFunctionCall(XplFunctioncall xplFunctioncall, Scope scope, TypeInfo classType, MemberInfo memberInfo)
         {
-            if (member.IsFactory() || member.get_ClassType().get_IsFactory())
+            ExpressionResult result = null;
+
+            XplNodeList parameters = EnterIntrinsicClosureScopeAndValidateParameters(xplFunctioncall, scope, classType, memberInfo);
+
+            // mark call for output modules
+            xplFunctioncall.set_targetClass("#intrinsic_closure#");
+            xplFunctioncall.set_targetMember("#IC_CALL#");
+
+            // eval block argument if present 
+            EvalFunctionCallBlock(xplFunctioncall.get_bk(), scope, classType, memberInfo);
+
+            ExitIntrinsicClosureScope(scope);
+
+            XplType returnType = GetIntrinsicClosureReturnType(xplFunctioncall.get_bk());
+
+            // create fp type
+            if (returnType == null) returnType = ZoeHelper.MakeTypeFromString(NativeTypes.Void);
+
+            TypeInfo typeInfo = GetFunctionPointerTypeForIntrinsicClosure(returnType, parameters, xplFunctioncall);
+            result = new ExpressionResult(typeInfo.get_FullName());
+
+            return result;
+        }
+
+        private TypeInfo GetFunctionPointerTypeForIntrinsicClosure(XplType returnType, XplNodeList parameters, XplFunctioncall xplFunctioncall)
+        {
+            string key = returnType.get_typeStr() + "/";
+            if (parameters != null)
+            {
+                foreach (XplDeclarator parameter in parameters)
+                {
+                    key += parameter.get_type().get_typeStr() + "/";
+                }
+            }
+
+            if (!p_intrinsicClosureTypes.ContainsKey(key))
+            {
+                TypeInfo closureTypesClass = p_types.get_TypeInfo("zoe.lang.ClosureTypes");
+                if (closureTypesClass == null)
+                {
+                    AddNewError(SemanticError.New(SemanticErrorCode.UnspecifiedSemanticError, xplFunctioncall, "Intrinsic closure type not found."));
+                    return p_types.get_TypeInfo(NativeTypes.Object);
+                }
+
+                XplFunction function = XplClass.new_Function();
+                function.set_name("FP" + (p_intrinsicClosureTypes.Count + 1));
+                function.set_ReturnType(returnType);
+                function.set_fp(true);
+
+                if (parameters != null)
+                {
+                    function.set_Parameters(XplFunction.new_Parameters());
+
+                    foreach (XplDeclarator declarator in parameters)
+                    {
+                        XplParameter parameter = XplParameters.new_P();
+                        parameter.set_name(declarator.get_name());
+                        parameter.set_type(declarator.get_type());
+                        function.get_Parameters().InsertAtEnd(parameter);
+                    }
+                }
+
+                var fpMember = new MemberInfo(closureTypesClass, closureTypesClass, function);
+                closureTypesClass.get_MemberInfoCollection().InsertMemberInfo(fpMember);
+                InsertType(fpMember.FullName, function, fpMember);
+
+                p_intrinsicClosureTypes.Add(key, p_types.get_TypeInfo(fpMember.FullName));
+            }
+            return (TypeInfo)p_intrinsicClosureTypes[key];
+        }
+
+        private static XplType GetIntrinsicClosureReturnType(XplFunctionBody xplFunctionBody)
+        {
+            // TODO : find all return expressions and check that it has the same type
+            XplExpression returnExp = null; 
+
+            XplNodeList children = xplFunctionBody.Children();
+
+            foreach (XplNode item in children)
+            {
+                if (item.IsA(CodeDOMTypes.XplExpression) && item.get_ElementName() == "return")
+                {
+                    returnExp = item as XplExpression;
+                    break;
+                }
+            }
+
+            if (returnExp == null || String.IsNullOrEmpty(returnExp.get_typeStr())) return null;
+
+            return ZoeHelper.MakeTypeFromString(returnExp.get_typeStr());
+        }
+
+        private void ExitIntrinsicClosureScope(Scope scope)
+        {
+            scope.LeaveScope();
+        }
+
+        private XplNodeList EnterIntrinsicClosureScopeAndValidateParameters(XplFunctioncall xplFunctioncall, Scope scope, TypeInfo classType, MemberInfo memberInfo)
+        {
+            scope.EnterScope(ScopeType.Block, null);
+
+            if (xplFunctioncall.get_args() == null) return null;
+
+            XplNodeList arguments = xplFunctioncall.get_args().Children();
+            XplNodeList declarators = new XplNodeList();
+            bool error = false;
+
+            foreach (XplExpression argument in arguments)
+            {
+                XplDeclarator symbol = ValidateIntrinsicClosureParameter(argument, scope);
+                if (symbol == null) error = true;
+                else declarators += symbol;
+            }
+
+            if (error) return null;
+
+            return declarators;
+        }
+
+        private XplDeclarator ValidateIntrinsicClosureParameter(XplExpression argument, Scope scope)
+        {
+            // valid "parameter" expression are:
+            //      <n>aSimpleName</n>
+            //      <@XplCastexpression><e><n>aSimpleName</n></e><type>aType</type></@XplCastexpression>
+            XplNode content = argument.get_Content();
+            if (!content.IsA(CodeDOMTypes.XplNode) && !content.IsA(CodeDOMTypes.XplCastexpression)) return null;
+
+            string symbolName = null;
+            XplType symbolType = null;
+
+            if (content.IsA(CodeDOMTypes.XplNode))
+            {
+                symbolName = content.get_StringValue();
+                // TODO : support type inference from usage inside function block
+                symbolType = ZoeHelper.MakeTypeFromString(TypeString.MakeReferenceTypeTo(NativeTypes.Object));
+            }
+            else
+            {
+                // this is a XplCastexpression
+                XplCastexpression cast = content as XplCastexpression;
+                if (!cast.get_e().get_Content().IsA(CodeDOMTypes.XplNode)) return null;
+                CheckType(cast.get_type(), cast, scope, true, null);
+                if (String.IsNullOrEmpty(cast.get_type().get_typeStr())) return null;
+                CheckForTypeConstructorCallOrSymbol(cast.get_type(), scope, null);
+
+                symbolName = cast.get_e().get_Content().get_StringValue();
+                symbolType = (XplType)cast.get_type().Clone();
+            }
+
+            if (scope.ExistsSymbol(symbolName))
+            {
+                AddNewError(SemanticError.New(SemanticErrorCode.SymbolAlreadyDefinedInCurrentScope, argument, symbolName));
+                return null;
+            }
+
+            XplDeclarator declarator = new XplDeclarator();
+            declarator.set_name(symbolName);
+            declarator.set_type(symbolType);
+
+            scope.InsertSymbol(new Symbol(declarator, symbolName));
+
+            return declarator;
+        }
+
+        private void EvalFunctionCallBlock(XplFunctionBody body, Scope scope, TypeInfo classType, MemberInfo memberInfo)
+        {
+            scope.set_IsInsideFunctionCallBlockArgument(true);
+            this.ProcessBlock(body, classType, scope, memberInfo);
+            scope.set_IsInsideFunctionCallBlockArgument(false);
+        }
+
+        private static bool IsIntrinsicClosureFunctionCall(XplFunctioncall xplFunctioncall)
+        {
+            if (xplFunctioncall.get_bk() == null) return false;
+            if (!xplFunctioncall.get_l().get_Content().IsA(CodeDOMTypes.XplNode)) return false;
+            string functionName = xplFunctioncall.get_l().get_Content().get_StringValue();
+            if (IsIntrinsicClosureName(functionName)) return true;
+            return true;
+        }
+
+        private ExpressionResult ProcessFunctioncallExpressionCommonEnd(XplFunctioncall xplFunctioncall, Scope scope, MemberInfo callTargetMember, TypeInfo currentClassType, MemberInfo currentMemberInfo)
+        {
+            if (callTargetMember.IsFactory() || callTargetMember.get_ClassType().get_IsFactory())
             {
                 //Aqui primero debe chequear q no sea una funcion miembro de la clase actual :-)
                 //estatica ni una función que se llame usando this, lo q puedo hacer es q directamente
                 //al declarar el puntero this utilice el modificador exec.
-                if (member.get_ClassTypeFullName() != scope.get_FullClassName())
-                    this.p_candidateStructures.AddCandidateStructure(member, xplFunctioncall, scope);
+                if (callTargetMember.get_ClassTypeFullName() != scope.get_FullClassName())
+                    this.p_candidateStructures.AddCandidateStructure(callTargetMember, xplFunctioncall, scope);
             }
-            else if (member.get_DeclarationClassType().get_IsFactory())
+            else if (callTargetMember.get_DeclarationClassType().get_IsFactory())
             {
-                if (member.get_DeclarationClassTypeFullName() != scope.get_FullClassName())
-                    this.p_candidateStructures.AddCandidateStructure(member, xplFunctioncall, scope);
+                if (callTargetMember.get_DeclarationClassTypeFullName() != scope.get_FullClassName())
+                    this.p_candidateStructures.AddCandidateStructure(callTargetMember, xplFunctioncall, scope);
             }
             //PENDIENTE : controlar si en los requerimientos del modulo de salida
             //es necesario marcar la clase de llamada y el miembro objetivo o no.
-            xplFunctioncall.set_targetClass(member.get_DeclarationClassTypeFullName());
-            xplFunctioncall.set_targetMember(member.get_MemberInternalName());
-            xplFunctioncall.set_targetMemberExternalName(member.get_MemberExternalName());
+            xplFunctioncall.set_targetClass(callTargetMember.get_DeclarationClassTypeFullName());
+            xplFunctioncall.set_targetMember(callTargetMember.get_MemberInternalName());
+            xplFunctioncall.set_targetMemberExternalName(callTargetMember.get_MemberExternalName());
 
-            if (member.IsConstructor())
+            // eval block argument if present 
+            if (xplFunctioncall.get_bk() != null && (xplFunctioncall.get_evaluateBlock() || callTargetMember.RequireEvalBlock))
             {
-                return new ExpressionResult(member.get_ClassTypeFullName());
+                EvalFunctionCallBlock(xplFunctioncall.get_bk(), scope, currentClassType, currentMemberInfo);
+            }
+
+            if (callTargetMember.IsConstructor())
+            {
+                return new ExpressionResult(callTargetMember.get_ClassTypeFullName());
             }
             else
             {
-                string typeStr = member.get_ReturnType().get_typeStr();
+                string typeStr = callTargetMember.get_ReturnType().get_typeStr();
                 if (String.IsNullOrEmpty(typeStr))
                 {
                     AddNewError(
-                        SemanticError.New(SemanticErrorCode.UnspecifiedSemanticError, xplFunctioncall, " Member \"" + member.ToString() + "\" with invalid return type found."));
+                        SemanticError.New(SemanticErrorCode.UnspecifiedSemanticError, xplFunctioncall, " Member \"" + callTargetMember.ToString() + "\" with invalid return type found."));
                     return null;
                 }
                 else
@@ -1227,7 +1443,7 @@ namespace LayerD.ZOECompiler
                 else bestFunc = i;
             }
             if (bestFunc >= 0) return new MemberInfo[] { validMembers[bestFunc] };
-            else return members;
+            else return validMembers.ToArray();
         }
         /// <summary>
         /// Determina si "funcA" es mejor que "funcB" para los argumentos
@@ -1317,14 +1533,15 @@ namespace LayerD.ZOECompiler
             bool isVarArgs = false;
             bool isLastArgumentABlock = false;
             if (maxParams > 0) isVarArgs = ((XplParameter)parameters.Children().LastNode()).get_params();
-            //parameters.Children().getLenght()
+
             if (maxArgs == 0 || (args != null && !IsNamedArgument((XplExpression)args.Children().FirstNode())))
-            {   //Argumentos sin nombrar
-                #region Argumentos Sin Nombrar
+            {   
+                //Argumentos sin nombrar
                 int currentParam = 0;
                 int currentArg = 0;
                 XplParameter lastParam = null;
                 if (args != null)
+                {
                     foreach (XplExpression arg in args.Children())
                     {
                         if (currentParam < maxParams)
@@ -1340,7 +1557,11 @@ namespace LayerD.ZOECompiler
                                   memberInfo.ToString(), "More arguments than expected."));
                             return false;
                         }
-                        if (!CheckValidArgumentForParameter(arg, lastParam, isVarArgs && maxArgs >= maxParams && currentArg >= maxParams, isVarArgs && maxArgs == maxParams && currentArg == maxParams, scope))
+
+                        bool allowCheckAsVarArg = isVarArgs && maxArgs >= maxParams && currentArg >= maxParams - 1;
+                        bool allowTypeOfArray = isVarArgs && maxArgs == maxParams && currentArg == maxParams;
+
+                        if (!CheckValidArgumentForParameter(arg, lastParam, allowCheckAsVarArg, allowTypeOfArray, scope))
                         {
                             if (emitErrors) AddNewError(
                                 SemanticError.New(SemanticErrorCode.InvalidArgumentTypeForActualParameter, errorNode != null ? errorNode : arg,
@@ -1348,6 +1569,7 @@ namespace LayerD.ZOECompiler
                             return false;
                         }
                     }
+                }
                 //Aqui debo chequear si me faltaron argumentos que los parametros faltantes posean valor por defecto
                 if (currentParam < maxParams)
                 {
@@ -1375,6 +1597,7 @@ namespace LayerD.ZOECompiler
                         }
                     }
                 }
+
                 //finalmente controlo si se proporciono un bloque como argumento y 
                 //la función no acepta un bloque como argumento.
                 if (!isLastArgumentABlock && xplFunctioncall.get_bk() != null)
@@ -1384,7 +1607,6 @@ namespace LayerD.ZOECompiler
                           memberInfo.ToString()));
                     return false;
                 }
-                #endregion
             }
             else
             {
@@ -1395,7 +1617,7 @@ namespace LayerD.ZOECompiler
         /// <summary>
         /// Determina si "param" es un parametro con valor por defecto.
         /// </summary>
-        private bool IsParameterWithDefaultValue(XplParameter param)
+        private static bool IsParameterWithDefaultValue(XplParameter param)
         {
             //PENDIENTE : revisar si el chequeo actual de parametro con valor por defecto
             //es suficiente (o se supone que esto viene chequeado cuando se chequea la funcion)
@@ -1524,22 +1746,6 @@ namespace LayerD.ZOECompiler
                 }
             }
 
-            //4) Lookfor  conversion between function pointer types
-            // TODO : check by output platform that
-            // this kind of conversion is supported
-            if (fromTypeInfo != null && fromTypeInfo.get_IsFPType())
-            {
-                TypeInfo toTypeInfo = (TypeInfo)p_types[toType];
-                if (toTypeInfo != null && toTypeInfo.get_IsFPType())
-                {
-                    if (IsSameSignature(fromTypeInfo.get_FpMemberInfo(), toTypeInfo.get_FpMemberInfo(), scope))
-                    {
-                        res = new ConversionData(ConversionType.NativeExplicitConversion, false, false, null);
-                        return res;
-                    }
-                }
-            }
-
             //5) Lookfor conversion between pointer and integer types
             res = IsConversionBetweenPointerAndIntegerTypes(fromType, toType);
             if (res != null) return res;
@@ -1554,7 +1760,7 @@ namespace LayerD.ZOECompiler
         /// <param name="fromType">Type string that denotes the source type.</param>
         /// <param name="toType">Type string that denotes the target type.</param>
         /// <returns>Null if there isn't a conversion, a ConversionData if there is a valid conversion.</returns>
-        private ConversionData IsConversionBetweenPointerAndIntegerTypes(string fromType, string toType)
+        private static ConversionData IsConversionBetweenPointerAndIntegerTypes(string fromType, string toType)
         {
             ConversionData res = null;
             // Lookfor a conversion from integer type to pointer type
@@ -1792,7 +1998,47 @@ namespace LayerD.ZOECompiler
                 return new ConversionData(ConversionType.NativeImplicitConversion,
                     false, false, null);
             }
+
+            //6) Lookfor  conversion between function pointer types
+            // TODO : check by output platform that
+            // this kind of conversion is supported
+            TypeInfo fromTypeInfo = (TypeInfo)p_types[fromType];
+            if (fromTypeInfo != null && fromTypeInfo.get_IsFPType())
+            {
+                TypeInfo toTypeInfo = (TypeInfo)p_types[toType];
+                if (toTypeInfo != null && toTypeInfo.get_IsFPType())
+                {
+                    if (AreFunctionPointerCompatibleSignatures(fromTypeInfo.get_FpMemberInfo(), toTypeInfo.get_FpMemberInfo(), scope))
+                    {
+                        return new ConversionData(ConversionType.NativeExplicitConversion, false, false, null);
+                    }
+                }
+            }
+
             return null;
+        }
+
+        private bool AreFunctionPointerCompatibleSignatures(MemberInfo member, MemberInfo otherMember, Scope scope)
+        {
+            // check return type
+            var memberTypeStr = member.get_ReturnType().get_typeStr();
+            var otherMemberTypeStr = otherMember.get_ReturnType().get_typeStr();
+
+            if (String.IsNullOrEmpty(memberTypeStr) || String.IsNullOrEmpty(otherMemberTypeStr)) return false;
+
+            if(!IsSameStringType(memberTypeStr, otherMemberTypeStr))
+            {
+                var conversionData = ExistNativeImplicitConversion(memberTypeStr, otherMemberTypeStr, scope);
+                if (conversionData == null) return false;
+            }
+
+            // check signature
+            if (this.IsSameSignature(member, otherMember, scope)) return true;
+
+            // if one function pointer has arguments of type "param ^[]object" then, exists an implicit conversion
+            if (member.HasObjectVariableParameters() || otherMember.HasObjectVariableParameters()) return true;
+
+            return false;
         }
 
         private bool ExistsConversionBetweenFP(TypeInfo toFpType, string explicitFPType)
@@ -1815,7 +2061,7 @@ namespace LayerD.ZOECompiler
         /// </summary>
         /// <param name="fromType"></param>
         /// <returns></returns>
-        private bool IsExplicitPointerToMember(string typeStr)
+        private static bool IsExplicitPointerToMember(string typeStr)
         {
             if (!TypeString.IsPointerType(typeStr)) return false;
             string toTypeStr = TypeString.RemovePointerIndirectionsFromType(typeStr, 1);
@@ -1876,7 +2122,7 @@ namespace LayerD.ZOECompiler
         /// 
         /// NO LLAMAR CON UNA EXPRESION QUE NO SEA UN ARGUMENTO NOMBRADO.
         /// </summary>
-        private string GetNamedArgumentName(XplExpression argExpression)
+        private static string GetNamedArgumentName(XplExpression argExpression)
         {
             return ((XplBinaryoperator)argExpression.get_Content()).get_l().get_Content().get_StringValue();
         }
@@ -1885,7 +2131,7 @@ namespace LayerD.ZOECompiler
         /// 
         /// NO LLAMAR CON UNA EXPRESION QUE NO SEA UN ARGUMENTO NOMBRADO.
         /// </summary>
-        private XplExpression GetNamedArgumentExpression(XplExpression argExpression)
+        private static XplExpression GetNamedArgumentExpression(XplExpression argExpression)
         {
             return ((XplBinaryoperator)argExpression.get_Content()).get_r();
         }
@@ -1902,7 +2148,7 @@ namespace LayerD.ZOECompiler
         /// <summary>
         /// Filtra los miembros marcados como "Hidden", ocultos.
         /// </summary>
-        private MemberInfo[] FilterNonHiddenMembers(MemberInfo[] members, Scope scope)
+        private static MemberInfo[] FilterNonHiddenMembers(MemberInfo[] members, Scope scope)
         {
             if (members == null) return null;
             int index = 0, currentIndex = 0;
@@ -1926,7 +2172,7 @@ namespace LayerD.ZOECompiler
         /// Quita del grupo de miembros los miembros que no sean estáticos,
         /// es decir los miembros de instancia.
         /// </summary>
-        private MemberInfo[] FilterStaticMembers(MemberInfo[] members, Scope scope, bool allowConstructors)
+        private static MemberInfo[] FilterStaticMembers(MemberInfo[] members, Scope scope, bool allowConstructors)
         {
             if (members == null) return null;
             int index = 0, currentIndex = 0;
@@ -1950,7 +2196,7 @@ namespace LayerD.ZOECompiler
         /// Quita del grupo de miembros los miembros que no sean de instancia,
         /// es decir los miembros estáticos.
         /// </summary>
-        private MemberInfo[] FilterInstanceMembers(MemberInfo[] members, Scope scope)
+        private static MemberInfo[] FilterInstanceMembers(MemberInfo[] members, Scope scope)
         {
             if (members == null) return null;
             int index = 0, currentIndex = 0;
@@ -1976,7 +2222,7 @@ namespace LayerD.ZOECompiler
         /// 
         /// También filtra los miembros marcados como "erroneos", "Bad Member".
         /// </summary>
-        private MemberInfo[] FilterAccesibleMembers(MemberInfo[] members, Scope scope)
+        private static MemberInfo[] FilterAccesibleMembers(MemberInfo[] members, Scope scope)
         {
             //PENDIENTE : Que funcione!, filtrar tambien los miembros "malos".
             if (members == null) return null;
@@ -2157,7 +2403,7 @@ namespace LayerD.ZOECompiler
         /// </summary>
         /// <param name="constantValue">Constant value</param>
         /// <returns>The native shortest integer type that can contain the provided value.</returns>
-        private string GetTypeForIntegerLiteral(long constantValue)
+        private static string GetTypeForIntegerLiteral(long constantValue)
         {
             // TODO : implement using target output module numeric limits
             if (constantValue <= Byte.MaxValue) return NativeTypes.Byte;
@@ -2193,6 +2439,17 @@ namespace LayerD.ZOECompiler
             {
                 return ProcessSimpleNameExpressionForSimpleName(xplNode, scope, nameToSearch);
             }
+        }
+
+        private static bool IsIntrinsicName(string nameToSearch, XplNode xplNode)
+        {
+            if (IsIntrinsicClosureName(nameToSearch)) return true;
+            return false;
+        }
+
+        private static bool IsIntrinsicClosureName(string name)
+        {
+            return name == "Func" || name == "zoe::Func" || name == "zoe.Func";
         }
 
         private ExpressionResult ProcessSimpleNameExpressionForSimpleName(XplNode xplNode, Scope scope, string nameToSearch)
@@ -2259,6 +2516,9 @@ namespace LayerD.ZOECompiler
                 }
             }
 
+            // check for intrinsic names
+            if (IsIntrinsicName(nameToSearch, xplNode)) return null;
+
             AddNewError(SemanticError.New(SemanticErrorCode.UnresolvedNameOnExpression,
                 xplNode, nameToSearch));
 
@@ -2288,7 +2548,7 @@ namespace LayerD.ZOECompiler
             {
                 // update the name in the code to corresponding full type name
                 xplNode.set_Value(fullTypeName.Replace(".", "::") + "::" + memberOrTypeToSearch);
-                TypeInfo type = (TypeInfo)p_types[fullTypeName];
+                TypeInfo typeInfo = (TypeInfo)p_types[fullTypeName];
                 // first, search an inner type
                 string typeName = Scope.MakeFullTypeName(fullTypeName, memberOrTypeToSearch);
                 typeName = p_types.get_ExistingTypeName(typeName, scope);
@@ -2296,13 +2556,16 @@ namespace LayerD.ZOECompiler
                 {
                     simpleExp.set_targetClass(typeName);
 
-                    type = (TypeInfo)p_types[typeName];
-                    if (TypeInfo.IsAccesible(type, scope))
+                    typeInfo = (TypeInfo)p_types[typeName];
+                    if (TypeInfo.IsAccesible(typeInfo, scope))
                     {
-                        return new ExpressionResult(type);
+                        return new ExpressionResult(typeInfo);
                     }
                     else
                     {
+                        // check for intrinsic names
+                        if (IsIntrinsicName(nameToSearch, xplNode)) return null;
+
                         AddNewError(
                             SemanticError.New(SemanticErrorCode.InaccesibleType,
                             xplNode, nameToSearch, "On simple name expression."));
@@ -2315,7 +2578,7 @@ namespace LayerD.ZOECompiler
                     simpleExp.set_targetClass(fullTypeName);
                     simpleExp.set_targetMember("?");
                     // find members inside resolved type
-                    MemberInfo[] members = type.get_MemberInfoCollection().get_MembersInfo(memberOrTypeToSearch);
+                    MemberInfo[] members = typeInfo.get_MemberInfoCollection().get_MembersInfo(memberOrTypeToSearch);
                     if (members != null && members.Length > 0)
                     {
                         simpleExp.set_targetMember(memberOrTypeToSearch);
@@ -2335,15 +2598,28 @@ namespace LayerD.ZOECompiler
                         }
                     }
 
+                    // check for intrinsic names
+                    if (IsIntrinsicName(nameToSearch, xplNode)) return null;
+
                     AddNewError(
                         SemanticError.New(SemanticErrorCode.NonexistentMemberOfType, xplNode,
-                        memberOrTypeToSearch, fullTypeName, GetSimilarMembersNames(type, memberOrTypeToSearch) + " On primary expression."));
+                        memberOrTypeToSearch, fullTypeName, GetSimilarMembersNames(typeInfo, memberOrTypeToSearch) + " On primary expression."));
+
+                    // Add candidate structure call if type is a factory and has a default type constructor
+                    if (typeInfo.get_IsFactory() && typeInfo.get_IsClass() && typeInfo.get_HasDefaultTypeConstructor())
+                    {
+                        CandidateStructure cs = new CandidateStructure(TypeNameContext.LocalVarDecl, xplNode, typeInfo);
+                        p_candidateStructures.Add(cs);
+                    }
 
                     return null;
                 }
             }
             else
             {
+                // check for intrinsic names
+                if (IsIntrinsicName(nameToSearch, xplNode)) return null;
+
                 AddNewError(
                     SemanticError.New(SemanticErrorCode.DeclaredTypeDoesnotExist, xplNode,
                     typeToSearch, "On primary expression."));
@@ -2391,8 +2667,14 @@ namespace LayerD.ZOECompiler
                         {
                             // set meta info
                             XplExpression expNode = xplNode.get_Parent() as XplExpression;
-                            expNode.set_targetClass(members[0].get_DeclarationClassTypeFullName());
-                            expNode.set_targetMember(members[0].get_MemberName());
+                            MemberInfo targetMember = members[0];
+                            expNode.set_targetClass(targetMember.get_DeclarationClassTypeFullName());
+                            expNode.set_targetMember(targetMember.get_MemberName());
+
+                            if (targetMember.IsStatic())
+                            {
+                                xplNode.set_Value(targetMember.FullName);
+                            }
 
                             return pThis != null ? new ExpressionResult(members, true)
                                 : new ExpressionResult(members);
@@ -2409,7 +2691,7 @@ namespace LayerD.ZOECompiler
         /// 
         /// NO LLAMAR CON SYMTYPE NULO.
         /// </summary>
-        private string GetTypeStringForFactoryTypeModifier(XplType symType, Scope scope)
+        private static string GetTypeStringForFactoryTypeModifier(XplType symType, Scope scope)
         {
             switch (symType.get_ftype())
             {
@@ -2431,7 +2713,7 @@ namespace LayerD.ZOECompiler
         #endregion
 
         #region ProcessUnaryOperatorExpression, ProcessBinaryOperatorExpression
-        private ExpressionResult ProcessUnaryOperatorExpression(XplUnaryoperator xplUnaryoperator, Scope scope)
+        private ExpressionResult ProcessUnaryOperatorExpression(XplUnaryoperator xplUnaryoperator, Scope scope, TypeInfo classType, MemberInfo memberInfo)
         {
             ExpressionResult res = null;
             string opStr = ""; //Indica el operador unario que debera procesarse
@@ -2443,13 +2725,12 @@ namespace LayerD.ZOECompiler
                     xplUnaryoperator));
                 return res;
             }
-            ExpressionResult expRes = ProcessExpression(unaryExp, scope);
+            ExpressionResult expRes = ProcessExpression(unaryExp, scope, classType, memberInfo);
             if (expRes == null) return res;
             ExpressionResultType expResType = expRes.get_ExpType();
             string errorStr = "On unary operator '" + xplUnaryoperator.get_op().ToString() + "' expression.";
             string typeStr = "";
 
-            #region Switch de UnaryOperator
             switch (xplUnaryoperator.get_op())
             {
                 #region Operadores Sobrecargables
@@ -2556,12 +2837,10 @@ namespace LayerD.ZOECompiler
                 default:
                     break;
             }
-            #endregion
 
             #region Operadores Sobrecargables
             if (opStr != "") //Si se cumple es un operador sobrecargable.
             {
-                #region Obtención de Tipos de Operandos Izquierdo y Derecho
                 TypeInfo operandType = null;
                 string typeName = "", functionName = "%op_" + opStr + "%";
                 bool typeRequired = true;
@@ -2605,9 +2884,7 @@ namespace LayerD.ZOECompiler
                         xplUnaryoperator));
                     return res;
                 }
-                #endregion
 
-                #region Obtención de Miembros Candidatos
                 //1- Filtro todos los operadores en el tipo del operando "Izq" y en el operando "Der",
                 //hago una unión de dichos miembros.
                 //Filtro los miembros accesibles.
@@ -2650,9 +2927,7 @@ namespace LayerD.ZOECompiler
                         xplUnaryoperator, opStr, expRes.get_TypeStr()));
                     return res;
                 }
-                #endregion
 
-                #region Resolusion de Sobrecarga y chequeo de argumentos
                 //Aqui tengo todos los miembros en "candidateMembers"
 
                 //Primero lleno los argumentos de la XplFunctioncall que utilizo como PlaceHolder
@@ -2697,16 +2972,13 @@ namespace LayerD.ZOECompiler
                 this.p_candidateStructures.AddCandidateStructure(selectedMember, xplUnaryoperator, scope);
 
                 res = new ExpressionResult(((XplFunction)selectedMember.get_MemberNode()).get_ReturnType().get_typeStr());
-
-                #endregion
-
             }
             #endregion
 
             return res;
         }
 
-        private ExpressionResult ProcessBinaryOperatorExpression(XplBinaryoperator xplBinaryoperator, Scope scope)
+        private ExpressionResult ProcessBinaryOperatorExpression(XplBinaryoperator xplBinaryoperator, Scope scope, TypeInfo classType, MemberInfo memberInfo)
         {
             ExpressionResult res = null;
             XplExpression rightExp = xplBinaryoperator.get_r();
@@ -2721,7 +2993,7 @@ namespace LayerD.ZOECompiler
                 return res;
             }
 
-            ExpressionResult leftRes = ProcessExpression(leftExp, scope), rightRes = null;
+            ExpressionResult leftRes = ProcessExpression(leftExp, scope, classType, memberInfo), rightRes = null;
             //ExpressionResult rightRes = ProcessExpression(xplBinaryoperator.get_r(), scope);
 
             string opStr = ""; //Indica el operador binario que debera procesarse
@@ -2813,19 +3085,19 @@ namespace LayerD.ZOECompiler
                     case XplBinaryoperators_enum.PMP:    //"->*" Acceso a miembro 
                         break;
                     case XplBinaryoperators_enum.RM:     //"Reservado" Acceso a miembro 
-                        return ProcessReservedMemberAccessBinaryOperator(xplBinaryoperator, scope, leftExp, leftRes);
+                        return ProcessReservedMemberAccessBinaryOperator(xplBinaryoperator, scope, leftExp, leftRes, classType, memberInfo);
                     #endregion
 
                     #region Operadores "=>"
                     case XplBinaryoperators_enum.IMP:    //"=>" Nombre de argumento
                         //El operador "=>" cuando es procesado fuera de una llamada a función 
                         //devuelve el operando derecho
-                        return ProcessExpression(rightExp, scope);
+                        return ProcessExpression(rightExp, scope, classType, memberInfo);
                     #endregion
 
                     case XplBinaryoperators_enum.COMMA:
                         // return the result from right operator
-                        return ProcessExpression(xplBinaryoperator.get_r(), scope);
+                        return ProcessExpression(xplBinaryoperator.get_r(), scope, classType, memberInfo);
                     default:
                         break;
                 }
@@ -2834,7 +3106,7 @@ namespace LayerD.ZOECompiler
 
                 if (opStr != "")
                 {
-                    res = ProcessBinaryOperatorExpressionForOperator(xplBinaryoperator, opStr, rightRes, leftRes, rightExp, leftExp, scope);
+                    res = ProcessBinaryOperatorExpressionForOperator(xplBinaryoperator, opStr, rightRes, leftRes, rightExp, leftExp, scope, classType, memberInfo);
                 }
             }
             else
@@ -2850,7 +3122,7 @@ namespace LayerD.ZOECompiler
                     default:
                         // process right expression when left is null in order to
                         // catch any classfactory call
-                        ProcessExpression(rightExp, scope);
+                        ProcessExpression(rightExp, scope, classType, memberInfo);
                         break;
                 }
             }
@@ -3027,7 +3299,7 @@ namespace LayerD.ZOECompiler
             }
         }
 
-        private ExpressionResult ProcessReservedMemberAccessBinaryOperator(XplBinaryoperator xplBinaryoperator, Scope scope, XplExpression leftExp, ExpressionResult leftRes)
+        private ExpressionResult ProcessReservedMemberAccessBinaryOperator(XplBinaryoperator xplBinaryoperator, Scope scope, XplExpression leftExp, ExpressionResult leftRes, TypeInfo classType, MemberInfo memberInfo)
         {
             if (leftRes.get_ExpType() == ExpressionResultType.TypeMembers
                 || leftRes.get_ExpType() == ExpressionResultType.TypeMembersFromValue)
@@ -3069,7 +3341,7 @@ namespace LayerD.ZOECompiler
                 {
                     xplBinaryoperator.set_op(XplBinaryoperators_enum.M);
                 }
-                return ProcessBinaryOperatorExpression(xplBinaryoperator, scope);
+                return ProcessBinaryOperatorExpression(xplBinaryoperator, scope, classType, memberInfo);
             }
         }
 
@@ -3273,7 +3545,8 @@ namespace LayerD.ZOECompiler
                     xplBinaryoperator.set_targetMember("?");
 
                     string memberName = rightNode.get_StringValue();
-                    string memberAccessCacheStr = type.get_FullName() + "." + memberName;
+                    // TODO : fix with cache issue
+                    // string memberAccessCacheStr = type.get_FullName() + "." + memberName;
 
                     string className;
                     MemberInfo[] members = null;
@@ -3367,11 +3640,11 @@ namespace LayerD.ZOECompiler
             return res;
         }
 
-        private ExpressionResult ProcessBinaryOperatorExpressionForOperator(XplBinaryoperator xplBinaryoperator, string opStr, ExpressionResult rightRes, ExpressionResult leftRes, XplExpression rightExp, XplExpression leftExp, Scope scope)
+        private ExpressionResult ProcessBinaryOperatorExpressionForOperator(XplBinaryoperator xplBinaryoperator, string opStr, ExpressionResult rightRes, ExpressionResult leftRes, XplExpression rightExp, XplExpression leftExp, Scope scope, TypeInfo classType, MemberInfo memberInfo)
         {
             ExpressionResult res = null;
             //Primero proceso la expresión derecha que estaba pendiente de procesar
-            rightRes = ProcessExpression(rightExp, scope);
+            rightRes = ProcessExpression(rightExp, scope, classType, memberInfo);
             if (rightRes == null || leftRes == null)
             {
                 //PENDIENTE : Emitir error cuando uno de los operandos sea nulo!!
@@ -3563,86 +3836,13 @@ namespace LayerD.ZOECompiler
 
         private ExpressionResult ObtainBinaryOperatorCandidateMembers(XplBinaryoperator xplBinaryoperator, string opStr, ExpressionResult rightRes, ExpressionResult leftRes, Scope scope, TypeInfo leftType, TypeInfo rightType, string functionName, out MemberInfo[] candidateMembers)
         {
-            //1- Filtro todos los operadores en el tipo del operando "Izq" y en el operando "Der",
-            //hago una unión de dichos miembros.
-            //Filtro los miembros accesibles.
-            //2- Si no hay miembros es un error.
-            //2.1- Si hay más de un miembro resuelvo sobrecarga de los miembros.
-            //3- Chequeo sea valida la llamada a función.
-            MemberInfo[] leftCandidateMembers = null;
-            MemberInfo[] rightCandidateMembers = null;
             candidateMembers = null;
-
-            //Si son los dos tipos iguales elimino uno!
-            if (leftType == rightType) rightType = null;
-            if (leftType != null) leftCandidateMembers = leftType.get_MemberInfoCollection().get_MembersInfo(functionName);
-            if (rightType != null) rightCandidateMembers = rightType.get_MemberInfoCollection().get_MembersInfo(functionName);
-            if (leftCandidateMembers == null && rightCandidateMembers == null)
+            if (p_customBinaryOperators.ContainsKey(functionName))
             {
-                string leftResTypeStr = leftRes != null ? leftRes.get_TypeStr() : String.Empty;
-                string rightResTypeStr = rightRes != null ? rightRes.get_TypeStr() : String.Empty;
-
-                //Primero cheque si ambos son punteros
-                if (!String.IsNullOrEmpty(leftResTypeStr) && !String.IsNullOrEmpty(rightResTypeStr) && 
-                    TypeString.IsPointerType(leftResTypeStr) && TypeString.IsPointerType(rightResTypeStr))
-                {
-                    if (opStr == "eq" || opStr == "noteq")
-                    {
-                        // Si son punteros del mismo tipo es seguro comparar
-                        if (IsSameStringType(leftResTypeStr, rightResTypeStr) ||
-                            IsPointerToBaseOrInterfaceOf(leftResTypeStr, rightResTypeStr) ||
-                            IsPointerToBaseOrInterfaceOf(rightResTypeStr, leftResTypeStr))
-                        {
-                            // TODO : mark this operation for output modules
-                            return new ExpressionResult(NativeTypes.Boolean);
-                        }
-                        else
-                        {
-                            AddNewError(
-                                SemanticError.New(SemanticErrorCode.PointerTypesCannotBeCompared,
-                                xplBinaryoperator, leftResTypeStr, rightResTypeStr));
-                            return null;
-                        }
-                    }
-                    else
-                    {
-                        //PENDIENTE : falta considerar otros operadores que trabajen con dos punteros
-                        //y operadores que trabajan con un puntero y un entero
-                        // *A + *B ??? <-- do not have sense!!
-                        AddNewError(
-                            SemanticError.New(SemanticErrorCode.BinaryOperatorWasNotFoundForCurrentOperands,
-                            xplBinaryoperator, opStr, leftResTypeStr, rightResTypeStr));
-
-                        return null;
-                    }
-                }
-                else
-                {
-                    // TODO : check operators for pointer aritmetic: 
-                    // * + int
-                    // * - int
-                    //No se encontro ningun operador para los operandos.
-                    AddNewError(
-                        SemanticError.New(SemanticErrorCode.BinaryOperatorWasNotFoundForCurrentOperands,
-                        xplBinaryoperator, opStr, leftResTypeStr, rightResTypeStr));
-                    return null;
-                }
+                ArrayList operators = (ArrayList)p_customBinaryOperators[functionName];
+                candidateMembers = new MemberInfo[operators.Count];
+                operators.CopyTo(candidateMembers);
             }
-            if (leftCandidateMembers != null && rightCandidateMembers != null)
-            {
-                // TODO : this is not ok, fix it.
-                // must only copy members if they are different memembers!! other wise it will
-                // generate an error if you have for example: pointerToBaseClass == pointerToDerivedClass
-                // and BaseClass define == operator
-                // Analyze to change how custom operators are processed.
-                // It needs to be processed like conversion operators, all at the same time
-                candidateMembers = new MemberInfo[leftCandidateMembers.Length + rightCandidateMembers.Length];
-                leftCandidateMembers.CopyTo(candidateMembers, 0);
-                rightCandidateMembers.CopyTo(candidateMembers, leftCandidateMembers.Length);
-            }
-            else if (leftCandidateMembers == null) candidateMembers = rightCandidateMembers;
-            else candidateMembers = leftCandidateMembers;
-
             candidateMembers = FilterAccesibleMembers(candidateMembers, scope);
             if (candidateMembers == null)
             {
@@ -3698,7 +3898,7 @@ namespace LayerD.ZOECompiler
                 {
                     AddNewError(
                         SemanticError.New(SemanticErrorCode.BestOverloadedFunctionHasSomeInvalidArguments,
-                        xplBinaryoperator, opStr, errorStr + MemberInfo.ToString(backup)));
+                        xplBinaryoperator, opStr, errorStr /*+ MemberInfo.ToString(backup)*/ ));
 
                     return null;
                 }
@@ -3739,10 +3939,10 @@ namespace LayerD.ZOECompiler
             return res;
         }
 
-        private string GetSimilarMembersNames(TypeInfo type, string memberName)
+        private static string GetSimilarMembersNames(TypeInfo type, string memberName)
         {
             return null;
-            //PENDIENTE : muestro o no muestro los nombres de miembros similares?
+            // TODO : show similar member names?
             //
             /*
             string res = "";
@@ -3755,7 +3955,7 @@ namespace LayerD.ZOECompiler
         }
         #endregion
 
-        private ExpressionResult ProcessNewExpression(XplNewExpression xplNewExpression, Scope scope)
+        private ExpressionResult ProcessNewExpression(XplNewExpression xplNewExpression, Scope scope, TypeInfo classType, MemberInfo memberInfo)
         {
             CheckType(xplNewExpression.get_type(), xplNewExpression, scope, false, "On 'new' expression.");
             if (xplNewExpression.get_type() == null) return null;
@@ -3765,7 +3965,7 @@ namespace LayerD.ZOECompiler
             if (TypeString.IsArrayType(typeStr))
             {
                 // it's an array
-                CheckInitializer(xplNewExpression, scope);
+                CheckInitializer(xplNewExpression, scope, classType, memberInfo);
                 // find the elements' type
                 string elementTypeStr = TypeString.RemoveAllDimensionsFromArrayType(typeStr);
                 while (TypeString.IsPointerType(elementTypeStr)) elementTypeStr = TypeString.RemovePointerIndirectionsFromType(elementTypeStr, 1);
@@ -3875,7 +4075,7 @@ namespace LayerD.ZOECompiler
             if (init != null)
             {
                 XplNodeList newArguments = ((XplInitializerList)init.Children().FirstNode()).Children();
-                ProcessArguments(newArguments, scope);
+                ProcessArguments(newArguments, scope, type, null);
                 args.Clear();
                 foreach (XplNode argument in newArguments)
                 {
@@ -3965,9 +4165,9 @@ namespace LayerD.ZOECompiler
             }
         }
 
-        private ExpressionResult ProcessAssingExpression(XplAssing xplAssing, Scope scope)
+        private ExpressionResult ProcessAssingExpression(XplAssing xplAssing, Scope scope, TypeInfo classType, MemberInfo memberInfo)
         {
-            ExpressionResult leftRes = ProcessExpression(xplAssing.get_l(), scope);
+            ExpressionResult leftRes = ProcessExpression(xplAssing.get_l(), scope, classType, memberInfo);
             ExpressionResult rightRes = null;
 
             if (xplAssing.get_operation() != XplAssingop_enum.NONE)
@@ -3978,13 +4178,13 @@ namespace LayerD.ZOECompiler
                 bopExp.set_op(ConvertAssignOperatorToBinaryOperator(xplAssing.get_operation()));
                 xplAssing.set_r(new XplExpression(bopExp));
                 // process the expression
-                rightRes = ProcessExpression(xplAssing.get_r(), scope);
+                rightRes = ProcessExpression(xplAssing.get_r(), scope, classType, memberInfo);
                 // restore original structure of assign node
                 xplAssing.set_r(bopExp.get_r());
             }
             else
             {
-                rightRes = ProcessExpression(xplAssing.get_r(), scope);
+                rightRes = ProcessExpression(xplAssing.get_r(), scope, classType, memberInfo);
             }
 
             if (leftRes != null && rightRes != null)
@@ -4053,7 +4253,7 @@ namespace LayerD.ZOECompiler
             return leftRes;
         }
 
-        private XplBinaryoperators_enum ConvertAssignOperatorToBinaryOperator(XplAssingop_enum xplAssingop_enum)
+        private static XplBinaryoperators_enum ConvertAssignOperatorToBinaryOperator(XplAssingop_enum xplAssingop_enum)
         {
             switch (xplAssingop_enum)
             {
@@ -4074,20 +4274,20 @@ namespace LayerD.ZOECompiler
                 case XplAssingop_enum.RSH:
                     return XplBinaryoperators_enum.RSH;
                 case XplAssingop_enum.AND:
-                    return XplBinaryoperators_enum.AND;
+                    return XplBinaryoperators_enum.BAND;
                 case XplAssingop_enum.XOR:
                     return XplBinaryoperators_enum.XOR;
                 case XplAssingop_enum.OR:
-                    return XplBinaryoperators_enum.OR;
+                    return XplBinaryoperators_enum.BOR;
                 default:
                     throw new SemanticException("Internal error on ConvertAssignOperatorToBinaryOperator");
             }
         }
 
-        private ExpressionResult ProcessOnpointerExpression(XplExpression xplExpression, Scope scope)
+        private ExpressionResult ProcessOnpointerExpression(XplExpression xplExpression, Scope scope, TypeInfo classType, MemberInfo memberInfo)
         {
             scope.set_IsOnPointerScope(true);
-            ExpressionResult result = ProcessExpression((XplExpression)xplExpression.get_Content(), scope);
+            ExpressionResult result = ProcessExpression((XplExpression)xplExpression.get_Content(), scope, classType, memberInfo);
             scope.set_IsOnPointerScope(false);
             return result;
         }
@@ -4096,7 +4296,7 @@ namespace LayerD.ZOECompiler
         /// para convertirla de "fromType" a "toType".
         /// Sólo tiene efecto en la generación de código extendido.
         /// </summary>
-        private void MarkConversion(ConversionData conversionData, string fromType, string toType, XplExpression xplExpression, Scope scope)
+        private static void MarkConversion(ConversionData conversionData, string fromType, string toType, XplExpression xplExpression, Scope scope)
         {
             //PENDIENTE : Implementar marcado de conversión.
         }

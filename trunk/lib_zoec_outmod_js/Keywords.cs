@@ -10,14 +10,13 @@
  *******************************************************************************/
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 namespace LayerD.OutputModules
 {
     class Keywords
     {
-        static HashSet<string> _keywords;
+        static Dictionary<string,object> _keywords;
 
         internal const string
             Break = "break",
@@ -56,6 +55,17 @@ namespace LayerD.OutputModules
             Import = "import",
             Super = "super",
 
+            // future reserved words on strict context (ECMA-262 7.6.1.2)
+            Implements = "implements",
+            Let = "let",
+            Private = "private",
+            Public = "public",
+            Yield = "yield",
+            Interface = "interface",
+            Package = "package",
+            Protected = "protected",
+            Static = "static",
+
             // Not Keywords but special identifiers
             Prototype = "prototype",
 
@@ -65,53 +75,66 @@ namespace LayerD.OutputModules
 
         internal static void Init()
         {
-            _keywords = new HashSet<string>();
-            _keywords.Add(Break);
-            _keywords.Add(Case);
-            _keywords.Add(Catch);
-            _keywords.Add(Continue);
-            _keywords.Add(Debugger);
-            _keywords.Add(Default);
-            _keywords.Add(Delete);
-            _keywords.Add(Do);
-            _keywords.Add(Else);
-            _keywords.Add(Finally);
-            _keywords.Add(For);
-            _keywords.Add(Function);
-            _keywords.Add(If);
-            _keywords.Add(In);
-            _keywords.Add(InstanceOf);
-            _keywords.Add(New);
-            _keywords.Add(Return);
-            _keywords.Add(Switch);
-            _keywords.Add(This);
-            _keywords.Add(Throw);
-            _keywords.Add(Try);
-            _keywords.Add(TypeOf);
-            _keywords.Add(Var);
-            _keywords.Add(Void);
-            _keywords.Add(While);
-            _keywords.Add(With);
+            _keywords = new Dictionary<string,object>();
+            _keywords.Add(Break, null);
+            _keywords.Add(Case, null);
+            _keywords.Add(Catch, null);
+            _keywords.Add(Continue, null);
+            _keywords.Add(Debugger, null);
+            _keywords.Add(Default, null);
+            _keywords.Add(Delete, null);
+            _keywords.Add(Do, null);
+            _keywords.Add(Else, null);
+            _keywords.Add(Finally, null);
+            _keywords.Add(For, null);
+            _keywords.Add(Function, null);
+            _keywords.Add(If, null);
+            _keywords.Add(In, null);
+            _keywords.Add(InstanceOf, null);
+            _keywords.Add(New, null);
+            _keywords.Add(Return, null);
+            _keywords.Add(Switch, null);
+            _keywords.Add(This, null);
+            _keywords.Add(Throw, null);
+            _keywords.Add(Try, null);
+            _keywords.Add(TypeOf, null);
+            _keywords.Add(Var, null);
+            _keywords.Add(Void, null);
+            _keywords.Add(While, null);
+            _keywords.Add(With, null);
 
             // future reserved words
-            _keywords.Add(Class);
-            _keywords.Add(Const);
-            _keywords.Add(Enum);
-            _keywords.Add(Export);
-            _keywords.Add(Extends);
-            _keywords.Add(Import);
-            _keywords.Add(Super);
+            _keywords.Add(Class, null);
+            _keywords.Add(Const, null);
+            _keywords.Add(Enum, null);
+            _keywords.Add(Export, null);
+            _keywords.Add(Extends, null);
+            _keywords.Add(Import, null);
+            _keywords.Add(Super, null);
+
+            // future reserved words in strict mode
+            _keywords.Add(Implements, null);
+            _keywords.Add(Let, null);
+            _keywords.Add(Private, null);
+            _keywords.Add(Public, null);
+            _keywords.Add(Yield, null);
+            _keywords.Add(Interface, null);
+            _keywords.Add(Package, null);
+            _keywords.Add(Protected, null);
+            _keywords.Add(Static, null);
 
             // Not Keywords but special identifiers
-            _keywords.Add(Prototype);
+            // Prototype is not added as reserved keyword to avoid replacing it by escaped version
+            // because it is not a reserved keyword, but a special member
+            // _keywords.Add(Prototype, null);
 
             // Not Keywords but special identifiers for Zoe JS Code Generator
-            _keywords.Add(Application);
+            _keywords.Add(Application, null);
         }
 
         internal static string GetValidIdentifier(string zoeIdentifier, bool isNamespace)
         {
-            if (_keywords.Contains(zoeIdentifier))
+            if (_keywords.ContainsKey(zoeIdentifier))
             {
                 if (isNamespace)
                 {
@@ -126,6 +149,25 @@ namespace LayerD.OutputModules
             {
                 return zoeIdentifier;
             }
+        }
+
+        /// <summary>
+        /// Process a qualified id like "a.b.c" to escape keywords.
+        /// </summary>
+        /// <param name="qualifiedName">The qualified name, use dot as separator and do not call with a simple name</param>
+        /// <returns>Qualified name with escaped keywords like a._$function._$var for input a.function.var</returns>
+        internal static string GetValidQualifiedName(string qualifiedName)
+        {
+            string[] qualifiedNameParts = qualifiedName.Split('.');
+            int count = 0;
+            foreach (var part in qualifiedNameParts)
+            {
+                string validPart = GetValidIdentifier(part, count == 0);
+                if (count == 0) qualifiedName = validPart;
+                else qualifiedName = qualifiedName + "." + validPart;
+                count++;
+            }
+            return qualifiedName;
         }
     }
 }
