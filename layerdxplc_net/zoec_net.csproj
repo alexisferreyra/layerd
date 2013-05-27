@@ -17,7 +17,7 @@
     </UpgradeBackupLocation>
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <StartupObject>LayerD.ZOECompilerUI.ZOECConsoleUI</StartupObject>
-    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -32,6 +32,7 @@
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -42,12 +43,16 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Debug\zoec.XML</DocumentationFile>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <Externalconsole>true</Externalconsole>
+    <Commandlineparameters>-ae ./aph.api.transformation.factory.zoe -sfd</Commandlineparameters>
+    <CodeAnalysisRules>
+    </CodeAnalysisRules>
+    <CodeAnalysisRuleSet>Migrated rules for zoec_net.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\..\..\..\layerd\Bin\</OutputPath>
+    <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -85,9 +90,14 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="BuildTest.bat" />
-    <None Include="PythonTests\helloworld.dpp" />
-    <None Include="PythonTests\python.os.externs.dpp" />
+    <None Include="JavaScriptTests\HelloWorld.dpp" />
+    <None Include="JavaScriptTests\InheritanceAndInterfaces.dpp" />
+    <None Include="JavaScriptTests\SimpleClasses.dpp" />
+    <None Include="JavaScriptTests\StructAndClasses.UsedByValue.dpp" />
+    <None Include="Tests\BreakCompileTime.client.test.dpp" />
+    <None Include="Tests\BreakCompileTime.test.factory.dpp" />
+    <None Include="Tests\CompileTimeOperator.client.dpp" />
+    <None Include="Tests\CompileTimeOperators.factory.dpp" />
     <None Include="Tests\CompileTimeProperty.Client.test.dpp" />
     <None Include="Mini\AutoVarTemplate.dpp" />
     <None Include="Mini\AutoVarTest.dpp" />
@@ -133,6 +143,7 @@
     <None Include="Tests\EjemploRAD.dpp" />
     <None Include="Release_Alpha_0.5\EjemploSimulacion.dpp" />
     <None Include="Tests\ExternalTest.dpp" />
+    <None Include="Tests\functionpointers.test.dpp" />
     <None Include="Tests\FunctionPointerTest.dpp" />
     <None Include="Tests\InfrastructureServiceDSL.dpp" />
     <None Include="Tests\InfrastructureServiceTemplate.dpp" />
@@ -155,7 +166,7 @@
     <None Include="Tests\IntelliSense.dpp" />
     <None Include="Tests\IntelliSenseTest.dpp" />
     <None Include="Tests\EjemploVariosClientes.dpp" />
-    <None Include="Tests\mdpp.closures.test.dpp" />
+    <None Include="Tests\mdpp.class.extensions.test.dpp" />
     <None Include="Tests\ModelProcessorTemplate.dpp" />
     <None Include="Tests\ModelProcessorTest.dpp" />
     <None Include="Tests\MoviesService.dpp" />
@@ -192,6 +203,7 @@
     <None Include="Tests\XMLTest.dpp" />
     <None Include="Tests\XMLTestTemplates.dpp" />
     <None Include="Release_Alpha_0.5\Zoe.UtilsTemplates.dpp" />
+    <None Include="Tests\zoe.closure.tests.dpp" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">

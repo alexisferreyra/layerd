@@ -1,30 +1,23 @@
 import "Microsoft", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
 import "System", "platform=DotNET", "ns=DotNET", "assembly=mscorlib";
-import "java.lang", "platform=Java", "ns=Java";
-import "java.io", "platform=Java", "ns=Java";
-import "os", "platform=python", "extern=python.os.externs.zoe";
+import "java.lang.*", "platform=Java", "ns=Java";
+import "java.io.*", "platform=Java", "ns=Java";
 using LayerD::IO;
 
 namespace FileIOTest{
 	public class TestIO{
 	public:
 		static void Main(string^[] args){
-			Console::WriteLine();
-			Console::WriteLine("=============================");
-			Console::WriteLine("Multiplatform File IO Sample.");
-			Console::WriteLine("=============================");
-			Console::WriteLine();
-			char[] buffer = new char[256];
+			Console::WriteLine("Multiplatform sample for IO to text files.");
+			char[] buffer = new char[1024];
 			try{
 				// write somethings to a file
 				FileWriter^ wvar = new FileWriter("test.txt");
-				wvar.Write("Hello world in .NET\n");
-				wvar.Write("Hello world in Java\n");
-				wvar.Write("Hello wolrd in Python\n");
-				wvar.Write("\n");
-				wvar.Write("Is all the same to LayerD\n");
-				wvar.Write("\n");
-				wvar.Write("Yes, this is a console demo. Cool!!\n");
+				wvar.Write("Uno\n");
+				wvar.Write("Dos\n");
+				wvar.Write("Tres\n");
+				wvar.Write("Cuatro\n");
+				wvar.Write("Cinco\n");
 				wvar.Close();
 				// read the file that was recently written
 				FileReader^ var = new FileReader("test.txt");

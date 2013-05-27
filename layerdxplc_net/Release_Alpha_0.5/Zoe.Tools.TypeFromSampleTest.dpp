@@ -1,50 +1,81 @@
-/*
+// Meta D++ sample.
+// Visit http://layerd.net and http://layerd.blogspot.com to get updates of LayerD SDK and documentation.
+// -
+// 2009 Alexis Ferreyra
+// THIS SOFTWARE IS PROVIDED BY CONTRIBUTORS
+// ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+// TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+// PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL COPYRIGHT HOLDERS OR CONTRIBUTORS
+// BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
 
-	Meta D++ sample.
-
-	Visit http://layerd.net and http://layerd.blogspot.com to get updates of LayerD SDK and documentation.
-	
-*/
-/*-
- * 2009 Alexis Ferreyra
- *
- * THIS SOFTWARE IS PROVIDED BY CONTRIBUTORS
- * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
- * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL COPYRIGHT HOLDERS OR CONTRIBUTORS
- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
- 
 namespace Sample{
 	public class App{
 	public:
 		static int Main(string^[] args){
-
-			// Llamanda a Classfactory Interactiva 
+			// Llamanda a Classfactory Interactiva
 			// para crear el prototipo de una clase a
 			// partir de un ejemplo de uso
-			TypeFromSample::New(MyClass);
-
-			// C�digo de ejemplo de uso a partir
+			// CÃ³digo de ejemplo de uso a partir
 			// del cual deseo armar el prototipo
 			// de MyClass
 			MyClass^ var = new MyClass();
 			var.Add(1, 2);
 			var.CurrentValue = "string";
-			var[2] = "test";
 			int n;
 			n = var.HashOf("hola");
 			n = var.foo(1, "chau", var, args);
+			n = var.foo2(1, "chau", var, args, 123);
+			n = var.foo(1, "chau", var, args, 123);
 			return 0;
 		}
-
 	}
-
+	public class MyClass{
+		void Add(byte p1, byte p2){
+			throw new NotImplementedException();
+		}
+		string^ property CurrentValue {
+			get {
+				throw new NotImplementedException();
+			}
+			set {
+				throw new NotImplementedException();
+			}
+		}
+		int HashOf(string^ p1){
+			throw new NotImplementedException();
+		}
+		int foo(byte p1, string^ p2, Sample::MyClass^ p3, string^[] p4){
+			throw new NotImplementedException();
+		}
+		void Add(byte p1, byte p2){
+			throw new NotImplementedException();
+		}
+		string^ property CurrentValue {
+			get {
+				throw new NotImplementedException();
+			}
+			set {
+				throw new NotImplementedException();
+			}
+		}
+		int HashOf(string^ p1){
+			throw new NotImplementedException();
+		}
+		int foo(byte p1, string^ p2, Sample::MyClass^ p3, string^[] p4){
+			throw new NotImplementedException();
+		}
+		int foo2(byte p1, string^ p2, Sample::MyClass^ p3, string^[] p4, byte p5){
+			throw new NotImplementedException();
+		}
+		int foo(byte p1, string^ p2, Sample::MyClass^ p3, string^[] p4, byte p5){
+			throw new NotImplementedException();
+		}
+	}
 }
 

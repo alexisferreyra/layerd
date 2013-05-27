@@ -227,7 +227,7 @@ namespace LayerD.ZOECompiler{
             p_database.Children().InsertAtEnd(cfd);
         }
 
-        private string GetPlatformsString(XplClass clase)
+        private static string GetPlatformsString(XplClass clase)
         {
             string retStr = "";
             XplNodeList plats = clase.get_SetPlatformsNodeList();

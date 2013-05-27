@@ -406,8 +406,16 @@ namespace LayerD.OutputModules
 
             if (!String.IsNullOrEmpty(forwardDeclarations))
             {
-                // TODO : use the namespace for types!! not this one hardcoded
-                outputBuffer.AppendLine(CppKeywords.NamespacePC + "application");
+                // TODO : use the correct namespace for types!! 
+                // this is using the same namespace than for the first type
+
+                var nsName = "application";
+                foreach (var key in this._declaredTypes.Keys)
+                {
+                    nsName = this._declaredTypes[key].ZoeNode.CurrentNamespace.get_name();
+                    break;
+                }
+                outputBuffer.AppendLine(CppKeywords.NamespacePC + nsName);
                 outputBuffer.AppendLine("{");
                 outputBuffer.AppendLine();
                 outputBuffer.Append(forwardDeclarations);

@@ -56,7 +56,7 @@ namespace LayerD.ZOECompiler
                         ProcessDeclsStatement((XplDeclaratorlist)node, classType, currentScope, memberInfo);
                         break;
                     case "e":
-                        ProcessExpression((XplExpression)node, currentScope, SemanticAction.CheckImplementation);
+                        ProcessExpression((XplExpression)node, currentScope, classType, memberInfo, SemanticAction.CheckImplementation);
                         break;
                     case "switch":
                         ProcessSwitchStatement((XplSwitchStatement)node, classType, currentScope, memberInfo);
@@ -178,7 +178,7 @@ namespace LayerD.ZOECompiler
             //1°) Si posee una expresion no vacia la proceso para obtener el tipo.
             //2°) Si el tipo de la expresion no vacia es diferente al tipo de retorno del miembro,
             //o al tipo de puntero a la clase para constructores es un error.
-            ExpressionResult expRes = xplExpression.get_Content() != null ? ProcessExpression(xplExpression, currentScope) : null;
+            ExpressionResult expRes = xplExpression.get_Content() != null ? ProcessExpression(xplExpression, currentScope, classType, memberInfo) : null;
             string memberRetType = memberInfo.get_ReturnType() != null ? memberInfo.get_ReturnType().get_typeStr() : "";
             XplFactorytype_enum retTypeFT = XplFactorytype_enum.NONE;
             if (memberInfo.get_ReturnType() != null)
@@ -206,7 +206,8 @@ namespace LayerD.ZOECompiler
             {
                 //Es un "return EXPRESSION;"
                 if (memberRetType != "" && NativeTypes.IsNativeVoid(memberRetType) &&
-                    memberInfo.get_ReturnType().get_ftype() == XplFactorytype_enum.NONE)
+                    memberInfo.get_ReturnType().get_ftype() == XplFactorytype_enum.NONE &&
+                    !currentScope.IsInsideFunctionCallBlockArgument())
                 {
                     AddNewError(
                         SemanticError.New(SemanticErrorCode.ReturnAValueIsNotAllowed,
@@ -218,10 +219,17 @@ namespace LayerD.ZOECompiler
                 if (String.IsNullOrEmpty(memberRetType))
                     return;
 
+                if (currentScope.IsInsideFunctionCallBlockArgument())
+                {
+                    // TODO : check types for return inside "closures"
+                    return;
+                }
+
                 if (expRes == null)
                     //PENDIENTE : ¿Cuando la expresion de un return no se pudo evaluar, 
                     //deberia emitir un error también en la instrucción?
                     return;
+
                 ExpressionResultType expType = expRes.get_ExpType();
                 if (expType == ExpressionResultType.TypeMembers ||
                     expType == ExpressionResultType.TypeMembersFromValue)
@@ -248,55 +256,66 @@ namespace LayerD.ZOECompiler
                     string expTypeStr = expRes.get_TypeStr();
                     if (!IsSameStringType(memberRetType, expTypeStr))
                     {
-                        ConversionData cdata = ExistsImplicitConversion(expTypeStr, memberRetType, xplExpression, currentScope);
-                        if (cdata == null)
-                        {
-                            //Primero debo chequear si el tipo de retorno es un tipo factory y si en cuyo 
-                            //caso existe una conversion explicita al tipo factory
-                            if (retTypeFT != XplFactorytype_enum.NONE)
-                            {
-                                #region Modificador Factory en ReturnType
-                                string retTypeFTStr = memberRetType;
-                                switch (retTypeFT)
-                                {
-                                    case XplFactorytype_enum.NONE:
-                                        break;
-                                    case XplFactorytype_enum.INAME:
-                                        retTypeFTStr = TypeString.MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".IName");
-                                        break;
-                                    case XplFactorytype_enum.EXPRESSION:
-                                        retTypeFTStr = TypeString.MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".XplExpression");
-                                        break;
-                                    case XplFactorytype_enum.EXPRESSIONLIST:
-                                        retTypeFTStr = TypeString.MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".XplExpressionlist");
-                                        break;
-                                    case XplFactorytype_enum.STATEMENT:
-                                        retTypeFTStr = TypeString.MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".XplFunctionBody");
-                                        break;
-                                    default:
-                                        break;
-                                }
-                                if (!IsSameStringType(retTypeFTStr, expTypeStr))
-                                {
-                                    cdata = ExistsImplicitConversion(expTypeStr, retTypeFTStr, xplExpression, currentScope);
-                                    if (cdata == null)
-                                        AddNewError(
-                                            SemanticError.New(SemanticErrorCode.InvalidReturnStatementExpressionValue,
-                                            xplExpression, expTypeStr, memberRetType));
-                                    else
-                                        MarkConversion(cdata, expTypeStr, retTypeFTStr, xplExpression, currentScope);
-                                }
-                                #endregion
-                            }
-                            else
-                                AddNewError(
-                                    SemanticError.New(SemanticErrorCode.InvalidReturnStatementExpressionValue,
-                                    xplExpression, expTypeStr, memberRetType));
-                        }
-                        else
-                            MarkConversion(cdata, expTypeStr, memberRetType, xplExpression, currentScope);
+                        CheckReturnStatementValueConversion(xplExpression, currentScope, memberRetType, retTypeFT, expTypeStr);
                     }
                 }
+            }
+        }
+
+        private void CheckReturnStatementValueConversion(XplExpression xplExpression, Scope currentScope, string memberRetType, XplFactorytype_enum retTypeFT, string expTypeStr)
+        {
+            ConversionData cdata = ExistsImplicitConversion(expTypeStr, memberRetType, xplExpression, currentScope);
+            if (cdata == null)
+            {
+                //Primero debo chequear si el tipo de retorno es un tipo factory y si en cuyo 
+                //caso existe una conversion explicita al tipo factory
+                if (retTypeFT != XplFactorytype_enum.NONE)
+                {
+                    string retTypeFTStr = memberRetType;
+                    switch (retTypeFT)
+                    {
+                        case XplFactorytype_enum.NONE:
+                            break;
+                        case XplFactorytype_enum.INAME:
+                            retTypeFTStr = TypeString.MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".IName");
+                            break;
+                        case XplFactorytype_enum.EXPRESSION:
+                            retTypeFTStr = TypeString.MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".XplExpression");
+                            break;
+                        case XplFactorytype_enum.EXPRESSIONLIST:
+                            retTypeFTStr = TypeString.MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".XplExpressionlist");
+                            break;
+                        case XplFactorytype_enum.STATEMENT:
+                            retTypeFTStr = TypeString.MakeReferenceTypeTo(CODEDOM_NAMESPACE + ".XplFunctionBody");
+                            break;
+                        default:
+                            break;
+                    }
+                    if (!IsSameStringType(retTypeFTStr, expTypeStr))
+                    {
+                        cdata = ExistsImplicitConversion(expTypeStr, retTypeFTStr, xplExpression, currentScope);
+                        if (cdata == null)
+                        {
+                            AddNewError(
+                                SemanticError.New(SemanticErrorCode.InvalidReturnStatementExpressionValue,
+                                xplExpression, expTypeStr, memberRetType));
+                        }
+                        else
+                        {
+                            MarkConversion(cdata, expTypeStr, retTypeFTStr, xplExpression, currentScope);
+                        }
+                    }
+                }
+                else
+                {
+                    AddNewError(
+                        SemanticError.New(SemanticErrorCode.InvalidReturnStatementExpressionValue,
+                        xplExpression, expTypeStr, memberRetType));
+                }
+            }
+            else
+            {
+                MarkConversion(cdata, expTypeStr, memberRetType, xplExpression, currentScope);
             }
         }
         private void ProcessThrowStatement(XplExpression xplExpression, TypeInfo classType, Scope currentScope, MemberInfo memberInfo)
@@ -309,7 +328,7 @@ namespace LayerD.ZOECompiler
                     xplExpression, " On throw statement."));
                 return;
             }
-            ExpressionResult expRes = ProcessExpression(xplExpression, currentScope);
+            ExpressionResult expRes = ProcessExpression(xplExpression, currentScope, classType, memberInfo);
             if (expRes != null)
             {
                 if (expRes.get_IsTypeMembers())
@@ -433,7 +452,7 @@ namespace LayerD.ZOECompiler
         private void ProcessDoStatement(XplDowhileStatement xplDowhileStatement, TypeInfo classType, Scope currentScope, MemberInfo memberInfo)
         {
             //1°) Compruebo que la expresión sea de tipo valor bool.
-            CheckForBoolExpression(xplDowhileStatement.get_boolean(), currentScope, "On do/while statement.", xplDowhileStatement);
+            CheckForBoolExpression(xplDowhileStatement.get_boolean(), currentScope, classType, memberInfo, "On do/while statement.", xplDowhileStatement);
             //2°) Proceso el bloque
             XplFunctionBody block = xplDowhileStatement.get_dobk();
             if (block == null)
@@ -461,7 +480,7 @@ namespace LayerD.ZOECompiler
             {
                 // expression list
                 XplExpressionlist el = (XplExpressionlist)init.get_Content();
-                ProcessExpressionList(el, currentScope);
+                ProcessExpressionList(el, currentScope, classType, memberInfo);
             }
 
             //2) Check repeat expression
@@ -476,7 +495,7 @@ namespace LayerD.ZOECompiler
                 }
                 else
                 {
-                    ProcessExpressionList(xplForStatement.get_repeat(), currentScope);
+                    ProcessExpressionList(xplForStatement.get_repeat(), currentScope, classType, memberInfo);
                 }
             }
 
@@ -501,7 +520,7 @@ namespace LayerD.ZOECompiler
                     //else
                     //{
 
-                    ExpressionResult condExpRes = ProcessExpression(conditionExp, currentScope);
+                    ExpressionResult condExpRes = ProcessExpression(conditionExp, currentScope, classType, memberInfo);
                     if (condExpRes == null)
                     {
                         AddNewError(
@@ -540,7 +559,7 @@ namespace LayerD.ZOECompiler
                 else
                 {
                     //Ciclo for común
-                    CheckForBoolExpression(conditionExp, currentScope, "On for/foreach block.", xplForStatement);
+                    CheckForBoolExpression(conditionExp, currentScope, classType, memberInfo, "On for/foreach block.", xplForStatement);
                 }
             }
             //4) Proceso el bloque
@@ -604,7 +623,7 @@ namespace LayerD.ZOECompiler
         private void ProcessIfStatement(XplIfStatement xplIfStatement, TypeInfo classType, Scope currentScope, MemberInfo memberInfo)
         {
             //1°) Compruebo que la expresión sea de tipo valor bool.
-            CheckForBoolExpression(xplIfStatement.get_boolean(), currentScope, "On if statement.", xplIfStatement);
+            CheckForBoolExpression(xplIfStatement.get_boolean(), currentScope, classType, memberInfo, "On if statement.", xplIfStatement);
             //2°) Proceso los bloques anidados.
             XplFunctionBody block = xplIfStatement.get_ifbk();
             if (block == null)
@@ -627,7 +646,7 @@ namespace LayerD.ZOECompiler
                 AddNewError(
                     SemanticError.New(SemanticErrorCode.ExpressionRequired, xplSwitchStatement, " Expression of type byte, short, int, long, char or string is required on Switch statement."));
             else
-                switchExpRes = ProcessExpression(switchExp, currentScope);
+                switchExpRes = ProcessExpression(switchExp, currentScope, classType, memberInfo);
             string switchExpResStr = switchExpRes == null ? null : switchExpRes.get_TypeStr();
             if (switchExpResStr != null)
             {
@@ -716,7 +735,7 @@ namespace LayerD.ZOECompiler
                         if (defaultCase) AddNewError(SemanticError.New(SemanticErrorCode.DuplicatedDefaultCaseOnSwitchStatement, caseOp));
                         else defaultCase = true;
                     }
-                    else caseRes = ProcessExpression(caseExp, currentScope);
+                    else caseRes = ProcessExpression(caseExp, currentScope, classType, memberInfo);
                     if (switchExpResStr != null && caseRes != null)
                     {
                         string caseExpResStr = null;
@@ -779,7 +798,7 @@ namespace LayerD.ZOECompiler
                             decl, decl.get_name()));
                     }
                     //Tengo que chequear el inicializador si existe
-                    if (decl.get_i() != null) CheckInitializer(decl, classType, currentScope);
+                    if (decl.get_i() != null) CheckInitializer(decl, classType, memberInfo, currentScope);
                 }
             }
         }
@@ -791,13 +810,13 @@ namespace LayerD.ZOECompiler
         {
             //PENDIENTE: Etiquetas!!
         }
-        private void CheckExpressionsOnInitializer(XplNodeList list, Scope scope)
+        private void CheckExpressionsOnInitializer(XplNodeList list, Scope scope, TypeInfo classType, MemberInfo memberInfo)
         {
             if (list == null) return;
             foreach (XplNode e in list)
                 if (e.get_TypeName() == CodeDOMTypes.XplExpression)
                 {
-                    ExpressionResult result = ProcessExpression((XplExpression)e, scope);
+                    ExpressionResult result = ProcessExpression((XplExpression)e, scope, classType, memberInfo);
                     if (result != null && !result.get_IsValue())
                     {
                         TryConvertTypeMembersToValueOrLValue(result, scope, e.get_Content());
@@ -805,10 +824,10 @@ namespace LayerD.ZOECompiler
                 }
                 else
                 {
-                    CheckExpressionsOnInitializer(e.Children(), scope);
+                    CheckExpressionsOnInitializer(e.Children(), scope, classType, memberInfo);
                 }
         }
-        private void CheckInitializer(XplNewExpression xplNewExpression, Scope scope)
+        private void CheckInitializer(XplNewExpression xplNewExpression, Scope scope, TypeInfo classType, MemberInfo memberInfo)
         {
             XplInitializerList init = xplNewExpression.get_init();
             if (init != null && !init.get_array())
@@ -819,17 +838,17 @@ namespace LayerD.ZOECompiler
             }
             else if (init != null && init.get_array())
             {
-                CheckExpressionsOnInitializer(init.Children(), scope);
+                CheckExpressionsOnInitializer(init.Children(), scope, classType, memberInfo);
                 // TODO check items are convertible to array items type
             }
         }
-        private void CheckInitializer(XplDeclarator decl, TypeInfo classType, Scope currentScope)
+        private void CheckInitializer(XplDeclarator decl, TypeInfo classType, MemberInfo memberInfo, Scope currentScope)
         {
             //TODO complete this method
             XplInitializerList list = decl.get_i();
             if (list == null) return;
 
-            CheckExpressionsOnInitializer(list.Children(), currentScope);
+            CheckExpressionsOnInitializer(list.Children(), currentScope, classType, memberInfo);
 
             string requiredTypeStr = decl.get_type().get_typeStr();
             // if typestr is null or empty it means unresolved type for declarator; can't check initialization correctness
@@ -868,7 +887,7 @@ namespace LayerD.ZOECompiler
             }
 
         }
-        private void CheckInitializer(XplField decl, TypeInfo classType, Scope currentScope)
+        private void CheckInitializer(XplField decl, TypeInfo classType, Scope currentScope, MemberInfo memberInfo)
         {
             //PENDIENTE : Chequear las expresiones de inicialización.
             //ESTO Q ESTA HECHO ESTA MAL, SOLO PROCESA LAS EXPRESIONES SIMPLES DE 
@@ -876,10 +895,10 @@ namespace LayerD.ZOECompiler
             XplInitializerList list = decl.get_i();
             if (list != null)
             {
-                CheckExpressionsOnInitializer(list.Children(), currentScope);
+                CheckExpressionsOnInitializer(list.Children(), currentScope, classType, memberInfo);
             }
         }
-        private void CheckInitializer(XplParameter parameter, TypeInfo classType, Scope currentScope)
+        private void CheckInitializer(XplParameter parameter, TypeInfo classType, MemberInfo memberInfo, Scope currentScope)
         {
             //PENDIENTE : Chequear las expresiones de inicialización.
             //ESTO Q ESTA HECHO ESTA MAL, SOLO PROCESA LAS EXPRESIONES SIMPLES DE 
@@ -887,7 +906,7 @@ namespace LayerD.ZOECompiler
             XplInitializerList list = parameter.get_i();
             if (list != null)
             {
-                CheckExpressionsOnInitializer(list.Children(), currentScope);
+                CheckExpressionsOnInitializer(list.Children(), currentScope, classType, memberInfo);
             }
         }
         #endregion

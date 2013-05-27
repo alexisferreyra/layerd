@@ -99,7 +99,7 @@ namespace LayerD.ZOECompiler{
             return null;
         }
 
-        public string GetFunctionNameFromFunctionCall(XplFunctioncall functionCall)
+        public static string GetFunctionNameFromFunctionCall(XplFunctioncall functionCall)
         {
             if (functionCall == null || functionCall.get_l() == null || functionCall.get_l().get_Content() == null) return null;
 
@@ -243,7 +243,7 @@ namespace LayerD.ZOECompiler{
             else return null;
         }
 
-        private string ConvertToUseOnCache(string fullName)
+        private static string ConvertToUseOnCache(string fullName)
         {
             return fullName;
         }
@@ -355,9 +355,11 @@ namespace LayerD.ZOECompiler{
             //Si esta en el alcance de los using actuales
             ArrayList usingDirectives = currentScope.get_UsingDirectives();
             if (usingDirectives == null) return null;
+
+            fullOrPartialName = Scope.ScopeSeparator + fullOrPartialName;
             foreach (string prefix in usingDirectives)
             {
-                fullTypeName = prefix + Scope.ScopeSeparator + fullOrPartialName;
+                fullTypeName = prefix + fullOrPartialName;
                 if (this.Exists(fullTypeName)) return fullTypeName;
             }
             return null;

@@ -61,7 +61,7 @@ namespace Sample{
 			XplIName^ funcName = new XplIName(op.get_r().get_Content().get_StringValue());
 
 			// If the parent expression is a function call we must infer the function signature
-			if (op.get_Parent().get_Parent().get_TypeName() == "XplFunctioncall"){
+			if (op.get_Parent().get_Parent().IsA(CodeDOMTypes::XplFunctioncall)){
 				XplFunctioncall^ func = (XplFunctioncall^)op.get_Parent().get_Parent();
 				// Create the function
 				XplFunction^ retFunc = (XplFunction^)writecode{%
@@ -90,7 +90,7 @@ namespace Sample{
 					retFunc.get_Parameters().Children().InsertAtEnd(param);
 				}
 				// If the parent expression of the function call is an assingment try to infer the return type
-				if (func.get_Parent().get_Parent().get_TypeName() == "XplAssing"){
+				if (func.get_Parent().get_Parent().IsA(CodeDOMTypes::XplAssing)){
 					XplExpression^ leftExp = ((XplAssing^)func.get_Parent().get_Parent()).get_l();
 					if (leftExp.get_typeStr() != ""){
 						retFunc.set_ReturnType(GetType(leftExp.get_typeStr()));
@@ -100,7 +100,7 @@ namespace Sample{
 			}
 			else {
 				// If the parent expression of the member access is an assingment try to infer a property
-				if (op.get_Parent().get_Parent().get_TypeName() == "XplAssing"){
+				if (op.get_Parent().get_Parent().IsA(CodeDOMTypes::XplAssing)){
 					XplExpression^ otherSide = null;
 					// Member access can be on the left or on the right
 					if (op.get_Parent().get_ElementName() == "l"){
