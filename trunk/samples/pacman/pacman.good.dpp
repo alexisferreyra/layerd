@@ -1,0 +1,13 @@
+using js;
+using js::global;
+
+namespace game
+{
+    class Pacman inherits PacmanSoul
+    {
+    public:
+        Pacman(Map^ map, int row, int column, string^ color) : PacmanSoul(map, row, column, color)
+        {
+        }
+    }
+}

@@ -1,0 +1,40 @@
+using js;
+using js::global;
+
+namespace game
+{
+    class BadPacman inherits PacmanSoul
+    {
+        int _counter = 0;
+    public:
+        BadPacman(Map^ map, int row, int column, string^ color) : PacmanSoul(map, row, column, color)
+        {
+        }
+        override void updateAnimation()
+        {
+            Array^ bestDirections = this.getBestDirections();
+            Array^ freeDirections = this.getFreeDirections();
+            if(bestDirections.length > 0 && bestDirections.indexOf(this._direction) < 0)
+            {
+                int selected = 0;
+                if(bestDirections.length > 1) selected = Math::floor(Math::random() * bestDirections.length);
+                this.changeDirection( (int)(object^)bestDirections[selected] );
+            }
+            else if(this._row == this._rowTo && this._column == this._columnTo || this._counter > 4 && freeDirections.length > 2)
+            {
+                int selected = Math::floor(Math::random() * freeDirections.length);
+                this.changeDirection( (int)(object^)freeDirections[selected] );
+                this._counter = 0;
+            }
+            
+            base.updateAnimation();
+        }
+        override void movedToCell(int row, int column)
+        {
+            this._counter++;
+            base.movedToCell(row, column);
+        }
+
+    }
+    
+}

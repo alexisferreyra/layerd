@@ -1,0 +1,13 @@
+// JavaScript specific imports
+import "./lib/classy.js", "platform=JavaScript", "type=script", "outputsubfolder=lib", "copy=true";
+import "./lib/zoe.base.js", "platform=JavaScript", "type=script", "outputsubfolder=lib", "copy=true";
+import "default.externs.zoe";
+
+// my project imports
+import "./pacman.css", "platform=JavaScript", "type=stylesheet", "copy=true";
+import "pacman.controller.zoe";
+import "pacman.map.zoe";
+import "pacman.actor.zoe";
+import "pacman.soul.zoe";
+import "pacman.bad.zoe";
+import "pacman.good.zoe";

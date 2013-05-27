@@ -1,0 +1,71 @@
+using js;
+using js::global;
+
+namespace game
+{
+    class PacmanSoul inherits Actor
+    {
+    protected:
+        int _mouthSize;
+        int _mouthSizeIncrement;
+        const int maxMouthSize = Math::PI / 3;
+        Actor^ _otherPacman;
+        string^ _color;
+        float _pacmanRadius;
+    public:
+        PacmanSoul(Map^ map, int row, int column, string^ color) : Actor(map, row, column)
+        {
+            this._mouthSize = 0;
+            this._mouthSizeIncrement = this.maxMouthSize / 15;
+            this._color = color;
+            this._pacmanRadius = Math::round(this._cellSize / 2 * 0.8);
+        }
+        void setOtherPacman(Actor^ actor)
+        {
+            this._otherPacman = actor;
+        }
+        override void render()
+        {
+            double arcOffset = 0;
+            if(this._direction == Actor::Left) arcOffset = Math::PI;
+            if(this._direction == Actor::Up) arcOffset = - Math::PI / 2;
+            if(this._direction == Actor::Down) arcOffset = Math::PI / 2;
+            
+            double x = this._map.xOffset() + this._cellSize * this._column;
+            double y = this._map.yOffset() +this._cellSize * this._row;
+            double centerX = x + (this._cellSize / 2) + this._xOffset;
+            double centerY = y + (this._cellSize / 2) + this._yOffset;
+            
+            this._context.beginPath();
+            this._context.fillStyle = this._color;
+            this._context.arc(centerX, centerY, this._pacmanRadius, this._mouthSize + arcOffset, 2.0 * Math::PI - this._mouthSize + arcOffset, false);
+            this._context.lineTo(centerX, centerY);
+            this._context.fill();
+            this._context.lineWidth = 1;
+            this._context.strokeStyle = this._color;
+            this._context.stroke();            
+        }
+        override void movedToCell(int row, int column)
+        {
+            int cellState = this._map.getCellState(row, column);
+            if(cellState == game::Map::P)
+            {
+                this._otherPacman.setSpeed(Actor::Slow);
+                this.setSpeed(Actor::Fast);
+                global::window.setTimeout(Func{
+                    this._otherPacman.setSpeed(Actor::Normal);
+                    this.setSpeed(Actor::Normal);
+                }, 5000);
+            }
+            this._map.eat(row, column);
+        }
+        override void updateAnimation()
+        {
+            this._mouthSize += this._mouthSizeIncrement;
+            if( Math::abs(this._mouthSize - this.maxMouthSize) <= 0.0001) this._mouthSize = 0;
+                        
+            base.updateAnimation();
+        }
+    }
+    
+}
