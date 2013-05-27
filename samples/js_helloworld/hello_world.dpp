@@ -1,0 +1,17 @@
+import "./lib/classy.js", "platform=JavaScript", "type=script", "outputsubfolder=lib", "copy=true";
+import "./lib/zoe.base.js", "platform=JavaScript", "type=script", "outputsubfolder=lib", "copy=true";
+import "default.externs.zoe";
+using js;
+using js::global;
+
+namespace myapp
+{
+    class hello
+    {
+    public:
+        static void Main()
+        {
+            console::log("Hello World");
+        }
+    }
+}
