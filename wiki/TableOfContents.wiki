@@ -42,7 +42,9 @@
   # [Programming_NET Programming for .NET]
   # [Programming_Java Programming for Java]
   # [Programming_Cpp Programming for C/C++]
-  # [Programming_Javascript Programming for Javascript]
+  # [Programming_Javascript Programming for JavaScript]
+      # [Javascript_hello_world JavaScript Hello World]
+      # [Javascript_pacman_sample Pacman Mini-Game Using Canvas]
   # [Programming_Python Programming for Python]
 
 * Reference *
