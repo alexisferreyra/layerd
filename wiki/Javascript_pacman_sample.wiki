@@ -1,0 +1,7 @@
+#summary One-sentence summary of this page.
+
+= Pacman Mini-Game Using Canvas =
+
+Here we describe a simple mini-game implemented 100% using Meta D++.
+
+= Details =
