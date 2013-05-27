@@ -21,6 +21,8 @@ import "images/ajax-loader.gif", "platform=JavaScript", "type=resource";
 // copy a javascript file into a subfolder 
 import "lib/classy.js", "platform=JavaScript", "type=script", "outputsubfolder=lib", "copy=true";
 
+// change create namespace and truncate functions with the ones provided in mylib.js
+import "myextern.js", "platform=JavaScript", "type=script", "extern=myextern.zoe", "createNamespaceFunction=MyLib.createNamespace", "truncateFunction=MyLib.truncate";
 }}}
 
 
@@ -37,6 +39,8 @@ All paths used in import directives are relative to current working directory of
   * *"copy"* parameter is either true or false. Set if the resource will copied to the output with the rest of generated code or not.
   * *"extern"* optional parameter that signal the code generator to load that Zoe file during compilation (when the target is Javascript) to be used as external types definitions. Because current implementation does not provide an automatic type importer. You must provide all type information for external types that lives in the target Javascript runtime.
   * *"outputsubfolder"* an optional subfolder that will be used to copy the resources/scripts and css files. If not provided, files are copied in the root of the output directory.
+  * *"createNamespaceFunction"* allows to change the default function "Zoe.createNamespace" used to declare namespaces.
+  * *"truncateFunction"* allows to change the default function "Zoe.truncate" used to truncate numbers.
 
 = External type information =
 Because current implementation does not provide an automatic type importer. You must provide all type information for external types that lives in the target Javascript runtime.
