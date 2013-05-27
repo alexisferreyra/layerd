@@ -7,7 +7,7 @@
   # [Hello_World_Samples Hello World Samples]
 
 * Programmers Guide *
-  # [Building_Binaries Building Binaries]
+  # [Building_Binaries Getting the Binaries]
   # [Introduction]
   # [Compiler_usage Compiler usage]
   # Basic Language
