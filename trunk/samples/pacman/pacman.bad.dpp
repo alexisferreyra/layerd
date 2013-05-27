@@ -6,28 +6,49 @@ namespace game
     class BadPacman inherits PacmanSoul
     {
         int _counter = 0;
+        bool _disableAuto;
+        int _enableTimeout;
     public:
         BadPacman(Map^ map, int row, int column, string^ color) : PacmanSoul(map, row, column, color)
         {
+            this._disableAuto = false;
+            this._enableTimeout = 0;
         }
         override void updateAnimation()
         {
+            if(this._disableAuto)
+            { 
+                base.updateAnimation();
+                return;
+            }
+            
             Array^ bestDirections = this.getBestDirections();
             Array^ freeDirections = this.getFreeDirections();
             if(bestDirections.length > 0 && bestDirections.indexOf(this._direction) < 0)
             {
                 int selected = 0;
                 if(bestDirections.length > 1) selected = Math::floor(Math::random() * bestDirections.length);
-                this.changeDirection( (int)(object^)bestDirections[selected] );
+                base.changeDirection( (int)(object^)bestDirections[selected] );
             }
             else if(this._row == this._rowTo && this._column == this._columnTo || this._counter > 4 && freeDirections.length > 2)
             {
                 int selected = Math::floor(Math::random() * freeDirections.length);
-                this.changeDirection( (int)(object^)freeDirections[selected] );
+                base.changeDirection( (int)(object^)freeDirections[selected] );
                 this._counter = 0;
             }
             
             base.updateAnimation();
+        }
+        override void changeDirection(int newDirection)
+        {
+            this._disableAuto = true;
+            base.changeDirection(newDirection);
+            
+            // timeout to enable auto again
+            if(this._enableTimeout != 0) global::window.clearTimeout(this._enableTimeout);
+            this._enableTimeout = global::window.setTimeout(Func{
+                this._disableAuto = false;
+                }, 5000);
         }
         override void movedToCell(int row, int column)
         {
