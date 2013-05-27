@@ -5,3 +5,5 @@
 Here we describe a simple mini-game implemented 100% using Meta D++.
 
 = Details =
+
+https://code.google.com/p/layerd/source/browse/wiki/img/pacman-screen.png
