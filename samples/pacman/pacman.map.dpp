@@ -1,0 +1,245 @@
+using js;
+using js::global;
+
+namespace game
+{
+    class Map
+    {
+        Array^ _map;
+        HTMLCanvasContext^ _context;
+        double _pixelWidth;
+        double _pixelHeight;
+        double _cellSize;
+        double _xOffset;
+        double _yOffset;
+        double _ballRadius;
+        double _powerRadius;
+        int _columns;
+        int _rows;
+        int _ballsCount;
+        int _totalBallsCount;
+        
+        void initialize()
+        {
+            this.fillMap();
+            
+            this._columns = ((Array^)this._map[0]).length;
+            this._rows = this._map.length;
+            
+            int maxWidth = Math::round(this._pixelWidth / this._columns);
+            int maxHeight = Math::round(this._pixelHeight / this._rows);
+            
+            this._cellSize = Math::min(maxWidth, maxHeight);
+            
+            this._xOffset = Math::round((this._pixelWidth - this._cellSize * this._columns) / 2);
+            this._yOffset = Math::round((this._pixelHeight - this._cellSize * this._rows) / 2);
+            this._ballRadius = Math::round(this._cellSize * 0.05);
+            this._powerRadius = Math::round(this._cellSize * 0.15);
+        }
+        
+        void drawMap()
+        {
+            int mapColumns = this._columns;
+            int mapRows = this._rows;
+            
+            for(int r = 0; r < mapRows; r++)
+            {
+                for(int c = 0; c < mapColumns; c++)
+                {
+                    int cellState = this.getCellState(r, c);
+                    if(cellState == B || cellState == P) this._totalBallsCount++;
+                    this.renderRowColumn(r, c, true);
+                }
+            }
+            this._ballsCount = this._totalBallsCount;
+        }
+        
+        void renderRowColumn(int row, int column, bool renderWall)
+        {
+            if(row < 0 || column < 0) return;
+            
+            int cellType = (int)this._map[row][column];
+            
+            double x = this._xOffset + this._cellSize * column;
+            double y = this._yOffset + this._cellSize * row;
+            
+            if(cellType == W && renderWall) this.renderWall(x, y);
+            if(cellType == F || cellType == FB || cellType == FP) this.renderFreeSpace(x, y);
+            if(cellType == B) this.renderBall(x, y);
+            if(cellType == P) this.renderPowerBall(x, y);
+        }
+        
+        void renderWall(double x, double y)
+        {
+            HTMLCanvasGradient^ grd = this._context.createRadialGradient(238, 50, 10, 238, 50, 300);
+            grd.addColorStop(0, "#8ED6FF");
+            grd.addColorStop(1, "#004CB3");
+            this._context.fillStyle = grd;
+            this._context.fillRect(x, y, this._cellSize, this._cellSize);
+        }
+        
+        void renderFreeSpace(double x, double y)
+        {
+            this._context.setFillColor("#FFF");
+            this._context.fillRect(x, y, this._cellSize, this._cellSize);
+        }
+        
+        void renderBall(double x, double y)
+        {
+            double centerX = x + (this._cellSize / 2);
+            double centerY = y + (this._cellSize / 2);
+            this.renderFreeSpace(x, y);
+            this._context.beginPath();
+            this._context.arc(centerX, centerY, this._ballRadius, 0, 2.0 * Math::PI, false);
+            this._context.fillStyle = "green";
+            this._context.fill();
+            this._context.lineWidth = 1;
+            this._context.strokeStyle = "#003300";
+            this._context.stroke();
+        }
+        
+        void renderPowerBall(double x, double y)
+        {
+            double centerX = x + (this._cellSize / 2);
+            double centerY = y + (this._cellSize / 2);
+            this.renderFreeSpace(x, y);
+            this._context.beginPath();
+            this._context.arc(centerX, centerY, this._powerRadius, 0, 2.0 * Math::PI, false);
+            this._context.fillStyle = "green";
+            this._context.fill();
+            this._context.lineWidth = 1;
+            this._context.strokeStyle = "#003300";
+            this._context.stroke();
+        }
+        
+    public:
+        static const int F = 0;
+        static const int B = 1;
+        static const int P = 2;
+        static const int W = 3;
+        static const int FB = 4;
+        static const int FP = 5;
+        
+        Map(HTMLCanvasContext^ context, double width, double height)
+        {
+            this._context = context;
+            this._pixelWidth = width;
+            this._pixelHeight = height;
+            this.initialize();
+        }
+        void eat(int row, int column)
+        {
+            int cellState = this.getCellState(row, column);
+            if(cellState == B || cellState == P)
+            {
+                this.changeCellState(row, column, cellState == B ? FB : FP);
+                this._ballsCount--;
+                if(this._ballsCount % 50 == 0 || this._ballsCount < 10)
+                {
+                    console::log("Balls Count: " + this._ballsCount);
+                }
+            }
+            if(this._ballsCount == 0) this.resetMap();
+        }
+        void resetMap()
+        {
+            console::log("Reset!");
+            int mapColumns = this._columns;
+            int mapRows = this._rows;
+            
+            for(int r = 0; r < mapRows; r++)
+            {
+                for(int c = 0; c < mapColumns; c++)
+                {
+                    int cellState = this.getCellState(r, c);
+                    if(cellState == FB || cellState == FP)
+                    {
+                        this.changeCellState(r, c, cellState == FB ? B : P);
+                        this.renderRowColumn(r, c, false);
+                    }
+                }
+            }
+            this._ballsCount = this._totalBallsCount;
+        }
+        void renderAround(int row, int column)
+        {
+            this.renderRowColumn(row, column, false);
+            this.renderRowColumn(row + 1, column, false);
+            this.renderRowColumn(row - 1, column, false);
+            this.renderRowColumn(row, column + 1, false);
+            this.renderRowColumn(row, column - 1, false);
+        }
+        
+        double xOffset()
+        {
+            return this._xOffset;
+        }
+        double yOffset()
+        {
+            return this._yOffset;
+        }
+        int rows()
+        {
+            return this._rows;
+        }
+        int columns()
+        {
+            return this._columns;
+        }
+        virtual void fillMap()
+        {
+            this._map = new Array(
+                new Array( W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W ),
+                new Array( W, F, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, W ),
+                
+                new Array( W, B, W, B, B, B, W, B, W, W, W, W, W, B, W, B, B, B, W, B, W, B, B, B, B, B, W, W, W, W, W, B, W ),
+                new Array( W, B, W, P, B, B, W, B, B, B, W, B, B, B, W, W, P, W, W, B, W, B, B, B, B, B, W, B, B, B, B, B, W ),
+                new Array( W, B, W, W, W, W, W, B, B, B, W, B, B, B, W, B, W, B, W, B, W, B, B, B, B, B, W, W, W, W, W, B, W ),
+                new Array( W, B, W, B, B, B, W, B, B, B, W, B, B, B, W, B, B, B, W, B, W, B, B, B, B, B, B, B, B, B, W, B, W ),
+                new Array( W, B, W, B, B, B, W, B, B, B, W, B, B, B, W, B, B, B, W, B, W, W, W, W, W, B, W, W, W, W, W, P, W ),
+                
+                new Array( W, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, W ),
+                
+                new Array( W, B, W, W, W, W, W, B, W, W, W, W, W, B, W, W, W, W, W, B, W, B, B, B, B, B, B, W, W, W, W, B, W ),
+                new Array( W, B, B, B, W, B, B, B, W, P, B, B, W, B, W, P, B, B, W, B, W, B, B, B, B, B, W, P, B, B, B, B, W ),                
+                new Array( W, B, B, B, W, B, B, B, W, B, B, B, W, B, W, B, B, B, W, B, W, B, B, B, B, B, B, W, W, W, B, B, W ),                
+                new Array( W, B, B, B, W, B, B, B, W, B, B, B, W, B, W, B, B, B, W, B, W, B, B, B, B, B, B, B, B, P, W, B, W ),                
+                new Array( W, B, B, B, W, B, B, B, W, W, W, B, W, B, W, W, W, B, W, B, W, W, W, W, W, B, W, W, W, W, B, B, W ),                
+                
+                new Array( W, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, B, F, W ),
+                new Array( W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W )
+            );
+        }
+        
+        int changeCellState(int row, int column, int newState)
+        {
+            int currentState = (int)(object^)this._map[row][column];
+            if(currentState != W)
+            {
+                this._map[row][column] = newState;
+                return currentState;
+            }
+            return -1;
+        }
+        
+        double getCellSize()
+        {
+            return this._cellSize;
+        }
+        
+        HTMLCanvasContext^ getCanvasContext()
+        {
+            return this._context;
+        }
+        
+        void render()
+        {
+            this.drawMap();
+        }
+        
+        int getCellState(int row, int column)
+        {
+            return (int)this._map[row][column];
+        }
+    }    
+}

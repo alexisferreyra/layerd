@@ -1,0 +1,166 @@
+using js;
+using js::global;
+
+namespace game
+{
+    abstract class Actor
+    {
+    protected:
+        Map^ _map;
+        int _row;
+        int _column;
+        int _rowTo;
+        int _columnTo;
+        HTMLCanvasContext^ _context;
+        double _cellSize;
+        int _direction;
+        double _xOffset;
+        double _yOffset;
+        double _offsetIncrement;
+        int _nextDirection;
+    public:
+        static const int Up = 1;
+        static const int Down = 2;
+        static const int Left = 3;
+        static const int Right = 4;
+        static const int Stop = 5;
+        static const double Normal = 15;
+        static const double Slow = 15 * 3;
+        static const double Fast = 15 / 1.5;
+        
+        Actor(Map^ map, int row, int column)
+        {
+            this._map = map;
+            this._row = row;
+            this._column = column;
+            this._rowTo = this._row;
+            this._columnTo = this._column;
+            this._context = map.getCanvasContext();
+            this._cellSize = map.getCellSize();
+            this._direction = Right;
+            this._nextDirection = Right;
+            this._offsetIncrement = this._cellSize / Normal;
+        }
+        
+        void render();
+        void updateState();
+        void movedToCell(int row, int column);
+        
+        void setSpeed(double speed)
+        {
+            this._offsetIncrement = this._cellSize / speed;
+        }
+        
+        int getNextX(int direction)
+        {
+            if(direction == Right) return 1;
+            if(direction == Left) return -1;
+            return 0;
+        }
+        int getNextY(int direction)
+        {
+            if(direction == Up) return -1;
+            if(direction == Down) return 1;
+            return 0;
+        }
+        void updateAnimation()
+        {
+            if(this._rowTo == this._row && this._columnTo == this._column) return;
+            if(Math::abs(this._xOffset) >= this._cellSize || Math::abs(this._yOffset) >= this._cellSize )
+            {
+                this._row = this._rowTo;
+                this._column = this._columnTo;
+                // move to next cell
+                this.resetAnimationOffset();
+                // update current cell state
+                this.movedToCell(this._rowTo, this._columnTo);
+                // check if we can move into next direction
+                this.moveToNextDirection();
+            }
+            else
+            {
+                int nextX = this.getNextX(this._direction);
+                int nextY = this.getNextY(this._direction);
+                this._xOffset += nextX * this._offsetIncrement;
+                this._yOffset += nextY * this._offsetIncrement;
+            }
+        }
+        void resetAnimationOffset()
+        {
+            this._xOffset = 0;
+            this._yOffset = 0;
+        }
+        void moveToNextDirection()
+        {
+            if(Math::abs(this._xOffset) >= this._cellSize / 10 || Math::abs(this._yOffset) >= this._cellSize / 10) return;
+            
+            int nextX = this.getNextX(this._nextDirection);
+            int nextY = this.getNextY(this._nextDirection);
+            int cellState = this._map.getCellState(this._row + nextY, this._column + nextX);
+            if(cellState != game::Map::W)
+            {
+                this._columnTo = this._column + nextX;
+                this._rowTo = this._row + nextY;
+                this._direction = this._nextDirection;
+            }
+        }
+        void changeDirection(int newDirection)
+        {
+            this._nextDirection = newDirection;
+            this.moveToNextDirection();
+        }
+        Array^ getBestDirections()
+        {
+            Array^ ret = new Array();
+            
+            int cellState = this._map.getCellState(this._row + 1, this._column);
+            if(cellState == game::Map::B) ret.push(Actor::Down);
+            if(cellState == game::Map::P) ret.push(Actor::Down);
+            if(cellState == game::Map::P) ret.push(Actor::Down);
+            
+            cellState = this._map.getCellState(this._row - 1, this._column);
+            if(cellState == game::Map::B) ret.push(Actor::Up);
+            if(cellState == game::Map::P) ret.push(Actor::Up);
+            if(cellState == game::Map::P) ret.push(Actor::Up);
+            
+            cellState = this._map.getCellState(this._row, this._column + 1);
+            if(cellState == game::Map::B) ret.push(Actor::Right);
+            if(cellState == game::Map::P) ret.push(Actor::Right);
+            if(cellState == game::Map::P) ret.push(Actor::Right);
+            
+            cellState = this._map.getCellState(this._row, this._column - 1);
+            if(cellState == game::Map::B) ret.push(Actor::Left);
+            if(cellState == game::Map::P) ret.push(Actor::Left);
+            if(cellState == game::Map::P) ret.push(Actor::Left);
+            
+            return ret;
+        }
+        Array^ getFreeDirections()
+        {
+            Array^ ret = new Array();
+            
+            int cellState = this._map.getCellState(this._rowTo + 1, this._columnTo);
+            if(cellState != game::Map::W) ret.push(Actor::Down);
+            
+            cellState = this._map.getCellState(this._rowTo - 1, this._columnTo);
+            if(cellState != game::Map::W) ret.push(Actor::Up);
+            
+            cellState = this._map.getCellState(this._rowTo, this._columnTo + 1);
+            if(cellState != game::Map::W) ret.push(Actor::Right);
+            
+            cellState = this._map.getCellState(this._rowTo, this._columnTo - 1);
+            if(cellState != game::Map::W) ret.push(Actor::Left);
+            
+            return ret;
+        }
+        int column()
+        {
+            return this._column;
+        }
+        int row()
+        {
+            return this._row;
+        }
+        
+    }
+}
