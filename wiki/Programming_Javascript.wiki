@@ -42,6 +42,8 @@ All paths used in import directives are relative to current working directory of
   * *"createNamespaceFunction"* allows to change the default function "Zoe.createNamespace" used to declare namespaces.
   * *"truncateFunction"* allows to change the default function "Zoe.truncate" used to truncate numbers.
 
+Note that parameters to change namespace or truncate functions are global settings. The last processed import directive, that includes these parameters, will be used. By default, you don't need to setup any special functions if you are OK using the ones provided by default.
+
 = External type information =
 Because current implementation does not provide an automatic type importer. You must provide all type information for external types that lives in the target Javascript runtime.
 When providing external type information to Javascript code generator use the namespace *"js"* for all external definitions and the special class *"js::global"* to provide global definitions like global functions like *alert* or objects like *window*.
