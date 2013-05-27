@@ -620,11 +620,11 @@ namespace LayerD.OutputModules
                     {
                         data.OutputSubfolder = parameterValue;
                     }
-                    else if (parameterName == "createNamespaceFunction")
+                    else if (parameterName == "createnamespacefunction")
                     {
                         JsTools.CreateNamespaceFunction = parameterValue;
                     }
-                    else if (parameterName == "truncateFunction")
+                    else if (parameterName == "truncatefunction")
                     {
                         JsTools.TruncateFunction = parameterValue;
                     }
