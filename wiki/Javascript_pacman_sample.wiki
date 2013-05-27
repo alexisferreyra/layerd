@@ -6,6 +6,8 @@ Here we describe a simple mini-game implemented 100% using Meta D++.
 
 You can download the code and `JavaScript` compilation of this sample from `trunk\samples\pacman`.
 
+Try the mini-game here [https://googledrive.com/host/0B6YUCBp4Z-wOdzl4OElxMmdiZWM/pacman.html]
+
 <img src="https://layerd.googlecode.com/svn/wiki/img/pacman-screen.png" />
 
 = Details =
