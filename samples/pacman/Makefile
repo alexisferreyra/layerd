@@ -13,12 +13,12 @@ DEPENDENCIES_ZOE = \
                 pacman.good.zoe
 
 all: $(DEPENDENCIES_ZOE)
-	mkdir pacman & echo Generate JS
-	$(ZOEC) -p:Javascript -opath:pacman pacman.zoe
+	mkdir output & echo Generate JS
+	$(ZOEC) -p:Javascript -opath:output pacman.zoe
 
 %.zoe: %.dpp
 	$(METADPP) -s $<
 
 clean:
 	del *.zoe
-	rmdir /S /Q pacman
+	rmdir /S /Q output
