@@ -22,7 +22,7 @@ import "images/ajax-loader.gif", "platform=JavaScript", "type=resource";
 import "lib/classy.js", "platform=JavaScript", "type=script", "outputsubfolder=lib", "copy=true";
 
 // change create namespace and truncate functions with the ones provided in mylib.js
-import "myextern.js", "platform=JavaScript", "type=script", "extern=myextern.zoe", "createNamespaceFunction=MyLib.createNamespace", "truncateFunction=MyLib.truncate";
+import "mylib.js", "platform=JavaScript", "type=script", "extern=mylib.zoe", "createNamespaceFunction=MyLib.createNamespace", "truncateFunction=MyLib.truncate";
 }}}
 
 
