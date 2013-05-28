@@ -46,6 +46,7 @@
   # [Programming_Javascript Programming for JavaScript]
       # [Javascript_hello_world JavaScript Hello World]
       # [Javascript_pacman_sample Pacman Mini-Game Using Canvas]
+      # [Javascript_limitations JavaScript code generator's limitations]
   # [Programming_Python Programming for Python]
 
 * Reference *
