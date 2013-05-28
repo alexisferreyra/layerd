@@ -7,7 +7,7 @@ You can find the code for this sample in `trunk\samples\js_helloworld`.
 = Setup base files =
 
 The Zoe `JavaScript` code generator depends on two `JavaScript` files that will be needed for all projects.
-You will find those files in the binaries (or in the Zoe code generator project in `trunk\lib_zoec_outmod_js\js_lib`.
+You will find those files in the binaries (or in the Zoe code generator project in `trunk\lib_zoec_outmod_js\js_lib`).
 
 The files that you will need are:
  # `classy.js` : this file provides an implementation for emulation of classes in `JavaScript`. This code is base on classyjs [https://github.com/mitsuhiko/classy].
