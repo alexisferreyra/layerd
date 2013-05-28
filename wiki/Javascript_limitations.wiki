@@ -7,7 +7,7 @@ This is what you can't do in Meta D++:
 
   * *Implement global functions or objects*: because Meta D++ promotes the use of namespaces and classes, it avoids having global objects and functions. For now, you can't write code at `JavaScript's` global scope. If you really, really need to write global scope things, you can always write JS code and import that into Meta D++ by providing type definition for the external code and importing using import directive.
 
-  * *Using dollar character in identifiers*: Meta D++ lexical definition does not allow to use $ in identifiers, so you can't use that in identifiers. Still, you can use the special static member "js::global::S" to access the global JS symbol "$"
+  * *Using dollar character in identifiers*: Meta D++ lexical definition does not allow to use $ in identifiers, so you can't use that in identifiers. Still, you can use the special static member "js::global::S" to access the global JS symbol "$" in external libraries. Still, it is recommended to use things like `jQuery` instead of `$` (that in Meta D++ will be `js::global::S`).
 
 = FAQ =
 
