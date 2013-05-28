@@ -178,3 +178,84 @@ global::window.onkeyup = Func(event is DOMEvent^){
 }}}
 You just assign the `onkeyup` property with a closure. Note that you have to provide the type information for the arguments in order to use the methods of event.
 
+== Using `JavaScript` native Object and Array ==
+To use native JS arrays and objects you just can use the external classes `js::Object` and `js::Array`.
+In typical extern definitions you will have something like:
+{{{
+extern public class Object
+{
+public:
+    Object(params object*ref[] args);
+
+    js::Object*ref indexer(object*ref name)
+    { 
+        get;
+        set;
+    }
+    // ....
+}
+extern public class Array inherits js::Object
+{
+public:
+    // Constructors
+    Array(params object*ref[] args);
+    // properties & methods
+    int length;
+    js::Array*ref concat(js::Array*ref[] args);
+    js::Array*ref concat(params js::Array*ref args);
+    js::String*ref join(js::Object*ref separator);
+    js::Object*ref pop();
+    int push(js::Object*ref arg1, params object*ref[] args);
+    void reverse();
+    js::Object*ref shift();
+    js::Array*ref slice();
+    js::Array*ref slice(int start);
+
+    // ....
+}
+
+}}}
+We recommend starting the extern definition from the one provided with the binaries.
+
+When you use `js::Object` and `js::Array` constructors the code generator will generate special code, as you will in native JS.
+
+For example, take a look at the code in `pacman.map.dpp`, function `fillMap`:
+{{{
+virtual void fillMap()
+{
+    this._map = new Array(
+        new Array( W, W, W, W ),
+        new Array( W, F, B, W ),
+        new Array( W, B, F, W ),
+        new Array( W, W, W, W ),
+    );
+}
+}}}
+
+The call to `new Array` - `js::Array` if you don't provide the using directive - will be compiled in `JavaScript` into:
+{{{
+fillMap: function(){
+   this._map = [
+        [ W, W, W, W ],
+        [ W, F, B, W ],
+        [ W, B, F, W ],
+        [ W, W, W, W ],
+    ];
+}
+}}}
+
+The same is true for `js::Object` special class. Example, if you write Meta D++ code:
+{{{
+   a = new js::Object( "key1", "value1", "key2", "value2" );
+}}}
+Will generate JS:
+{{{
+  a = { "key1": "value1", "key2": "value2" };
+}}}
+
+And it support recursive inclusion of `Object` and `Arrays`.
+
+== And that's all ==
+This is more or less all that you need to know in order to program in Meta D++ and target `JavaScript` runtimes.
+
+Because, it's Meta D++, you can take advantage of all of the compile time capabilities of the language like introspection, code refactoring and transformation, compile time API encapsulation, program your own DSL, etc.
