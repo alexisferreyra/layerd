@@ -22,7 +22,9 @@ Yes off-course Sir!, you have to provide a file with external types definition a
 Remember that you only need to provide type definition for the things that you use. It's not needed to have full types definition!
 
 *What can I use to debug JS programs written in Meta D++?*
+
 Any debugger like Chrome Tools or Mozilla will work. But take into account that you will be debugging the generated JS. Still, the generated code is really, really, readable. 
+
 You can help us implementing source mappings into the code generator!
 
 *I want to add objects and types definition to special `js::global` class. But, I wan't to do that in a separate file from common externs.*
