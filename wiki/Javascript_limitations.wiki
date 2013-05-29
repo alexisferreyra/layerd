@@ -14,11 +14,16 @@ This is what you can't do in Meta D++:
 *I do not like the code generated for classes and inheritance, what can I do?*
 
 You can always fork the Zoe `JavaScript` Code Generator. It's basically a pretty printer that you should be able to easily customize.
+In the future, we may provide a standard way to customize the generated code.
 
 *I want to use other `JavaScript` libraries. Is that possible?*
 
 Yes off-course Sir!, you have to provide a file with external types definition and provide a simple import clause like the ones [https://code.google.com/p/layerd/wiki/Programming_Javascript here].
 Remember that you only need to provide type definition for the things that you use. It's not needed to have full types definition!
+
+*What can I use to debug JS programs written in Meta D++?*
+Any debugger like Chrome Tools or Mozilla will work. But take into account that you will be debugging the generated JS. Still, the generated code is really, really, readable. 
+You can help us implementing source mappings into the code generator!
 
 *I want to add objects and types definition to special `js::global` class. But, I wan't to do that in a separate file from common externs.*
 
