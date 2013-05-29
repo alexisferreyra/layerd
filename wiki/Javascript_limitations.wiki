@@ -9,6 +9,12 @@ This is what you can't do in Meta D++:
 
   * *Using dollar character in identifiers*: Meta D++ lexical definition does not allow to use $ in identifiers, so you can't use that in identifiers. Still, you can use the special static member "js::global::S" to access the global JS symbol "$" in external libraries. Still, it is recommended to use things like `jQuery` instead of `$` (that in Meta D++ will be `js::global::S`).
 
+ * *Unions and pointer arithmetic*: those Meta D++ features are not supported by the code generator. So, avoid using them in programs that will target `JavaScript`. Simple pointers, used to pass by reference parameters are supported. But more complex interaction like pointer increment of additions are not.
+
+ * *Enumeration, Properties and operator overloading*: Meta D++ enumerations, properties and operator overloading are not supported. But that will be added in the future.
+
+ * *Meta D++ native classes like `zoe::lang::String` are not mapped*: the few native classes are not yet mapped to `JavaScript`. You can use native `JavaScript` classes like `js::String`, `js::Date`, etc. instead. Intrinsic types like `int` or `double` are supported.
+
 = FAQ =
 
 *I do not like the code generated for classes and inheritance, what can I do?*
