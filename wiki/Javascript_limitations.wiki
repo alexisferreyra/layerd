@@ -13,7 +13,7 @@ This is what you can't do in Meta D++:
 
  * *Enumeration, Properties and operator overloading*: Meta D++ enumerations, properties and operator overloading are not supported. But that will be added in the future.
 
- * *Meta D++ native classes like `zoe::lang::String` are not mapped*: the few native classes are not yet mapped to `JavaScript`. You can use native `JavaScript` classes like `js::String`, `js::Date`, etc. instead. Intrinsic types like `int` or `double` are supported.
+ * *Meta D++ native classes like `zoe::lang::String` are not mapped*: the few native classes are not yet mapped to `JavaScript`. You can use native `JavaScript` classes like `js::String`, `js::Date`, etc. instead. Intrinsic types like `int` or `double` are supported. You can use Meta D++ native classes, but will need to provide the implementation in `JavaScript`.
 
 = FAQ =
 
