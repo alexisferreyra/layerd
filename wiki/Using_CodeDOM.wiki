@@ -6,22 +6,23 @@
 Classes within `CodeDOM` represents portions of Zoe source code in memory, eg classes, functions, expressions, types, etc..
 All classes that represent some portion of source code are derived from `XplNode` which is the base class for all nodes that represent a Zoe source.  In memory a Zoe source is represented with a tree structure and the classes within the `CodeDOM` represent the branches and leaves in the tree. As the most important classes within the `CodeDOM` can be mention the followings: 
 </p>
+<p>You can find the CodeDOM documentation [https://googledrive.com/host/0B6YUCBp4Z-wOOGZBdlVRTTQzNFk/d0/d7f/namespace_layer_d_1_1_code_d_o_m.html here]. Or generate the CodeDOM with LayerD's source.</p>
 
 <br>
 || *Class* || *Description* ||
-|| `XplNode` || It is the base class for all classes that are part of a Zoe document in memory. ||
-|| `XplDocument` || Represents the initial node of a Zoe document in memory. Contains a `DocumentData` that contains metadata and configuration information. Another section `DocumentBody` where the functional part of the source code is located. ||
-|| `XplNamespace` || Represents a Zoe namespace, to set or get the name is used `set_name` or `get_name`. ||
-|| `XplClass` || Represents a class, interface, enumeration, or Zoe structure.  By default represents a class. ||
-|| `XplFunction` || Represents a member function of a Zoe class. ||
-|| `XplProperty` || Represents a member property of a Zoe class. ||
-|| `XplField` || Represents a Zoe member field. ||
-|| `XplType` ||	Represents a data type, is a recursive structure. It is used to represent the data type `type`. ||
-|| `XplFunctionBody` || Represents a function body, contains instructions. It is used to represent the type of data `block`. ||
-|| `XplIName` || Represents an `iname` or identifier for the purpose of being used by the Zoe compiler, but is not itself a portion of source code. ||
-|| `XplClassMembersList` || Not used as part of a Zoe program, but to group class members in memory. ||
-|| `XplExpression` ||	Represents a container of some kind of expression. For example, can contain a literal expression, unary, binary, etc. It's the data type used to represent the expressions data types `exp`. ||
-|| `XplNodeList` || This is a list of nodes used to store any type of node derived from `XplNode`. ||
+|| [https://googledrive.com/host/0B6YUCBp4Z-wOOGZBdlVRTTQzNFk/d0/d09/class_layer_d_1_1_code_d_o_m_1_1_xpl_node.html `XplNode`] || It is the base class for all classes that are part of a Zoe document in memory. ||
+|| [https://googledrive.com/host/0B6YUCBp4Z-wOOGZBdlVRTTQzNFk/d2/da0/class_layer_d_1_1_code_d_o_m_1_1_xpl_document.html `XplDocument`] || Represents the initial node of a Zoe document in memory. Contains a `DocumentData` that contains metadata and configuration information. Another section `DocumentBody` where the functional part of the source code is located. ||
+|| [https://googledrive.com/host/0B6YUCBp4Z-wOOGZBdlVRTTQzNFk/db/dc6/class_layer_d_1_1_code_d_o_m_1_1_xpl_namespace.html `XplNamespace`] || Represents a Zoe namespace, to set or get the name is used `set_name` or `get_name`. ||
+|| [https://googledrive.com/host/0B6YUCBp4Z-wOOGZBdlVRTTQzNFk/de/dd4/class_layer_d_1_1_code_d_o_m_1_1_xpl_class.html `XplClass`] || Represents a class, interface, enumeration, or Zoe structure.  By default represents a class. ||
+|| [https://googledrive.com/host/0B6YUCBp4Z-wOOGZBdlVRTTQzNFk/da/d91/class_layer_d_1_1_code_d_o_m_1_1_xpl_function.html `XplFunction`] || Represents a member function of a Zoe class. ||
+|| [https://googledrive.com/host/0B6YUCBp4Z-wOOGZBdlVRTTQzNFk/da/d3b/class_layer_d_1_1_code_d_o_m_1_1_xpl_property.html `XplProperty`] || Represents a member property of a Zoe class. ||
+|| [https://googledrive.com/host/0B6YUCBp4Z-wOOGZBdlVRTTQzNFk/d9/dc6/class_layer_d_1_1_code_d_o_m_1_1_xpl_field.html `XplField`] || Represents a Zoe member field. ||
+|| [https://googledrive.com/host/0B6YUCBp4Z-wOOGZBdlVRTTQzNFk/d5/d02/class_layer_d_1_1_code_d_o_m_1_1_xpl_type.html `XplType`] ||	Represents a type declaration, it is a recursive structure for derived types likes arrays and pointers. ||
+|| [https://googledrive.com/host/0B6YUCBp4Z-wOOGZBdlVRTTQzNFk/da/d5f/class_layer_d_1_1_code_d_o_m_1_1_xpl_function_body.html `XplFunctionBody`] || Represents a function body or any block of statements. A reference to this class is the type used by the intrinsic type `block`. ||
+|| [https://googledrive.com/host/0B6YUCBp4Z-wOOGZBdlVRTTQzNFk/d8/d0c/class_layer_d_1_1_code_d_o_m_1_1_xpl_i_name.html `XplIName`] || Represents an `iname` or identifier for the purpose of being used by the Zoe compiler, but is not itself a portion of source code. ||
+|| [https://googledrive.com/host/0B6YUCBp4Z-wOOGZBdlVRTTQzNFk/d6/d3c/class_layer_d_1_1_code_d_o_m_1_1_xpl_class_members_list.html `XplClassMembersList`] || Not used as part of a Zoe program, but to group class members in memory. ||
+|| [https://googledrive.com/host/0B6YUCBp4Z-wOOGZBdlVRTTQzNFk/d6/dfb/class_layer_d_1_1_code_d_o_m_1_1_xpl_expression.html `XplExpression`] ||	This is the container for all kind of expressions. For example, can contain a literal expression, unary, binary, etc. It's the data type used to represent the variables with the type modifier `exp`. ||
+|| [https://googledrive.com/host/0B6YUCBp4Z-wOOGZBdlVRTTQzNFk/d7/d5e/class_layer_d_1_1_code_d_o_m_1_1_xpl_node_list.html `XplNodeList`] || This is a list of nodes used to store any type of node derived from `XplNode`. This type is used in every place in the CodeDOM where a list of nodes is needed. ||
 
 <p>As `XplNode` is the base class of all nodes in the `CodeDOM` its functionality is shared with most of the data types within the `CodeDOM`. You can think an instance of `XplNode` as the representation of a xml node of the Zoe source, then every derived class represents a different portion of Zoe source code in memory. The core functionality of `XplNode` is detailed in the following table:</p>
 
@@ -70,7 +71,7 @@ All classes that represent some portion of source code are derived from `XplNode
 <p>Using instances of `CodeDOM` classes is possible to create in memory portions of source code and even entire programs. Is necessary to clear that any Zoe code represented in memory as a document is implemented with `CodeDOM` classes, because of this it is very useful for all classfactories programmers know the `CodeDOM`.</p>
 
 == Classification of CodeDOM classes regarding the possibility of having children nodes ==
-The CodeDOM classes can be classified regarding the possibility of having children- nodes in the followings types:
+The CodeDOM classes can be classified regarding the possibility of having children nodes in the followings types:
 
  # The ones that can have multiple children of different types. For example: `XplFunctionBody`, `XplExpressionlist`, `XplClass`, `XplNamespace`, `XplDocumentBody`, `XplParameters`, `XplInherits`. If `.Children()` method is invoked (the one which is inherited from `XplNode`) a list with the children nodes that the class has is returned. This is because is permitted to this kind of class to has a variable number of children nodes.
  # The ones that can have only one child-node of some specific types. For example: `XplExpression`, `XplCatchinit` that uses the `get_Content()` and `set_Content()` methods to get or set its content. For an expression, for example, there are specific types of nodes that are valid as content. If `.Children()` method is invoked a null value is returned. This is because for this kind of class that manages a `content` the methods get and set content are supposed to be used.
