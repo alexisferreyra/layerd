@@ -50,4 +50,4 @@
   # [Programming_Python Programming for Python]
 
 * Reference *
-  # [https://googledrive.com/host/0B6YUCBp4Z-wOd0tiVURaY1YzdEk/classes.html CodeDOM Reference]
+  # [https://googledrive.com/host/0B6YUCBp4Z-wOOGZBdlVRTTQzNFk/namespaces.html CodeDOM Reference]
