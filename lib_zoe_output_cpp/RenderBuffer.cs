@@ -280,7 +280,7 @@ namespace LayerD.OutputModules
 
             RenderLines(outputBuffer, lines, false);
 
-            SaveToDisk(outputBuffer, Path.ChangeExtension(Path.Combine(outputFolder != null ? outputFolder : String.Empty, FileName), "cpp"));
+            SaveToDisk(outputBuffer, Path.Combine(outputFolder != null ? outputFolder : String.Empty, FileName) + ".cpp");
         }
 
         private void RenderDebugInfo(StringBuilder outputBuffer)
@@ -323,7 +323,7 @@ namespace LayerD.OutputModules
             // close ifdefguard
             outputBuffer.AppendLine("#endif");
 
-            SaveToDisk(outputBuffer, Path.ChangeExtension( Path.Combine(outputFolder != null ? outputFolder : String.Empty, FileName), "h"));
+            SaveToDisk(outputBuffer, Path.Combine(outputFolder != null ? outputFolder : String.Empty, FileName) + ".h");
         }
 
         private void RenderIfDefGuard(StringBuilder outputBuffer)

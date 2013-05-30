@@ -1,5 +1,11 @@
 namespace js
 {
+    extern public class Conversions
+    {
+    public:
+        fp void EventDelegate(js::DOMEvent*ref event);
+        static object^ operator implicit(EventDelegate arg1);
+    }
 	extern public class global
 	{
 	public:
