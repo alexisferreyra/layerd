@@ -1,0 +1,556 @@
+# Introduction #
+
+Zoe native types are defined as follow (in Meta D++ syntax):
+
+```
+
+namespace zoe::lang{
+  public class Object{
+  public:
+    extern Object();
+    extern virtual bool Equals(object^ obj);
+    extern virtual object^ MemberwiseClone();
+    extern virtual string^ ToString();
+    extern virtual string^ ToString(object^ cultureInfo);
+    extern virtual int GetHashCode();
+  }
+  public class String {
+  public:
+    extern String();
+    extern String(string source);
+    extern String(ASCIIString source);
+    extern String(char source);
+    extern String(ASCIIChar source);
+
+    extern override string^ ToString();
+    
+    extern string^ Substring(int index);
+    extern string^ Substring(int index, int count);
+    extern bool Contains(string^ text);
+    extern string^ ToUpper();
+    extern string^ ToLower();
+    extern string^ Trim();
+    extern string^ TrimBegin();
+    extern string^ TrimEnd();
+    extern int IndexOf(char letter);
+    extern int IndexOf(string str);
+    extern int IndexOf(string^ str);
+    extern int LastIndexOf(char letter);
+    extern int LastIndexOf(string str);
+    extern int LastIndexOf(string^ str);
+    extern string^ Replace(string^ source, string^ target);
+    extern char[] ToCharArray();
+    extern char indexer(int index){
+      get;
+    }
+
+    extern int property Length{
+      get;
+    }
+
+    extern static string^ operator+(string opA, string opB);
+
+    extern static string^ operator+(string opA, char opB);
+    extern static string^ operator+(string opA, sbyte opB);
+    extern static string^ operator+(string opA, byte opB);
+    extern static string^ operator+(string opA, short opB);
+    extern static string^ operator+(string opA, ushort opB);
+    extern static string^ operator+(string opA, int opB);
+    extern static string^ operator+(string opA, unsigned opB);
+    extern static string^ operator+(string opA, long opB);
+    extern static string^ operator+(string opA, ulong opB);
+    extern static string^ operator+(string opA, float opB);
+    extern static string^ operator+(string opA, double opB);
+    extern static string^ operator+(string opA, decimal opB);
+
+    extern static string^ operator+(char opB, string opA);
+    extern static string^ operator+(sbyte opB, string opA);
+    extern static string^ operator+(byte opB, string opA);
+    extern static string^ operator+(short opB, string opA);
+    extern static string^ operator+(ushort opB, string opA);
+    extern static string^ operator+(int opB, string opA);
+    extern static string^ operator+(unsigned opB, string opA);
+    extern static string^ operator+(long opB, string opA);
+    extern static string^ operator+(ulong opB, string opA);
+    extern static string^ operator+(float opB, string opA);
+    extern static string^ operator+(double opB, string opA);
+    extern static string^ operator+(decimal opB, string opA);
+
+    extern static bool operator==(string opA, string opB);
+    extern static bool operator!=(string opA, string opB);
+
+    extern static string^ operator+(string^ opA, string^ opB);
+
+    extern static string^ operator+(string^ opA, char opB);
+    extern static string^ operator+(string^ opA, sbyte opB);
+    extern static string^ operator+(string^ opA, byte opB);
+    extern static string^ operator+(string^ opA, short opB);
+    extern static string^ operator+(string^ opA, ushort opB);
+    extern static string^ operator+(string^ opA, int opB);
+    extern static string^ operator+(string^ opA, unsigned opB);
+    extern static string^ operator+(string^ opA, long opB);
+    extern static string^ operator+(string^ opA, ulong opB);
+    extern static string^ operator+(string^ opA, float opB);
+    extern static string^ operator+(string^ opA, double opB);
+    extern static string^ operator+(string^ opA, decimal opB);
+
+    extern static string^ operator+(char opB, string^ opA);
+    extern static string^ operator+(sbyte opB, string^ opA);
+    extern static string^ operator+(byte opB, string^ opA);
+    extern static string^ operator+(short opB, string^ opA);
+    extern static string^ operator+(ushort opB, string^ opA);
+    extern static string^ operator+(int opB, string^ opA);
+    extern static string^ operator+(unsigned opB, string^ opA);
+    extern static string^ operator+(long opB, string^ opA);
+    extern static string^ operator+(ulong opB, string^ opA);
+    extern static string^ operator+(float opB, string^ opA);
+    extern static string^ operator+(double opB, string^ opA);
+    extern static string^ operator+(decimal opB, string^ opA);
+
+    extern static bool operator==(string^ opA, string^ opB);
+    extern static bool operator!=(string^ opA, string^ opB);
+    
+    extern static string^ operator+(string opA, string^ opB);
+    extern static string^ operator+(string^ opA, string opB);
+
+    extern static bool operator==(string opA, string^ opB);
+    extern static bool operator!=(string opA, string^ opB);
+    extern static bool operator==(string^ opA, string opB);
+    extern static bool operator!=(string^ opA, string opB);
+
+  }
+  public struct Null{
+  public:
+    extern static bool operator==(object^ opA, object^ opB);
+    extern static bool operator!=(object^ opA, object^ opB);
+  }
+  public struct Boolean {
+  public:
+    extern override string^ ToString();
+    extern static const bool False = false;
+    extern static const bool True = true;
+    extern static const long MinValue;
+    extern static const long MaxValue;
+    extern static const int Size;
+
+    extern static bool operator|(bool opA, bool opB);
+    extern static bool operator&(bool opA, bool opB);
+    extern static bool operator^(bool opA, bool opB);
+    extern static bool operator!(bool opA);
+    extern static bool operator==(bool opA, bool opB);
+    extern static bool operator!=(bool opA, bool opB);
+    extern static bool operator>(bool opA, bool opB);
+    extern static bool operator<(bool opA, bool opB);
+    extern static bool operator>=(bool opA, bool opB);
+    extern static bool operator<=(bool opA, bool opB);
+    extern static bool operator&&(bool opA, bool opB);
+    extern static bool operator||(bool opA, bool opB);
+  }
+  public struct Char {
+  public:
+    extern static const long MinValue;
+    extern static const long MaxValue;
+    extern static const int Size;
+
+    extern static bool operator==(char opA, char opB);
+    extern static bool operator!=(char opA, char opB);
+
+    extern override string^ ToString();
+  }
+  public struct Byte{
+  public:
+    extern override string^ ToString();
+    extern static const long MinValue;
+    extern static const long MaxValue;
+    extern static const int Size;
+
+    extern static byte operator+(byte opA, byte opB);
+    extern static byte operator-(byte opA, byte opB);
+    extern static byte operator*(byte opA, byte opB);
+    extern static byte operator/(byte opA, byte opB);
+    extern static byte operator|(byte opA, byte opB);
+    extern static byte operator&(byte opA, byte opB);
+    extern static byte operator^(byte opA, byte opB);
+    extern static byte operator%(byte opA, byte opB);
+    extern static byte operator-(byte opA);
+    extern static byte operator!(byte opA);
+    extern static byte operator~(byte opA);
+    extern static bool operator==(byte opA, byte opB);
+    extern static bool operator!=(byte opA, byte opB);
+    extern static bool operator>(byte opA, byte opB);
+    extern static bool operator<(byte opA, byte opB);
+    extern static bool operator>=(byte opA, byte opB);
+    extern static bool operator<=(byte opA, byte opB);
+  }
+  public struct SByte {
+  public:
+    extern override string^ ToString();
+    extern static const long MinValue;
+    extern static const long MaxValue;
+    extern static const int Size;
+
+    extern static sbyte operator+(sbyte opA, sbyte opB);
+    extern static sbyte operator-(sbyte opA, sbyte opB);
+    extern static sbyte operator*(sbyte opA, sbyte opB);
+    extern static sbyte operator/(sbyte opA, sbyte opB);
+    extern static sbyte operator|(sbyte opA, sbyte opB);
+    extern static sbyte operator&(sbyte opA, sbyte opB);
+    extern static sbyte operator^(sbyte opA, sbyte opB);
+    extern static sbyte operator%(sbyte opA, sbyte opB);
+    extern static sbyte operator-(sbyte opA);
+    extern static sbyte operator!(sbyte opA);
+    extern static sbyte operator~(sbyte opA);
+    extern static sbyte operator++(sbyte opA);
+    extern static sbyte operator--(sbyte opA);
+    extern static bool operator==(sbyte opA, sbyte opB);
+    extern static bool operator!=(sbyte opA, sbyte opB);
+    extern static bool operator>(sbyte opA, sbyte opB);
+    extern static bool operator<(sbyte opA, sbyte opB);
+    extern static bool operator>=(sbyte opA, sbyte opB);
+    extern static bool operator<=(sbyte opA, sbyte opB);
+  }
+  public struct Short {
+  public:
+    extern override string^ ToString();
+    extern static const long MinValue;
+    extern static const long MaxValue;
+    extern static const int Size;
+
+    extern static short operator+(short opA, short opB);
+    extern static short operator-(short opA, short opB);
+    extern static short operator*(short opA, short opB);
+    extern static short operator/(short opA, short opB);
+    extern static short operator|(short opA, short opB);
+    extern static short operator&(short opA, short opB);
+    extern static short operator^(short opA, short opB);
+    extern static short operator%(short opA, short opB);
+    extern static short operator-(short opA);
+    extern static short operator!(short opA);
+    extern static short operator~(short opA);
+    extern static short operator++(short opA);
+    extern static short operator--(short opA);
+    extern static bool operator==(short opA, short opB);
+    extern static bool operator!=(short opA, short opB);
+    extern static bool operator>(short opA, short opB);
+    extern static bool operator<(short opA, short opB);
+    extern static bool operator>=(short opA, short opB);
+    extern static bool operator<=(short opA, short opB);
+  }
+  public struct UShort {
+  public:
+    extern override string^ ToString();
+    extern static const long MinValue;
+    extern static const long MaxValue;
+    extern static const int Size;
+
+    extern static ushort operator+(ushort opA, ushort opB);
+    extern static ushort operator-(ushort opA, ushort opB);
+    extern static ushort operator*(ushort opA, ushort opB);
+    extern static ushort operator/(ushort opA, ushort opB);
+    extern static ushort operator|(ushort opA, ushort opB);
+    extern static ushort operator&(ushort opA, ushort opB);
+    extern static ushort operator^(ushort opA, ushort opB);
+    extern static ushort operator%(ushort opA, ushort opB);
+    extern static ushort operator-(ushort opA);
+    extern static ushort operator!(ushort opA);
+    extern static ushort operator~(ushort opA);
+    extern static ushort operator++(ushort opA);
+    extern static ushort operator--(ushort opA);
+    extern static bool operator==(ushort opA, ushort opB);
+    extern static bool operator!=(ushort opA, ushort opB);
+    extern static bool operator>(ushort opA, ushort opB);
+    extern static bool operator<(ushort opA, ushort opB);
+    extern static bool operator>=(ushort opA, ushort opB);
+    extern static bool operator<=(ushort opA, ushort opB);
+  }
+  public struct Integer {
+  public:
+    extern override string^ ToString();
+    extern static const long MinValue;
+    extern static const long MaxValue;
+    extern static const int Size;
+
+    extern static int operator+(int opA, int opB);
+    extern static int operator-(int opA, int opB);
+    extern static int operator*(int opA, int opB);
+    extern static int operator/(int opA, int opB);
+    extern static int operator|(int opA, int opB);
+    extern static int operator&(int opA, int opB);
+    extern static int operator^(int opA, int opB);
+    extern static int operator%(int opA, int opB);
+    extern static int operator-(int opA);
+    extern static int operator!(int opA);
+    extern static int operator~(int opA);
+    extern static int operator++(int opA);
+    extern static int operator--(int opA);
+    extern static bool operator==(int opA, int opB);
+    extern static bool operator!=(int opA, int opB);
+    extern static bool operator>(int opA, int opB);
+    extern static bool operator<(int opA, int opB);
+    extern static bool operator>=(int opA, int opB);
+    extern static bool operator<=(int opA, int opB);
+  }
+  public struct Unsigned {
+  public:
+    extern override string^ ToString();
+    extern static const long MinValue;
+    extern static const long MaxValue;
+    extern static const int Size;
+
+    extern static unsigned operator+(unsigned opA, unsigned opB);
+    extern static unsigned operator-(unsigned opA, unsigned opB);
+    extern static unsigned operator*(unsigned opA, unsigned opB);
+    extern static unsigned operator/(unsigned opA, unsigned opB);
+    extern static unsigned operator|(unsigned opA, unsigned opB);
+    extern static unsigned operator&(unsigned opA, unsigned opB);
+    extern static unsigned operator^(unsigned opA, unsigned opB);
+    extern static unsigned operator%(unsigned opA, unsigned opB);
+    extern static unsigned operator-(unsigned opA);
+    extern static unsigned operator!(unsigned opA);
+    extern static unsigned operator~(unsigned opA);
+    extern static unsigned operator++(unsigned opA);
+    extern static unsigned operator--(unsigned opA);
+    extern static bool operator==(unsigned opA, unsigned opB);
+    extern static bool operator!=(unsigned opA, unsigned opB);
+    extern static bool operator>(unsigned opA, unsigned opB);
+    extern static bool operator<(unsigned opA, unsigned opB);
+    extern static bool operator>=(unsigned opA, unsigned opB);
+    extern static bool operator<=(unsigned opA, unsigned opB);
+  }
+  public struct Long {
+  public:
+    extern override string^ ToString();
+    extern static const long MinValue;
+    extern static const long MaxValue;
+    extern static const int Size;
+
+    extern static long operator+(long opA, long opB);
+    extern static long operator-(long opA, long opB);
+    extern static long operator*(long opA, long opB);
+    extern static long operator/(long opA, long opB);
+    extern static long operator|(long opA, long opB);
+    extern static long operator&(long opA, long opB);
+    extern static long operator^(long opA, long opB);
+    extern static long operator%(long opA, long opB);
+    extern static long operator-(long opA);
+    extern static long operator!(long opA);
+    extern static long operator~(long opA);
+    extern static long operator++(long opA);
+    extern static long operator--(long opA);
+    extern static bool operator==(long opA, long opB);
+    extern static bool operator!=(long opA, long opB);
+    extern static bool operator>(long opA, long opB);
+    extern static bool operator<(long opA, long opB);
+    extern static bool operator>=(long opA, long opB);
+    extern static bool operator<=(long opA, long opB);
+  }
+  public struct ULong {
+  public:
+    extern override string^ ToString();
+    extern static const long MinValue;
+    extern static const long MaxValue;
+    extern static const int Size;
+
+    extern static ulong operator+(ulong opA, ulong opB);
+    extern static ulong operator-(ulong opA, ulong opB);
+    extern static ulong operator*(ulong opA, ulong opB);
+    extern static ulong operator/(ulong opA, ulong opB);
+    extern static ulong operator|(ulong opA, ulong opB);
+    extern static ulong operator&(ulong opA, ulong opB);
+    extern static ulong operator^(ulong opA, ulong opB);
+    extern static ulong operator%(ulong opA, ulong opB);
+    extern static ulong operator-(ulong opA);
+    extern static ulong operator!(ulong opA);
+    extern static ulong operator~(ulong opA);
+    extern static ulong operator++(ulong opA);
+    extern static ulong operator--(ulong opA);
+    extern static bool operator==(ulong opA, ulong opB);
+    extern static bool operator!=(ulong opA, ulong opB);
+    extern static bool operator>(ulong opA, ulong opB);
+    extern static bool operator<(ulong opA, ulong opB);
+    extern static bool operator>=(ulong opA, ulong opB);
+    extern static bool operator<=(ulong opA, ulong opB);
+  }
+  public struct Float {
+  public:
+    extern override string^ ToString();
+    extern static const float MinValue;
+    extern static const float MaxValue;
+    extern static const int Size;
+
+    extern static float operator+(float opA, float opB);
+    extern static float operator-(float opA, float opB);
+    extern static float operator*(float opA, float opB);
+    extern static float operator/(float opA, float opB);
+    extern static float operator|(float opA, float opB);
+    extern static float operator&(float opA, float opB);
+    extern static float operator^(float opA, float opB);
+    extern static float operator%(float opA, float opB);
+    extern static float operator-(float opA);
+    extern static float operator!(float opA);
+    extern static float operator~(float opA);
+    extern static float operator++(float opA);
+    extern static float operator--(float opA);
+    extern static bool operator==(float opA, float opB);
+    extern static bool operator!=(float opA, float opB);
+    extern static bool operator>(float opA, float opB);
+    extern static bool operator<(float opA, float opB);
+    extern static bool operator>=(float opA, float opB);
+    extern static bool operator<=(float opA, float opB);
+  }
+  public struct Double {
+  public:
+    extern override string^ ToString();
+    extern static const double MinValue;
+    extern static const double MaxValue;
+    extern static const int Size;
+
+    extern static double operator+(double opA, double opB);
+    extern static double operator-(double opA, double opB);
+    extern static double operator*(double opA, double opB);
+    extern static double operator/(double opA, double opB);
+    extern static double operator|(double opA, double opB);
+    extern static double operator&(double opA, double opB);
+    extern static double operator^(double opA, double opB);
+    extern static double operator%(double opA, double opB);
+    extern static double operator-(double opA);
+    extern static double operator!(double opA);
+    extern static double operator~(double opA);
+    extern static double operator++(double opA);
+    extern static double operator--(double opA);
+    extern static bool operator==(double opA, double opB);
+    extern static bool operator!=(double opA, double opB);
+    extern static bool operator>(double opA, double opB);
+    extern static bool operator<(double opA, double opB);
+    extern static bool operator>=(double opA, double opB);
+    extern static bool operator<=(double opA, double opB);
+  }
+  public struct Decimal {
+  public:
+    extern override string^ ToString();
+    extern static const decimal MinValue;
+    extern static const decimal MaxValue;
+    extern static const int Size;
+
+    extern static decimal operator++(decimal opA);
+    extern static decimal operator--(decimal opA);
+    extern static decimal operator+(decimal opA, decimal opB);
+    extern static decimal operator-(decimal opA, decimal opB);
+    extern static decimal operator*(decimal opA, decimal opB);
+    extern static decimal operator/(decimal opA, decimal opB);
+    extern static decimal operator|(decimal opA, decimal opB);
+    extern static decimal operator&(decimal opA, decimal opB);
+    extern static decimal operator^(decimal opA, decimal opB);
+    extern static decimal operator%(decimal opA, decimal opB);
+    extern static decimal operator-(decimal opA);
+    extern static decimal operator!(decimal opA);
+    extern static decimal operator~(decimal opA);
+    extern static bool operator++(decimal opA);
+    extern static bool operator--(decimal opA);
+    extern static bool operator==(decimal opA, decimal opB);
+    extern static bool operator!=(decimal opA, decimal opB);
+    extern static bool operator>(decimal opA, decimal opB);
+    extern static bool operator<(decimal opA, decimal opB);
+    extern static bool operator>=(decimal opA, decimal opB);
+    extern static bool operator<=(decimal opA, decimal opB);
+  }
+  public struct DateTime {
+  public:
+    extern DateTime(int month, int day, int year);
+
+    extern override string^ ToString();
+    extern static const DateTime MinValue = new DateTime(1,1,1000);
+    extern static const DateTime MaxValue = new DateTime(1,1,9999);
+    extern static const int Size;
+
+    extern DateTime property Now{
+      get;
+    }
+    extern int property Day{
+      get;
+      set;
+    }
+    extern int property Month{
+      get;
+      set;
+    }
+    extern int property Year{
+      get;
+      set;
+    }
+    extern int property Hour{
+      get;
+      set;
+    }
+    extern int property Minutes{
+      get;
+      set;
+    }
+    extern int property Seconds{
+      get;
+      set;
+    }
+    extern void AddDays(int days);
+    extern void AddMonths(int months);
+    extern void AddYears(int years);
+    extern void AddHours(int hours);
+    extern void AddMinutes(int minutes);
+    extern void AddSeconds(int seconds);
+    extern int CompareTo(DateTime opA);
+
+    extern static TimeSpan operator+(DateTime opA, DateTime opB);
+    extern static TimeSpan operator-(DateTime opA, DateTime opB);
+    extern static bool operator==(DateTime opA, DateTime opB);
+    extern static bool operator!=(DateTime opA, DateTime opB);
+    extern static bool operator>(DateTime opA, DateTime opB);
+    extern static bool operator<(DateTime opA, DateTime opB);
+    extern static bool operator>=(DateTime opA, DateTime opB);
+    extern static bool operator<=(DateTime opA, DateTime opB);
+  }
+  public struct TimeSpan {
+  public:
+    extern static const int Size;
+
+    extern int property Days{
+      get;
+    }
+    extern int property Months{
+      get;
+    }
+    extern int property Years{
+      get;
+    }
+    extern int property Hours{
+      get;
+    }
+    extern int property Minutes{
+      get;
+    }
+    extern int property Seconds{
+      get;
+    }
+    extern static TimeSpan^ operator+(DateTime^ opA, TimeSpan^ opB);
+    extern static TimeSpan^ operator-(DateTime^ opA, TimeSpan^ opB);
+    extern static TimeSpan^ operator+(TimeSpan^ opA, DateTime^ opB);
+    extern static TimeSpan^ operator-(TimeSpan^ opA, DateTime^ opB);
+    extern static bool operator==(TimeSpan^ opA, TimeSpan^ opB);
+    extern static bool operator!=(TimeSpan^ opA, TimeSpan^ opB);
+    extern static bool operator>(TimeSpan^ opA, TimeSpan^ opB);
+    extern static bool operator<(TimeSpan^ opA, TimeSpan^ opB);
+    extern static bool operator>=(TimeSpan^ opA, TimeSpan^ opB);
+    extern static bool operator<=(TimeSpan^ opA, TimeSpan^ opB);
+  }
+  public class Array {
+  public:
+    extern override string^ ToString();
+    extern long property Length{
+      get;
+    }
+  }
+  // Base class for Enums
+  public struct Enum{
+  public:
+  }
+}
+
+```
